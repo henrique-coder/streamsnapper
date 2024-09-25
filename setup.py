@@ -17,13 +17,10 @@ setup(
     license='MIT',
     packages=find_packages(),
     install_requires=[
-        'yt-dlp'
+        'yt-dlp',
+        'scrapetube'
     ],
-    extras_require={
-        'tools': ['scrapetube'],
-        'downloader': [],
-        'all': ['scrapetube']
-    },
+    extras_require={},
     classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
