@@ -1,0 +1,16 @@
+# IDE
+.idea
+.venv
+__pycache__
+
+# Directories
+.debug
+build
+dist
+
+# Files
+requirements.dev.txt
+upload_to_pypi.py
+
+# Extensions
+# ...
