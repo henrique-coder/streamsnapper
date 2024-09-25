@@ -4,25 +4,29 @@ from pathlib import Path
 # Third-party imports
 from setuptools import setup, find_packages
 
+# Local imports
+from streamsnapper import __version__, __license__
+
 
 setup(
     name='streamsnapper',
-    version='0.0.1',
+    version=__version__,
     description='StreamSnapper is an intuitive library designed to simplify and enhance YouTube media downloads. It offers efficient, high-speed media extraction with optional tools for advanced data retrieval from YouTube.',
     long_description=Path('README.md').read_text(),
     long_description_content_type='text/markdown',
     url='https://github.com/henrique-coder/streamsnapper',
     author='henrique-coder',
     author_email='hjyz6rqyb@mozmail.com',
-    license='MIT',
+    license=__license__,
     packages=find_packages(),
     install_requires=[
-        'yt-dlp',
-        'scrapetube'
+        'scrapetube',
+        'yt-dlp'
     ],
     extras_require={
         'downloader': ['pysmartdl2'],
-        'all': ['pysmartdl2']
+        'merger': ['pyffmpeg'],
+        'all': ['pyffmpeg' 'pysmartdl2']
     },
     classifiers=[
         'Development Status :: 4 - Beta',
