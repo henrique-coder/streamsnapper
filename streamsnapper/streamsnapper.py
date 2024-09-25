@@ -1,8 +1,84 @@
 # Built-in imports
+from os import PathLike
+from shutil import which
+from pathlib import Path
 from re import sub as re_sub, search as re_search, IGNORECASE
 from unicodedata import normalize
 from locale import getlocale
-from typing import Any, AnyStr, Dict, List, Literal, Optional, Type, Union
+from random import choices
+from string import ascii_letters, digits
+from typing import Any, Dict, List, Literal, Optional, Type, Union
+
+
+class StreamError(Exception):
+    """
+    Base exception for the StreamSnapper, StreamTools and StreamDownloader classes.
+    """
+
+    pass
+
+
+class MissingRequirementsError(StreamError):
+    """
+    Exception raised when required packages are not installed.
+    """
+
+    pass
+
+
+class InvalidYTDLPDataError(StreamError):
+    """
+    Exception raised when invalid yt-dlp data is provided.
+    """
+
+    pass
+
+
+class InvalidURLError(StreamError):
+    """
+    Exception raised when an invalid URL is provided.
+    """
+
+    pass
+
+
+class ScrapingError(StreamError):
+    """
+    Exception raised when an error occurs while scraping YouTube data.
+    """
+
+    pass
+
+
+class BadArgumentError(StreamError):
+    """
+    Exception raised when an invalid argument is provided.
+    """
+
+    pass
+
+
+class DownloadError(StreamError):
+    """
+    Exception raised when an error occurs while downloading a file.
+    """
+
+    pass
+
+
+class FFmpegNotFoundError(StreamError):
+    """
+    Exception raised when the FFmpeg binary is not found.
+    """
+
+    pass
+
+
+try:
+    from yt_dlp import YoutubeDL, utils as yt_dlp_utils
+    from scrapetube import get_search as scrape_youtube_search, get_playlist as scrape_youtube_playlist, get_channel as scrape_youtube_channel
+except ImportError as e:
+    raise MissingRequirementsError(f'Missing required packages: "{e.name}"') from e
 
 
 def get_value(data: Dict[Any, Any], key: Any, fallback_key: Any = None, convert_to: Type = None, default_to: Any = None) -> Any:
@@ -35,69 +111,54 @@ def get_value(data: Dict[Any, Any], key: Any, fallback_key: Any = None, convert_
 
     return value
 
-def format_string(query: AnyStr, max_length: int = 128) -> Optional[str]:
+def format_string(query: str, max_length: int = 128) -> Optional[str]:
     """
-    Format a string to be used as a filename or directory name. Remove special characters, limit length etc.
+    Format a string to be used as a filename or directory name. Remove special characters, limit length and normalize the string.
     :param query: The string to be formatted.
     :param max_length: The maximum length of the formatted string. If the string is longer, it will be truncated.
     :return: The formatted string. If the input string is empty or None, return None.
     """
 
-    if not query or not query.strip():
+    if not query:
         return None
 
-    normalized_string = normalize('NFKD', str(query)).encode('ASCII', 'ignore').decode('utf-8')
+    normalized_string = normalize('NFKD', query).encode('ASCII', 'ignore').decode('utf-8')
     sanitized_string = re_sub(r'\s+', ' ', re_sub(r'[^a-zA-Z0-9\-_()[\]{}!$#+;,. ]', '', normalized_string)).strip()
 
     if len(sanitized_string) > max_length:
         cutoff = sanitized_string[:max_length].rfind(' ')
         sanitized_string = sanitized_string[:cutoff] if cutoff != -1 else sanitized_string[:max_length]
 
-    return sanitized_string
+    return sanitized_string if sanitized_string else None
 
-
-class StreamSnapperError(Exception):
+def generate_random_string(length: int = 16, prefix: str = None, suffix: str = None, separator: str = '_') -> str:
     """
-    Base exception class for StreamSnapper.
-    """
-
-    pass
-    """
-    Exception raised when the requirements for StreamSnapper are not met.
+    Generate a random string of a specific length using ASCII letters and digits.
+    :param length: The length of the random string to generate.
+    :param prefix: The prefix to add to the random string.
+    :param suffix: The suffix to add to the random string.
+    :return: The generated random string.
     """
 
-    pass
-
-
-class StreamSnapperRequirementsError(StreamSnapperError):
-    """
-    Exception raised when a StreamSnapper requirement is not met.
-    """
-
-    pass
-
-
-try:
-    from yt_dlp import YoutubeDL, utils as yt_dlp_utils
-    from scrapetube import get_search as scrape_youtube_search, get_playlist as scrape_youtube_playlist, get_channel as scrape_youtube_channel
-except ImportError as e:
-    raise StreamSnapperRequirementsError(f'Error importing required modules. Please install the required packages using "pip install -U yt-dlp scrapetube"') from e
+    return separator.join([part for part in [prefix, ''.join(choices(ascii_letters + digits, k=length)), suffix] if part])
 
 
 class StreamSnapper:
     """
-    A class for extracting and formatting data from YouTube videos using yt-dlp, facilitating access to general media information.
+    A class for extracting and formatting data from YouTube videos using yt-dlp (https://github.com/yt-dlp/yt-dlp), facilitating access to general media information.
     """
 
-    def __init__(self, disable_logging: bool = True) -> None:
+    def __init__(self, enable_log: bool = False) -> None:
         """
         Initialize the StreamSnapper class with optional settings for yt-dlp.
-        :param disable_logging: Disable logging from yt-dlp. If True, logging will be disabled.
+        :param enable_log: Enable or disable yt-dlp logging. If enabled, yt-dlp will print log messages to the console. If disabled, yt-dlp will suppress log messages.
         """
 
-        self.streamsnapper_tools: StreamSnapperTools = StreamSnapperTools()
+        self.streamtools: StreamTools = StreamTools()
 
-        self._ydl_opts: Dict[str, bool] = {'extract_flat': True, 'geo_bypass': True, 'noplaylist': True, 'age_limit': None, 'quiet': disable_logging, 'no_warnings': disable_logging, 'ignoreerrors': disable_logging}
+        enable_logging = not enable_logging
+
+        self._ydl_opts: Dict[str, bool] = {'extract_flat': True, 'geo_bypass': True, 'noplaylist': True, 'age_limit': None, 'quiet': enable_log, 'no_warnings': enable_log, 'ignoreerrors': enable_log}
         self._raw_youtube_data: Dict[Any, Any] = {}
         self._raw_youtube_streams: List[Dict[Any, Any]] = []
         self._raw_youtube_subtitles: Dict[str, List[Dict[str, str]]] = {}
@@ -122,27 +183,39 @@ class StreamSnapper:
         self.available_video_qualities: List[str] = []
         self.available_audio_languages: List[str] = []
 
-    def run(self, url: str = None) -> None:
+    def run(self, url: str = None, ytdlp_data: Dict[str, Any] = None) -> None:
         """
         Run the StreamSnapper class to extract and format data from a YouTube video.
         :param url: The URL of the YouTube video to extract data from.
+        :param data: The raw yt-dlp data of the YouTube video to extract data from. If provided, the URL will be ignored. (this is useful for testing and debugging)
+        :raises InvalidURLError: If an invalid URL is provided.
+        :raises ScrapingError: If an error occurs while scraping and extracting data from the YouTube video.
+        :raises InvalidYTDLPDataError: If invalid yt-dlp data is provided.
         """
 
-        media_id = self.streamsnapper_tools.extract_media_id(url)
+        if ytdlp_data:
+            self._raw_youtube_data = ytdlp_data
+        elif not url:
+            raise InvalidURLError('No YouTube video URL provided')
+        else:
+            media_id = self.streamtools.extract_media_id(url)
 
-        if not media_id:
-            raise ValueError(f'Invalid YouTube video URL: "{url}"')
+            if not media_id:
+                raise InvalidURLError(f'Invalid YouTube video URL (or media ID not found): "{url}"')
 
-        url = f'https://www.youtube.com/watch?v={media_id}'
+            url = f'https://www.youtube.com/watch?v={media_id}'
+
+            try:
+                with YoutubeDL(self._ydl_opts) as ydl:
+                    self._raw_youtube_data = ydl.extract_info(url, download=False, process=True)
+            except (yt_dlp_utils.DownloadError, yt_dlp_utils.ExtractorError, Exception) as e:
+                raise ScrapingError(f'Error occurred while scraping and extracting data from YouTube media: "{url}"') from e
 
         try:
-            with YoutubeDL(self._ydl_opts) as ydl:
-                self._raw_youtube_data = ydl.extract_info(url, download=False, process=True)
-        except (yt_dlp_utils.DownloadError, yt_dlp_utils.ExtractorError, Exception) as e:
-            raise ValueError(f'Error extracting data from YouTube video: "{url}"') from e
-
-        self._raw_youtube_streams = self._raw_youtube_data.get('formats', [])
-        self._raw_youtube_subtitles = self._raw_youtube_data.get('subtitles', {})
+            self._raw_youtube_streams = self._raw_youtube_data['formats']
+            self._raw_youtube_subtitles = self._raw_youtube_data['subtitles']
+        except KeyError as e:
+            raise InvalidYTDLPDataError(f'Invalid yt-dlp data. Missing required key: "{e.args[0]}"') from e
 
     def analyze_media_info(self) -> None:
         """
@@ -214,10 +287,10 @@ class StreamSnapper:
         data = self._raw_youtube_streams
 
         format_id_extension_map = {
-            702: 'mp4', 571: 'mp4', 402: 'mp4', 272: 'webm',  # 7680x4320
+            702: 'mp4', 402: 'mp4', 571: 'mp4', 272: 'webm',  # 7680x4320
             701: 'mp4', 401: 'mp4', 337: 'webm', 315: 'webm', 313: 'webm', 305: 'mp4', 266: 'mp4',  # 3840x2160
             700: 'mp4', 400: 'mp4', 336: 'webm', 308: 'webm', 271: 'webm', 304: 'mp4', 264: 'mp4',  # 2560x1440
-            699: 'mp4', 399: 'mp4', 335: 'webm', 303: 'webm', 248: 'webm', 299: 'mp4', 137: 'mp4', 216: 'mp4', 170: 'webm',  # 1920x1080 (616: 'webm' - Premium [m3u8])
+            699: 'mp4', 399: 'mp4', 335: 'webm', 303: 'webm', 248: 'webm', 299: 'mp4', 137: 'mp4', 216: 'mp4', 170: 'webm',  # 1920x1080 (699: 'mp4', 399: 'mp4', 335: 'webm', 303: 'webm', 248: 'webm', 616: 'webm', 299: 'mp4', 137: 'mp4', 216: 'mp4', 170: 'webm')
             698: 'mp4', 398: 'mp4', 334: 'webm', 302: 'webm', 612: 'webm', 247: 'webm', 298: 'mp4', 136: 'mp4', 169: 'webm',  # 1280x720
             697: 'mp4', 397: 'mp4', 333: 'webm', 244: 'webm', 135: 'mp4', 168: 'webm',  # 854x480
             696: 'mp4', 396: 'mp4', 332: 'webm', 243: 'webm', 134: 'mp4', 167: 'webm',  # 640x360
@@ -356,10 +429,10 @@ class StreamSnapper:
             if preferred_language == 'auto':
                 try:
                     if self.system_language not in self.available_audio_languages:
-                        raise Exception
+                        raise ValueError
 
                     self.best_audio_streams = [stream for stream in self.best_audio_streams if stream['language'] == self.system_language]
-                except Exception:
+                except ValueError:
                     preferred_language = 'original'
             if preferred_language == 'original':
                 self.best_audio_streams = [stream for stream in self.best_audio_streams if stream['isOriginalAudio']]
@@ -391,14 +464,14 @@ class StreamSnapper:
         self.subtitle_streams = dict(sorted(subtitle_streams.items()))
 
 
-class StreamSnapperTools:
+class StreamTools:
     """
     A class with independent tools to be used with the StreamSnapper class or separately.
     """
 
     def __init__(self) -> None:
         self._youtube_media_id_regex = r'(?:https?:)?(?:\/\/)?(?:[0-9A-Z-]+\.)?(?:youtu\.be\/|youtube(?:-nocookie)?\.com\S*?[^\w\s-])([\w-]{11})(?=[^\w-]|$)(?![?=&+%\w.-]*(?:[\'"][^<>]*>|<\/a>))[?=&+%\w.-]*'
-        self._youtube_media_playlist_id_regex = r'(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:playlist\?list=|watch\?v=|embed\/|v\/)|youtu\.be\/)(?:.*?list=)?([\w-]{34})'
+        self._youtube_playlist_id_regex = r'(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:playlist\?list=|watch\?v=|embed\/|v\/)|youtu\.be\/)(?:.*?list=)?([\w-]{34})'
 
     def extract_media_id(self, url: str) -> Optional[str]:
         """
@@ -417,7 +490,7 @@ class StreamSnapperTools:
         :return: The YouTube media playlist ID extracted from the URL. If the URL is invalid or the media playlist ID is not found, return None.
         """
 
-        match = re_search(self._youtube_media_playlist_id_regex, url, IGNORECASE)
+        match = re_search(self._youtube_playlist_id_regex, url, IGNORECASE)
         return match.group(1) if match else None
 
     def get_url_from_query(self, query: str) -> Optional[str]:
@@ -463,10 +536,11 @@ class StreamSnapperTools:
         :param channel_url: The URL of the YouTube channel.
         :param channel_username: The username of the YouTube channel.
         :return: A list of all the video URLs in the channel. If the channel is invalid or no videos are found, return None.
+        :raises BadArgumentError: If an invalid argument is provided.
         """
 
         if sum([bool(channel_id), bool(channel_url), bool(channel_username)]) != 1:
-            raise ValueError('You must provide only one of the following: channel_id, channel_url, channel_username')
+            raise BadArgumentError('Exactly one of the following arguments must be provided: "channel_id", "channel_url", "channel_username"')
 
         try:
             data = list(scrape_youtube_channel(channel_id=channel_id, channel_url=channel_url, channel_username=channel_username, sort_by='newest', content_type='videos', limit=None))
@@ -475,3 +549,78 @@ class StreamSnapperTools:
 
         if data:
             return [f'https://www.youtube.com/watch?v={video['videoId']}' for video in data]
+
+
+class StreamDownloader:
+    """
+    A class for downloading direct links using pysmartdl2 (https://github.com/amkrajewski/pysmartdl2), extremely quickly.
+    """
+
+    def __init__(self, url: str, output_path: Union[str, PathLike], max_connections: int = 4, show_progress_bar: bool = True, timeout: int = 120) -> None:
+        """
+        Initialize the StreamDownloader class with the required settings for downloading a file.
+        :param url: The direct URL of the file to download.
+        :param output_path: The path where the downloaded file will be saved. If a directory is provided, the file will be named based on the URL. If a full file path is provided, the file will be saved with the specified name.
+        :param max_connections: The maximum number of connections (threads) to use.
+        :param show_progress_bar: Enable or disable the progress bar.
+        :param timeout: The timeout for the download.
+        """
+
+        try:
+            from pysmartdl2 import SmartDL
+        except ImportError as e:
+            raise MissingRequirementsError(f'To use this function, you need to install the streamsnapper[downloader] version. Missing required packages: "{e.name}"') from e
+
+        self._SmartDL = SmartDL
+
+        self._url: str = url
+        self._output_path: Union[str, PathLike] = Path(output_path).resolve().as_posix()
+        self._max_connections: int = max_connections
+        self._show_progress_bar: bool = show_progress_bar
+        self._timeout: int = timeout
+
+    def download(self) -> None:
+        """
+        Start the download process.
+        :raises DownloadError: If an error occurs while downloading the file.
+        """
+
+        try:
+            download_obj = self._SmartDL(urls=self._url, dest=self._output_path, threads=self._max_connections, progress_bar=self._show_progress_bar, timeout=self._timeout)
+            download_obj.start()
+        except Exception as e:
+            raise DownloadError(f'Error occurred while downloading the file: "{self._url}"') from e
+
+
+class StreamMerger:
+    """
+    A class for merging video and audio files cleanly and quickly using ffmpeg (https://ffmpeg.org).
+    """
+
+    def __init__(self, use_system_ffmpeg: bool = False, enable_log: bool = False) -> None:
+        """
+        Initialize the StreamMerger class with optional settings for FFmpeg.
+        :param use_system_ffmpeg: Use the system FFmpeg binary if available. If False, use the FFmpeg binary provided by the pyffmpeg package.
+        :param enable_log: Enable or disable FFmpeg logging. If enabled, FFmpeg will print log messages to the console. If disabled, FFmpeg will suppress log messages.
+        :raises MissingRequirementsError: If the pyffmpeg package is not installed.
+        :raises FFmpegNotFoundError: If the FFmpeg binary is not found.
+        """
+
+        raise NotImplementedError('This function is not yet implemented')
+
+        try:
+            from pyffmpeg import FFmpeg
+        except ImportError as e:
+            raise MissingRequirementsError(f'To use this function, you need to install the streamsnapper[merger] version. Missing required packages: "{e.name}"') from e
+
+        self.ffmpeg_bin_path: str = None
+        self._ffmpeg_obj: FFmpeg = FFmpeg(enable_log=enable_log)
+
+        if use_system_ffmpeg:
+            which_ffmpeg = which('ffmpeg')
+            self.ffmpeg_bin_path = Path(which_ffmpeg).resolve().as_posix() if which_ffmpeg else None
+        else:
+            self.ffmpeg_bin_path = Path(self._ffmpeg_obj.get_ffmpeg_bin()).resolve().as_posix()
+
+        if not self.ffmpeg_bin_path:
+            raise FFmpegNotFoundError('FFmpeg binary not found. Make sure FFmpeg is installed and added to the system environment variables.')
