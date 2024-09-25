@@ -1,2 +1,3 @@
-yt-dlp
+pysmartdl2
 scrapetube
+yt-dlp

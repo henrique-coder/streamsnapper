@@ -20,7 +20,10 @@ setup(
         'yt-dlp',
         'scrapetube'
     ],
-    extras_require={},
+    extras_require={
+        'downloader': ['pysmartdl2'],
+        'all': ['pysmartdl2']
+    },
     classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
