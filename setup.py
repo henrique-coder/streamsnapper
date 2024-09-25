@@ -26,7 +26,7 @@ setup(
     extras_require={
         'downloader': ['pysmartdl2'],
         'merger': ['pyffmpeg'],
-        'all': ['pyffmpeg' 'pysmartdl2']
+        'all': ['pyffmpeg', 'pysmartdl2']
     },
     classifiers=[
         'Development Status :: 4 - Beta',
