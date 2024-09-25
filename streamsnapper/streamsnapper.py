@@ -78,7 +78,7 @@ try:
     from yt_dlp import YoutubeDL, utils as yt_dlp_utils
     from scrapetube import get_search as scrape_youtube_search, get_playlist as scrape_youtube_playlist, get_channel as scrape_youtube_channel
 except ImportError as e:
-    raise MissingRequirementsError(f'Missing required packages: "{e.name}"') from e
+    raise MissingRequirementsError(f'Missing required packages: "{e.name.replace('_', '-')}"') from e
 
 
 def get_value(data: Dict[Any, Any], key: Any, fallback_key: Any = None, convert_to: Type = None, default_to: Any = None) -> Any:
@@ -569,7 +569,7 @@ class StreamDownloader:
         try:
             from pysmartdl2 import SmartDL
         except ImportError as e:
-            raise MissingRequirementsError(f'To use this function, you need to install the streamsnapper[downloader] version. Missing required packages: "{e.name}"') from e
+            raise MissingRequirementsError(f'To use this function, you need to install the streamsnapper[downloader] version. Missing required packages: "{e.name.replace('_', '-')}"') from e
 
         self._SmartDL = SmartDL
 
@@ -611,7 +611,7 @@ class StreamMerger:
         try:
             from pyffmpeg import FFmpeg
         except ImportError as e:
-            raise MissingRequirementsError(f'To use this function, you need to install the streamsnapper[merger] version. Missing required packages: "{e.name}"') from e
+            raise MissingRequirementsError(f'To use this function, you need to install the streamsnapper[merger] version. Missing required packages: "{e.name.replace('_', '-')}"') from e
 
         self.ffmpeg_bin_path: str = None
         self._ffmpeg_obj: FFmpeg = FFmpeg(enable_log=enable_log)
