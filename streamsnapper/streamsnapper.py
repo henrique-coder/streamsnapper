@@ -1,9 +1,3 @@
-# PyPI package: streamsnapper
-# streamsnapper -> ['yt-dlp']
-# streamsnapper[tools] -> ['yt-dlp', 'scrapetube']
-# streamsnapper[downloader] -> ['yt-dlp']
-# streamsnapper[all] -> ['yt-dlp', 'scrapetube']
-
 # Built-in imports
 from re import sub as re_sub, search as re_search, IGNORECASE
 from unicodedata import normalize
@@ -68,9 +62,6 @@ class StreamSnapperError(Exception):
     """
 
     pass
-
-
-class StreamSnapperRequirementsError(StreamSnapperError):
     """
     Exception raised when the requirements for StreamSnapper are not met.
     """
@@ -78,25 +69,35 @@ class StreamSnapperRequirementsError(StreamSnapperError):
     pass
 
 
+class StreamSnapperRequirementsError(StreamSnapperError):
+    """
+    Exception raised when a StreamSnapper requirement is not met.
+    """
+
+    pass
+
+
+try:
+    from yt_dlp import YoutubeDL, utils as yt_dlp_utils
+    from scrapetube import get_search as scrape_youtube_search, get_playlist as scrape_youtube_playlist, get_channel as scrape_youtube_channel
+except ImportError as e:
+    raise StreamSnapperRequirementsError(f'Error importing required modules. Please install the required packages using "pip install -U yt-dlp scrapetube"') from e
+
+
 class StreamSnapper:
     """
     A class for extracting and formatting data from YouTube videos using yt-dlp, facilitating access to general media information.
     """
 
-    try:
-        from yt_dlp import YoutubeDL, utils as yt_dlp_utils
-    except ImportError as e:
-        raise StreamSnapperRequirementsError(f'Error importing "yt-dlp" module. Please manually install the package using "pip install -U yt-dlp"') from e
-
-    def __init__(self, quiet: bool = True, no_warnings: bool = True, ignore_errors: bool = True) -> None:
+    def __init__(self, disable_logging: bool = True) -> None:
         """
         Initialize the StreamSnapper class with optional settings for yt-dlp.
-        :param quiet: Whether to suppress console output from yt-dlp.
-        :param no_warnings: Whether to suppress warnings from yt-dlp.
-        :param ignore_errors: Whether to ignore errors from yt-dlp.
+        :param disable_logging: Disable logging from yt-dlp. If True, logging will be disabled.
         """
 
-        self._ydl_opts: Dict[str, bool] = {'extract_flat': True, 'geo_bypass': True, 'noplaylist': True, 'age_limit': None, 'quiet': quiet, 'no_warnings': no_warnings, 'ignoreerrors': ignore_errors}
+        self.streamsnapper_tools: StreamSnapperTools = StreamSnapperTools()
+
+        self._ydl_opts: Dict[str, bool] = {'extract_flat': True, 'geo_bypass': True, 'noplaylist': True, 'age_limit': None, 'quiet': disable_logging, 'no_warnings': disable_logging, 'ignoreerrors': disable_logging}
         self._raw_youtube_data: Dict[Any, Any] = {}
         self._raw_youtube_streams: List[Dict[Any, Any]] = []
         self._raw_youtube_subtitles: Dict[str, List[Dict[str, str]]] = {}
@@ -127,7 +128,7 @@ class StreamSnapper:
         :param url: The URL of the YouTube video to extract data from.
         """
 
-        media_id = StreamSnapperTools.extract_media_id(url)
+        media_id = self.streamsnapper_tools.extract_media_id(url)
 
         if not media_id:
             raise ValueError(f'Invalid YouTube video URL: "{url}"')
@@ -135,9 +136,9 @@ class StreamSnapper:
         url = f'https://www.youtube.com/watch?v={media_id}'
 
         try:
-            with self.YoutubeDL(self._ydl_opts) as ydl:
+            with YoutubeDL(self._ydl_opts) as ydl:
                 self._raw_youtube_data = ydl.extract_info(url, download=False, process=True)
-        except (self.yt_dlp_utils.DownloadError, self.yt_dlp_utils.ExtractorError, Exception) as e:
+        except (yt_dlp_utils.DownloadError, yt_dlp_utils.ExtractorError, Exception) as e:
             raise ValueError(f'Error extracting data from YouTube video: "{url}"') from e
 
         self._raw_youtube_streams = self._raw_youtube_data.get('formats', [])
@@ -396,13 +397,8 @@ class StreamSnapperTools:
     """
 
     def __init__(self) -> None:
-        try:
-            from scrapetube import get_search as scrape_youtube_search, get_playlist as scrape_youtube_playlist, get_channel as scrape_youtube_channel
-        except ImportError as e:
-            raise StreamSnapperRequirementsError(f'Error importing "scrapetube" module. Please install the streamsnapper[tools] package using "pip install -U streamsnapper[tools]" or "pip install -U scrapetube" to manually install the package') from e
-
-    _youtube_media_id_regex = r'(?:https?:)?(?:\/\/)?(?:[0-9A-Z-]+\.)?(?:youtu\.be\/|youtube(?:-nocookie)?\.com\S*?[^\w\s-])([\w-]{11})(?=[^\w-]|$)(?![?=&+%\w.-]*(?:[\'"][^<>]*>|<\/a>))[?=&+%\w.-]*'
-    _youtube_media_playlist_id_regex = r'(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:playlist\?list=|watch\?v=|embed\/|v\/)|youtu\.be\/)(?:.*?list=)?([\w-]{34})'
+        self._youtube_media_id_regex = r'(?:https?:)?(?:\/\/)?(?:[0-9A-Z-]+\.)?(?:youtu\.be\/|youtube(?:-nocookie)?\.com\S*?[^\w\s-])([\w-]{11})(?=[^\w-]|$)(?![?=&+%\w.-]*(?:[\'"][^<>]*>|<\/a>))[?=&+%\w.-]*'
+        self._youtube_media_playlist_id_regex = r'(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:playlist\?list=|watch\?v=|embed\/|v\/)|youtu\.be\/)(?:.*?list=)?([\w-]{34})'
 
     def extract_media_id(self, url: str) -> Optional[str]:
         """
@@ -411,7 +407,7 @@ class StreamSnapperTools:
         :return: The YouTube media ID extracted from the URL. If the URL is invalid or the media ID is not found, return None.
         """
 
-        match = re_search(StreamSnapperTools._youtube_media_id_regex, url, IGNORECASE)
+        match = re_search(self._youtube_media_id_regex, url, IGNORECASE)
         return match.group(1) if match else None
 
     def extract_playlist_id(self, url: str) -> Optional[str]:
@@ -421,7 +417,7 @@ class StreamSnapperTools:
         :return: The YouTube media playlist ID extracted from the URL. If the URL is invalid or the media playlist ID is not found, return None.
         """
 
-        match = re_search(StreamSnapperTools._youtube_media_playlist_id_regex, url, IGNORECASE)
+        match = re_search(self._youtube_media_playlist_id_regex, url, IGNORECASE)
         return match.group(1) if match else None
 
     def get_url_from_query(self, query: str) -> Optional[str]:
@@ -432,7 +428,7 @@ class StreamSnapperTools:
         """
 
         try:
-            data = list(self.scrape_youtube_search(query, sort_by='relevance', results_type='video', limit=1))
+            data = list(scrape_youtube_search(query, sort_by='relevance', results_type='video', limit=1))
         except Exception:
             return None
 
@@ -447,13 +443,13 @@ class StreamSnapperTools:
         :return: A list of all the video URLs in the playlist. If the playlist is invalid or no videos are found, return None.
         """
 
-        playlist_id = StreamSnapperTools.extract_playlist_id(url)
+        playlist_id = self.extract_playlist_id(url)
 
         if not playlist_id:
             return None
 
         try:
-            data = list(self.scrape_youtube_playlist(playlist_id, limit=None))
+            data = list(scrape_youtube_playlist(playlist_id, limit=None))
         except Exception:
             return None
 
@@ -473,7 +469,7 @@ class StreamSnapperTools:
             raise ValueError('You must provide only one of the following: channel_id, channel_url, channel_username')
 
         try:
-            data = list(self.scrape_youtube_channel(channel_id=channel_id, channel_url=channel_url, channel_username=channel_username, sort_by='newest', content_type='videos', limit=None))
+            data = list(scrape_youtube_channel(channel_id=channel_id, channel_url=channel_url, channel_username=channel_username, sort_by='newest', content_type='videos', limit=None))
         except Exception:
             return None
 

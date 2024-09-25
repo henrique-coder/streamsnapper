@@ -1,3 +1,1 @@
-from .streamsnapper import (
-    StreamSnapper, StreamSnapperTools  # StreamSnapperError, StreamSnapperRequirementsError
-    )
+from .streamsnapper import StreamSnapper, StreamSnapperTools, StreamSnapperError, StreamSnapperRequirementsError
