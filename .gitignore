@@ -14,4 +14,4 @@ upload_to_pypi.py
 requirements.dev.txt
 
 # Extensions
-# ...
+*.egg-info
