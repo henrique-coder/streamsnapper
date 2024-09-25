@@ -9,8 +9,9 @@ build
 dist
 
 # Files
-requirements.dev.txt
+debugging.py
 upload_to_pypi.py
+requirements.dev.txt
 
 # Extensions
 # ...
