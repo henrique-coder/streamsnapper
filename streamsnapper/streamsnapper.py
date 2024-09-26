@@ -9,6 +9,12 @@ from random import choices
 from string import ascii_letters, digits
 from typing import Any, Dict, List, Literal, Optional, Type, Union
 
+# Third-party imports
+from pyffmpeg import FFmpeg
+from pysmartdl2 import SmartDL
+from scrapetube import get_search as scrape_youtube_search, get_playlist as scrape_youtube_playlist, get_channel as scrape_youtube_channel
+from yt_dlp import YoutubeDL, utils as yt_dlp_utils
+
 
 class StreamError(Exception):
     """
@@ -16,9 +22,6 @@ class StreamError(Exception):
     """
 
     pass
-
-
-class MissingRequirementsError(StreamError):
     """
     Exception raised when required packages are not installed.
     """
@@ -72,13 +75,6 @@ class FFmpegNotFoundError(StreamError):
     """
 
     pass
-
-
-try:
-    from yt_dlp import YoutubeDL, utils as yt_dlp_utils
-    from scrapetube import get_search as scrape_youtube_search, get_playlist as scrape_youtube_playlist, get_channel as scrape_youtube_channel
-except ImportError as e:
-    raise MissingRequirementsError(f'An error occurred while importing the required packages. Error: "{e}"') from e
 
 
 def get_value(data: Dict[Any, Any], key: Any, fallback_key: Any = None, convert_to: Type = None, default_to: Any = None) -> Any:
@@ -566,13 +562,6 @@ class StreamDownloader:
         :param timeout: The timeout for the download.
         """
 
-        try:
-            from pysmartdl2 import SmartDL
-        except ImportError as e:
-            raise MissingRequirementsError(f'To use this function, you need to install the streamsnapper[downloader] version. Error: "{e}"') from e
-
-        self._SmartDL = SmartDL
-
         self._url: str = url
         self._output_path: Union[str, PathLike] = Path(output_path).resolve().as_posix()
         self._max_connections: int = max_connections
@@ -586,7 +575,7 @@ class StreamDownloader:
         """
 
         try:
-            download_obj = self._SmartDL(urls=self._url, dest=self._output_path, threads=self._max_connections, progress_bar=self._show_progress_bar, timeout=self._timeout)
+            download_obj = SmartDL(urls=self._url, dest=self._output_path, threads=self._max_connections, progress_bar=self._show_progress_bar, timeout=self._timeout)
             download_obj.start()
         except Exception as e:
             raise DownloadError(f'Error occurred while downloading the file: "{self._url}"') from e
@@ -602,23 +591,17 @@ class StreamMerger:
         Initialize the StreamMerger class with optional settings for FFmpeg.
         :param use_system_ffmpeg: Use the system FFmpeg binary if available. If False, use the FFmpeg binary provided by the pyffmpeg package.
         :param enable_log: Enable or disable FFmpeg logging. If enabled, FFmpeg will print log messages to the console. If disabled, FFmpeg will suppress log messages.
-        :raises MissingRequirementsError: If the pyffmpeg package is not installed.
         :raises FFmpegNotFoundError: If the FFmpeg binary is not found.
         """
 
-        try:
-            from pyffmpeg import FFmpeg
-        except ImportError as e:
-            raise MissingRequirementsError(f'To use this function, you need to install the streamsnapper[merger] version. Error: "{e}"') from e
-
-        self.ffmpeg_bin_path: str = None
+        self.ffmpeg_binary_path: str = None
         self._ffmpeg_obj: FFmpeg = FFmpeg(enable_log=enable_log)
 
         if use_system_ffmpeg:
             which_ffmpeg = which('ffmpeg')
-            self.ffmpeg_bin_path = Path(which_ffmpeg).resolve().as_posix() if which_ffmpeg else None
+            self.ffmpeg_binary_path = Path(which_ffmpeg).resolve().as_posix() if which_ffmpeg else None
         else:
-            self.ffmpeg_bin_path = Path(self._ffmpeg_obj.get_ffmpeg_bin()).resolve().as_posix()
+            self.ffmpeg_binary_path = Path(self._ffmpeg_obj.get_ffmpeg_bin()).resolve().as_posix()
 
-        if not self.ffmpeg_bin_path:
+        if not self.ffmpeg_binary_path:
             raise FFmpegNotFoundError('FFmpeg binary not found. Make sure FFmpeg is installed and added to the system environment variables.')
