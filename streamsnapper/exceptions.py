@@ -44,11 +44,3 @@ class DownloadError(StreamBaseError):
     """
 
     pass
-
-
-class FFmpegNotFoundError(StreamBaseError):
-    """
-    Exception raised when the FFmpeg binary is not found.
-    """
-
-    pass
