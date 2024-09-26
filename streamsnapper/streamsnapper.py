@@ -15,66 +15,8 @@ from pysmartdl2 import SmartDL
 from scrapetube import get_search as scrape_youtube_search, get_playlist as scrape_youtube_playlist, get_channel as scrape_youtube_channel
 from yt_dlp import YoutubeDL, utils as yt_dlp_utils
 
-
-class StreamError(Exception):
-    """
-    Base exception for the StreamSnapper, StreamTools and StreamDownloader classes.
-    """
-
-    pass
-    """
-    Exception raised when required packages are not installed.
-    """
-
-    pass
-
-
-class InvalidYTDLPDataError(StreamError):
-    """
-    Exception raised when invalid yt-dlp data is provided.
-    """
-
-    pass
-
-
-class InvalidURLError(StreamError):
-    """
-    Exception raised when an invalid URL is provided.
-    """
-
-    pass
-
-
-class ScrapingError(StreamError):
-    """
-    Exception raised when an error occurs while scraping YouTube data.
-    """
-
-    pass
-
-
-class BadArgumentError(StreamError):
-    """
-    Exception raised when an invalid argument is provided.
-    """
-
-    pass
-
-
-class DownloadError(StreamError):
-    """
-    Exception raised when an error occurs while downloading a file.
-    """
-
-    pass
-
-
-class FFmpegNotFoundError(StreamError):
-    """
-    Exception raised when the FFmpeg binary is not found.
-    """
-
-    pass
+# Local imports
+from .exceptions import *
 
 
 def get_value(data: Dict[Any, Any], key: Any, fallback_key: Any = None, convert_to: Type = None, default_to: Any = None) -> Any:
