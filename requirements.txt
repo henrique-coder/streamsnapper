@@ -1,4 +1,3 @@
-pyffmpeg
 pysmartdl2
 scrapetube
 yt-dlp
