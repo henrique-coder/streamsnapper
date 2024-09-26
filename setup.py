@@ -20,7 +20,6 @@ setup(
     license=__license__,
     packages=find_packages(),
     install_requires=[
-        'pyffmpeg',
         'pysmartdl2',
         'scrapetube',
         'yt-dlp'
