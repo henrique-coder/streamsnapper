@@ -1,5 +1,5 @@
 # Local imports
-from .streamsnapper import Snapper, Extractor
+from .streamsnapper import Snapper, Extractor, Downloader
 from .exceptions import *
 
 
