@@ -1,8 +1,6 @@
 # Local imports
-from .streamsnapper import (
-    StreamSnapper, StreamTools, StreamDownloader,
-    StreamBaseError, InvalidYTDLPDataError, InvalidURLError, ScrapingError, BadArgumentError, DownloadError
-)
+from .streamsnapper import Snapper, Extractor
+from .exceptions import *
 
 
 __version__ = '0.0.3'
