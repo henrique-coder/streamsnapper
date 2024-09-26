@@ -156,7 +156,7 @@ class StreamSnapper:
 
         self.streamtools: StreamTools = StreamTools()
 
-        enable_logging = not enable_logging
+        enable_log = not enable_log
 
         self._ydl_opts: Dict[str, bool] = {'extract_flat': True, 'geo_bypass': True, 'noplaylist': True, 'age_limit': None, 'quiet': enable_log, 'no_warnings': enable_log, 'ignoreerrors': enable_log}
         self._raw_youtube_data: Dict[Any, Any] = {}
@@ -602,12 +602,9 @@ class StreamMerger:
         Initialize the StreamMerger class with optional settings for FFmpeg.
         :param use_system_ffmpeg: Use the system FFmpeg binary if available. If False, use the FFmpeg binary provided by the pyffmpeg package.
         :param enable_log: Enable or disable FFmpeg logging. If enabled, FFmpeg will print log messages to the console. If disabled, FFmpeg will suppress log messages.
-        :raises NotImplementedError: This function is not yet implemented.
         :raises MissingRequirementsError: If the pyffmpeg package is not installed.
         :raises FFmpegNotFoundError: If the FFmpeg binary is not found.
         """
-
-        raise NotImplementedError('This function is not yet implemented')
 
         try:
             from pyffmpeg import FFmpeg

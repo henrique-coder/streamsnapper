@@ -1,6 +1,6 @@
 # Local imports
 from .streamsnapper import (
-    StreamSnapper, StreamTools, StreamDownloader, StreamMerger,
+    StreamSnapper, StreamTools, StreamDownloader,
     StreamError, MissingRequirementsError, InvalidYTDLPDataError, InvalidURLError, ScrapingError, BadArgumentError, DownloadError,
     get_value, format_string, generate_random_string
 )
