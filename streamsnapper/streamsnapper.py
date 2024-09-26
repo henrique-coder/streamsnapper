@@ -1,6 +1,5 @@
 # Built-in imports
 from os import PathLike
-from shutil import which
 from pathlib import Path
 from re import sub as re_sub, search as re_search, IGNORECASE
 from unicodedata import normalize
@@ -10,7 +9,6 @@ from string import ascii_letters, digits
 from typing import Any, Dict, List, Literal, Optional, Type, Union
 
 # Third-party imports
-from pyffmpeg import FFmpeg
 from pysmartdl2 import SmartDL
 from scrapetube import get_search as scrape_youtube_search, get_playlist as scrape_youtube_playlist, get_channel as scrape_youtube_channel
 from yt_dlp import YoutubeDL, utils as yt_dlp_utils
@@ -81,22 +79,22 @@ def generate_random_string(length: int = 16, prefix: str = None, suffix: str = N
     return separator.join([part for part in [prefix, ''.join(choices(ascii_letters + digits, k=length)), suffix] if part])
 
 
-class StreamSnapper:
+class Snapper:
     """
     A class for extracting and formatting data from YouTube videos using yt-dlp (https://github.com/yt-dlp/yt-dlp), facilitating access to general media information.
     """
 
-    def __init__(self, enable_log: bool = False) -> None:
+    def __init__(self, enable_ytdlp_log: bool = False) -> None:
         """
-        Initialize the StreamSnapper class with optional settings for yt-dlp.
-        :param enable_log: Enable or disable yt-dlp logging. If enabled, yt-dlp will print log messages to the console. If disabled, yt-dlp will suppress log messages.
+        Initialize the Snapper class with optional settings for yt-dlp.
+        :param enable_ytdlp_log: Enable or disable yt-dlp logging. If enabled, yt-dlp will print log messages to the console. If disabled, yt-dlp will suppress log messages.
         """
 
-        self.streamtools: StreamTools = StreamTools()
+        self._extractor: Extractor = Extractor()
 
-        enable_log = not enable_log
+        enable_ytdlp_log = not enable_ytdlp_log
 
-        self._ydl_opts: Dict[str, bool] = {'extract_flat': True, 'geo_bypass': True, 'noplaylist': True, 'age_limit': None, 'quiet': enable_log, 'no_warnings': enable_log, 'ignoreerrors': enable_log}
+        self._ydl_opts: Dict[str, bool] = {'extract_flat': True, 'geo_bypass': True, 'noplaylist': True, 'age_limit': None, 'quiet': enable_ytdlp_log, 'no_warnings': enable_ytdlp_log, 'ignoreerrors': enable_ytdlp_log}
         self._raw_youtube_data: Dict[Any, Any] = {}
         self._raw_youtube_streams: List[Dict[Any, Any]] = []
         self._raw_youtube_subtitles: Dict[str, List[Dict[str, str]]] = {}
@@ -123,7 +121,7 @@ class StreamSnapper:
 
     def run(self, url: str = None, ytdlp_data: Dict[str, Any] = None) -> None:
         """
-        Run the StreamSnapper class to extract and format data from a YouTube video.
+        Start the process of extracting and formatting data from a YouTube video.
         :param url: The URL of the YouTube video to extract data from.
         :param data: The raw yt-dlp data of the YouTube video to extract data from. If provided, the URL will be ignored. (this is useful for testing and debugging)
         :raises InvalidURLError: If an invalid URL is provided.
@@ -136,7 +134,7 @@ class StreamSnapper:
         elif not url:
             raise InvalidURLError('No YouTube video URL provided')
         else:
-            media_id = self.streamtools.extract_media_id(url)
+            media_id = self._extractor.extract_video_id(url)
 
             if not media_id:
                 raise InvalidURLError(f'Invalid YouTube video URL (or media ID not found): "{url}"')
@@ -402,56 +400,63 @@ class StreamSnapper:
         self.subtitle_streams = dict(sorted(subtitle_streams.items()))
 
 
-class StreamTools:
+class Extractor:
     """
-    A class with independent tools to be used with the StreamSnapper class or separately.
+    A class with functions to check input data (e.g. video/playlist/channel URLs) and extract its data in a simplified form.
     """
 
     def __init__(self) -> None:
-        self._youtube_media_id_regex = r'(?:https?:)?(?:\/\/)?(?:[0-9A-Z-]+\.)?(?:youtu\.be\/|youtube(?:-nocookie)?\.com\S*?[^\w\s-])([\w-]{11})(?=[^\w-]|$)(?![?=&+%\w.-]*(?:[\'"][^<>]*>|<\/a>))[?=&+%\w.-]*'
+        """
+        Initialize the Extractor class with the required regular expressions for extracting video and playlist IDs from YouTube URLs.
+        """
+
+        self._youtube_video_id_regex = r'(?:https?:)?(?:\/\/)?(?:[0-9A-Z-]+\.)?(?:youtu\.be\/|youtube(?:-nocookie)?\.com\S*?[^\w\s-])([\w-]{11})(?=[^\w-]|$)(?![?=&+%\w.-]*(?:[\'"][^<>]*>|<\/a>))[?=&+%\w.-]*'
         self._youtube_playlist_id_regex = r'(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:playlist\?list=|watch\?v=|embed\/|v\/)|youtu\.be\/)(?:.*?list=)?([\w-]{34})'
 
-    def extract_media_id(self, url: str) -> Optional[str]:
+    def extract_video_id(self, url: str) -> Optional[str]:
         """
-        Extract the YouTube media ID from a URL.
-        :param url: The URL to extract the media ID from.
-        :return: The YouTube media ID extracted from the URL. If the URL is invalid or the media ID is not found, return None.
+        Extract the YouTube video ID from a URL.
+        :param url: The URL to extract the video ID from.
+        :return: The extracted video ID. If no video ID is found, return None.
         """
 
-        match = re_search(self._youtube_media_id_regex, url, IGNORECASE)
-        return match.group(1) if match else None
+        found_match = re_search(self._youtube_video_id_regex, url, IGNORECASE)
+        return found_match.group(1) if found_match else None
 
     def extract_playlist_id(self, url: str) -> Optional[str]:
         """
         Extract the YouTube playlist ID from a URL.
-        :param url: The URL to extract the media playlist ID from.
-        :return: The YouTube media playlist ID extracted from the URL. If the URL is invalid or the media playlist ID is not found, return None.
+        :param url: The URL to extract the playlist ID from.
+        :return: The extracted playlist ID. If no playlist ID is found, return None.
         """
 
-        match = re_search(self._youtube_playlist_id_regex, url, IGNORECASE)
-        return match.group(1) if match else None
+        found_match = re_search(self._youtube_playlist_id_regex, url, IGNORECASE)
+        return found_match.group(1) if found_match else None
 
-    def get_url_from_query(self, query: str) -> Optional[str]:
+    def search_video(self, query: str) -> Optional[str]:
         """
-        Get a YouTube video URL from a query string.
-        :param query: The query string to search for a YouTube video URL.
-        :return: The YouTube video URL found in the query. If no URL is found, return None.
+        Search YouTube for a video based on a query.
+        :param query: The query to search for.
+        :return: The URL of the first video found. If no video is found, return None.
         """
 
         try:
-            data = list(scrape_youtube_search(query, sort_by='relevance', results_type='video', limit=1))
+            extracted_data = list(scrape_youtube_search(query=query, sort_by='relevance', results_type='video', limit=1))
         except Exception:
             return None
 
-        if data:
-            for video in data:
-                return f'https://www.youtube.com/watch?v={video['videoId']}'
+        if extracted_data:
+            for item in extracted_data:
+                video_id = item.get('videoId')
 
-    def get_playlist_urls(self, url: str) -> Optional[List[str]]:
+                if video_id:
+                    return f'https://www.youtube.com/watch?v={video_id}'
+
+    def extract_playlist_videos(self, url: str) -> Optional[List[str]]:
         """
-        Get all the video URLs from a YouTube playlist URL.
+        Extract the video URLs from a YouTube playlist.
         :param url: The URL of the YouTube playlist.
-        :return: A list of all the video URLs in the playlist. If the playlist is invalid or no videos are found, return None.
+        :return: A list of video URLs from the playlist. If no videos are found, return None.
         """
 
         playlist_id = self.extract_playlist_id(url)
@@ -460,25 +465,26 @@ class StreamTools:
             return None
 
         try:
-            data = list(scrape_youtube_playlist(playlist_id, limit=None))
+            extracted_data = list(scrape_youtube_playlist(playlist_id, limit=None))
         except Exception:
             return None
 
-        if data:
-            return [f'https://www.youtube.com/watch?v={video['videoId']}' for video in data]
+        if extracted_data:
+            found_urls = [f'https://www.youtube.com/watch?v={item.get('videoId')}' for item in extracted_data if item.get('videoId')]
+            return found_urls if found_urls else None
 
-    def get_channel_urls(self, channel_id: str = None, channel_url: str = None, channel_username: str = None) -> Optional[List[str]]:
+    def extract_channel_videos(self, channel_id: str = None, channel_url: str = None, channel_username: str = None) -> Optional[List[str]]:
         """
-        Get all the video URLs from a YouTube channel URL.
+        Extract the video URLs from a YouTube channel.
         :param channel_id: The ID of the YouTube channel.
         :param channel_url: The URL of the YouTube channel.
         :param channel_username: The username of the YouTube channel.
-        :return: A list of all the video URLs in the channel. If the channel is invalid or no videos are found, return None.
-        :raises BadArgumentError: If an invalid argument is provided.
+        :return: A list of video URLs from the channel. If no videos are found, return None.
+        :raises BadArgumentError: If more than one of the following arguments is provided: "channel_id", "channel_url" or "channel_username".
         """
 
         if sum([bool(channel_id), bool(channel_url), bool(channel_username)]) != 1:
-            raise BadArgumentError('Exactly one of the following arguments must be provided: "channel_id", "channel_url", "channel_username"')
+            raise BadArgumentError('Exactly one of the following arguments must be provided: "channel_id", "channel_url" or "channel_username"')
 
         try:
             data = list(scrape_youtube_channel(channel_id=channel_id, channel_url=channel_url, channel_username=channel_username, sort_by='newest', content_type='videos', limit=None))
@@ -486,64 +492,44 @@ class StreamTools:
             return None
 
         if data:
-            return [f'https://www.youtube.com/watch?v={video['videoId']}' for video in data]
+            found_urls = [f'https://www.youtube.com/watch?v={item.get('videoId')}' for item in data if item.get('videoId')]
+            return found_urls if found_urls else None
 
 
-class StreamDownloader:
+class Downloader:
     """
-    A class for downloading direct links using pysmartdl2 (https://github.com/amkrajewski/pysmartdl2), extremely quickly.
+    A class for downloading direct download URLs. Created to download YouTube videos and audio streams. However, it can be used to download any direct download URL.
     """
 
     def __init__(self, url: str, output_path: Union[str, PathLike], max_connections: int = 4, show_progress_bar: bool = True, timeout: int = 120) -> None:
         """
-        Initialize the StreamDownloader class with the required settings for downloading a file.
-        :param url: The direct URL of the file to download.
-        :param output_path: The path where the downloaded file will be saved. If a directory is provided, the file will be named based on the URL. If a full file path is provided, the file will be saved with the specified name.
-        :param max_connections: The maximum number of connections (threads) to use.
-        :param show_progress_bar: Enable or disable the progress bar.
-        :param timeout: The timeout for the download.
+        Initialize the Downloader class with the required settings for downloading a file.
+        :param url: The direct download URL to download.
+        :param output_path: The path to save the downloaded file to. If the path is a directory, the file name will be generated from the URL (server response). If the path is a file, the file will be saved with the provided name.
+        :param max_connections: The maximum number of connections (threads) to use for downloading the file.
+        :param show_progress_bar: Show or hide the download progress bar.
+        :param timeout: The maximum number of seconds to wait for the server to respond.
         """
 
         self._url: str = url
-        self._output_path: Union[str, PathLike] = Path(output_path).resolve().as_posix()
+        self._output_path: Union[str, PathLike] = output_path
         self._max_connections: int = max_connections
         self._show_progress_bar: bool = show_progress_bar
         self._timeout: int = timeout
 
+        self.output_downloaded_file_path: Optional[str] = None
+
     def download(self) -> None:
         """
-        Start the download process.
-        :raises DownloadError: If an error occurs while downloading the file.
+        Start the process of downloading the direct download URL.
+        :raises DownloadError: If an error occurs while downloading the URL.
         """
 
         try:
-            download_obj = SmartDL(urls=self._url, dest=self._output_path, threads=self._max_connections, progress_bar=self._show_progress_bar, timeout=self._timeout)
-            download_obj.start()
+            downloader = SmartDL(urls=self._url, dest=self._output_path, threads=self._max_connections, progress_bar=self._show_progress_bar, timeout=self._timeout)
+            downloader.start(blocking=True)
         except Exception as e:
-            raise DownloadError(f'Error occurred while downloading the file: "{self._url}"') from e
+            raise DownloadError(f'Error occurred while downloading URL: "{self._url}"') from e
 
-
-class StreamMerger:
-    """
-    A class for merging video and audio files cleanly and quickly using ffmpeg (https://ffmpeg.org).
-    """
-
-    def __init__(self, use_system_ffmpeg: bool = False, enable_log: bool = False) -> None:
-        """
-        Initialize the StreamMerger class with optional settings for FFmpeg.
-        :param use_system_ffmpeg: Use the system FFmpeg binary if available. If False, use the FFmpeg binary provided by the pyffmpeg package.
-        :param enable_log: Enable or disable FFmpeg logging. If enabled, FFmpeg will print log messages to the console. If disabled, FFmpeg will suppress log messages.
-        :raises FFmpegNotFoundError: If the FFmpeg binary is not found.
-        """
-
-        self.ffmpeg_binary_path: str = None
-        self._ffmpeg_obj: FFmpeg = FFmpeg(enable_log=enable_log)
-
-        if use_system_ffmpeg:
-            which_ffmpeg = which('ffmpeg')
-            self.ffmpeg_binary_path = Path(which_ffmpeg).resolve().as_posix() if which_ffmpeg else None
-        else:
-            self.ffmpeg_binary_path = Path(self._ffmpeg_obj.get_ffmpeg_bin()).resolve().as_posix()
-
-        if not self.ffmpeg_binary_path:
-            raise FFmpegNotFoundError('FFmpeg binary not found. Make sure FFmpeg is installed and added to the system environment variables.')
+        output_destination = downloader.get_dest()
+        self.output_downloaded_file_path = Path(output_destination).resolve().as_posix() if output_destination else None
