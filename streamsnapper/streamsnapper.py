@@ -602,6 +602,7 @@ class StreamMerger:
         Initialize the StreamMerger class with optional settings for FFmpeg.
         :param use_system_ffmpeg: Use the system FFmpeg binary if available. If False, use the FFmpeg binary provided by the pyffmpeg package.
         :param enable_log: Enable or disable FFmpeg logging. If enabled, FFmpeg will print log messages to the console. If disabled, FFmpeg will suppress log messages.
+        :raises NotImplementedError: This function is not yet implemented.
         :raises MissingRequirementsError: If the pyffmpeg package is not installed.
         :raises FFmpegNotFoundError: If the FFmpeg binary is not found.
         """
