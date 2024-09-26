@@ -20,14 +20,11 @@ setup(
     license=__license__,
     packages=find_packages(),
     install_requires=[
+        'pyffmpeg',
+        'pysmartdl2',
         'scrapetube',
         'yt-dlp'
     ],
-    extras_require={
-        'downloader': ['pysmartdl2'],
-        'merger': ['pyffmpeg'],
-        'all': ['pyffmpeg', 'pysmartdl2']
-    },
     classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
