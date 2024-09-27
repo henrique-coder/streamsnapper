@@ -10,6 +10,7 @@ dist
 
 # Files
 debugging.py
+test_lib.py
 upload_to_pypi.py
 
 # Extensions
