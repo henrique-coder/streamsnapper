@@ -4,20 +4,19 @@ from pathlib import Path
 from re import sub as re_sub, search as re_search, IGNORECASE
 from unicodedata import normalize
 from locale import getlocale
-from random import choices
-from string import ascii_letters, digits
-from typing import Any, Dict, List, Literal, Optional, Type, Union
+from typing import Any, Dict, List, Literal, Optional, Callable, Union
 
 # Third-party imports
 from pysmartdl2 import SmartDL
 from scrapetube import get_search as scrape_youtube_search, get_playlist as scrape_youtube_playlist, get_channel as scrape_youtube_channel
+from requests import head
 from yt_dlp import YoutubeDL, utils as yt_dlp_utils
 
 # Local imports
-from .exceptions import *
+from exceptions import *
 
 
-def get_value(data: Dict[Any, Any], key: Any, fallback_key: Any = None, convert_to: Type = None, default_to: Any = None) -> Any:
+def get_value(data: Dict[Any, Any], key: Any, fallback_key: Any = None, convert_to: Callable = None, default_to: Any = None) -> Any:
     """
     Get a value from a dictionary, with optional fallback key, conversion and default value.
     :param data: The dictionary to search for the key.
@@ -66,17 +65,6 @@ def format_string(query: str, max_length: int = 128) -> Optional[str]:
         sanitized_string = sanitized_string[:cutoff] if cutoff != -1 else sanitized_string[:max_length]
 
     return sanitized_string if sanitized_string else None
-
-def generate_random_string(length: int = 16, prefix: str = None, suffix: str = None, separator: str = '_') -> str:
-    """
-    Generate a random string of a specific length using ASCII letters and digits.
-    :param length: The length of the random string to generate.
-    :param prefix: The prefix to add to the random string.
-    :param suffix: The suffix to add to the random string.
-    :return: The generated random string.
-    """
-
-    return separator.join([part for part in [prefix, ''.join(choices(ascii_letters + digits, k=length)), suffix] if part])
 
 
 class Snapper:
@@ -165,17 +153,14 @@ class Snapper:
         clean_title = format_string(title)
         channel_name = get_value(data, 'channel', 'uploader')
         clean_channel_name = format_string(channel_name)
-        chapters = data.get('chapters', [])
-
-        if chapters:
-            chapters = [
-                {
-                    'title': chapter.get('title'),
-                    'startTime': get_value(chapter, 'start_time', convert_to=float),
-                    'endTime': get_value(chapter, 'end_time', convert_to=float)
-                }
-                for chapter in chapters
-            ]
+        chapters = [
+            {
+                'title': chapter.get('title'),
+                'startTime': get_value(chapter, 'start_time', convert_to=float),
+                'endTime': get_value(chapter, 'end_time', convert_to=float)
+            }
+            for chapter in get_value(data, 'chapters', convert_to=list, default_to=[])
+        ]
 
         media_info = {
             'fullUrl': f'https://www.youtube.com/watch?v={id_}',
@@ -211,6 +196,12 @@ class Snapper:
                 f'https://img.youtube.com/vi/{id_}/default.jpg'
             ]
         }
+
+        for thumbnail in media_info['thumbnails']:
+            r = head(thumbnail, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36'}, allow_redirects=True, timeout=5)
+
+            if r.status_code != 200:
+                media_info['thumbnails'].remove(thumbnail)
 
         self.media_info = dict(sorted(media_info.items()))
 
