@@ -1,3 +1,4 @@
 pysmartdl2
+requests
 scrapetube
 yt-dlp
