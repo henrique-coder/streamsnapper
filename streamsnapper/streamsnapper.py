@@ -13,7 +13,7 @@ from requests import head
 from yt_dlp import YoutubeDL, utils as yt_dlp_utils
 
 # Local imports
-from exceptions import *
+from .exceptions import *
 
 
 def get_value(data: Dict[Any, Any], key: Any, fallback_key: Any = None, convert_to: Callable = None, default_to: Any = None) -> Any:
