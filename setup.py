@@ -19,6 +19,7 @@ setup(
     install_requires=[
         'pysmartdl2',
         'scrapetube',
+        'requests',
         'yt-dlp'
     ],
     classifiers=[
