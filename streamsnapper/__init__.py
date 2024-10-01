@@ -1,5 +1,5 @@
 # Local imports
-from .streamsnapper import Snapper, Extractor, Downloader
+from .streamsnapper import YouTube, SoundCloud, Downloader
 from .exceptions import *
 
 
