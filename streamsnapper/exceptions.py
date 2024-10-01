@@ -5,14 +5,12 @@ class StreamBaseError(Exception):
 
     pass
 
-
-class InvalidYTDLPDataError(StreamBaseError):
+class InvalidDataError(StreamBaseError):
     """
     Exception raised when invalid yt-dlp data is provided.
     """
 
     pass
-
 
 class InvalidURLError(StreamBaseError):
     """
@@ -21,7 +19,6 @@ class InvalidURLError(StreamBaseError):
 
     pass
 
-
 class ScrapingError(StreamBaseError):
     """
     Exception raised when an error occurs while scraping YouTube data.
@@ -29,14 +26,12 @@ class ScrapingError(StreamBaseError):
 
     pass
 
-
 class BadArgumentError(StreamBaseError):
     """
     Exception raised when an invalid argument is provided.
     """
 
     pass
-
 
 class DownloadError(StreamBaseError):
     """
