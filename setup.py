@@ -20,7 +20,8 @@ setup(
         'pysmartdl2',
         'scrapetube',
         'requests',
-        'yt-dlp'
+        'yt-dlp',
+        'soundcloud-lib'
     ],
     classifiers=[
         'Development Status :: 4 - Beta',

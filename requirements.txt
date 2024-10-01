@@ -2,3 +2,4 @@ pysmartdl2
 requests
 scrapetube
 yt-dlp
+soundcloud-lib
