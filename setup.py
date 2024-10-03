@@ -7,7 +7,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='streamsnapper',
-    version='0.0.6',
+    version='0.0.7',
     description='StreamSnapper is an intuitive library designed to simplify and enhance YouTube media downloads. It offers efficient, high-speed media extraction with optional tools for advanced data retrieval from YouTube.',
     long_description=Path('README.md').read_text(),
     long_description_content_type='text/markdown',
