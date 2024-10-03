@@ -1,3 +1,3 @@
 ### StreamSnapper
 
-StreamSnapper is an intuitive library designed to simplify and enhance YouTube media downloads. It offers efficient, high-speed media extraction with optional tools for advanced data retrieval from YouTube.
+StreamSnapper is an intuitive library designed to simplify, enhance, and organize media downloads from a variety of audiovisual platforms. It offers efficient, high-speed media extraction with optional tools for extracting data from these platforms.
