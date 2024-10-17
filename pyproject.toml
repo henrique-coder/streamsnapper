@@ -1,3 +1,41 @@
 [build-system]
-requires = ["setuptools>=42", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+name = "streamsnapper"
+version = "0.0.7"
+description = "StreamSnapper is an intuitive library designed to simplify, enhance, and organize media downloads from a variety of audiovisual platforms. It offers efficient, high-speed media extraction with optional tools for extracting data from these platforms."
+authors = ["henrique-coder <hjyz6rqyb@mozmail.com>"]
+license = "MIT"
+readme = "README.md"
+homepage = "https://github.com/henrique-coder/streamsnapper"
+documentation = "https://github.com/henrique-coder/streamsnapper"
+repository = "https://github.com/henrique-coder/streamsnapper"
+keywords = [
+    "scraper",
+    "downloader",
+    "stream",
+    "snapper",
+    "youtube",
+    "soundcloud"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Libraries",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy"
+]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+pysmartdl2 = "*"
+scrapetube = "*"
+requests = "*"
+yt-dlp = "*"
+soundcloud-lib = "*"

@@ -12,6 +12,7 @@ dist
 debugging.py
 test_lib.py
 upload_to_pypi.py
+poetry.lock
 
 # Extensions
 *.egg-info
