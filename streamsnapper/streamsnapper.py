@@ -108,7 +108,7 @@ class YouTube:
         self.available_video_qualities: List[str] = []
         self.available_audio_languages: List[str] = []
 
-    def run(self, url: str = None, ytdlp_data: Dict[str, Any] = None) -> None:
+    def run(self, url: str = None, ytdlp_data: Dict[Any, Any] = None) -> None:
         """
         Run the process of extracting and formatting data from a YouTube video.
         :param url: The YouTube video URL to extract data from.
@@ -142,9 +142,10 @@ class YouTube:
         except KeyError as e:
             raise InvalidDataError(f'Invalid yt-dlp data. Missing required key: "{e.args[0]}"') from e
 
-    def analyze_info(self) -> None:
+    def analyze_info(self, check_thumbnails: bool = True) -> None:
         """
         Extract and format relevant information.
+        :check_thumbnails: Quickly add and check the best thumbnails to the output data.
         """
 
         data = self._raw_youtube_data
@@ -198,11 +199,12 @@ class YouTube:
             ]
         }
 
-        for thumbnail in general_info['thumbnails']:
-            r = head(thumbnail, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36'}, allow_redirects=True, timeout=5)
+        if check_thumbnails:
+            for thumbnail in general_info['thumbnails']:
+                r = head(thumbnail, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36'}, allow_redirects=False, timeout=5)
 
-            if r.status_code != 200:
-                general_info['thumbnails'].remove(thumbnail)
+                if r.status_code != 200:
+                    general_info['thumbnails'].remove(thumbnail)
 
         self.general_info = dict(sorted(general_info.items()))
 
@@ -321,7 +323,7 @@ class YouTube:
         self.best_video_stream = self.best_video_streams[0] if self.best_video_streams else None
         self.best_video_download_url = self.best_video_stream['url'] if self.best_video_stream else None
 
-        self.available_video_qualities = list(dict.fromkeys([f'{stream['quality']}p' for stream in self.best_video_streams if stream['quality']]))
+        self.available_video_qualities = list(dict.fromkeys([f'{stream["quality"]}p' for stream in self.best_video_streams if stream['quality']]))
 
         if preferred_quality != 'all':
             preferred_quality = preferred_quality.strip().lower()
@@ -501,7 +503,7 @@ class YouTube:
                 return None
 
             if extracted_data:
-                found_urls = [f'https://www.youtube.com/watch?v={item.get('videoId')}' for item in extracted_data if item.get('videoId')]
+                found_urls = [f'https://www.youtube.com/watch?v={item.get("videoId")}' for item in extracted_data if item.get('videoId')]
                 return found_urls if found_urls else None
 
         def get_playlist_videos(self, url: str, limit: int = None) -> Optional[List[str]]:
@@ -523,7 +525,7 @@ class YouTube:
                 return None
 
             if extracted_data:
-                found_urls = [f'https://www.youtube.com/watch?v={item.get('videoId')}' for item in extracted_data if item.get('videoId')]
+                found_urls = [f'https://www.youtube.com/watch?v={item.get("videoId")}' for item in extracted_data if item.get('videoId')]
                 return found_urls if found_urls else None
 
         def get_channel_videos(self, channel_id: str = None, channel_url: str = None, channel_username: str = None, sort_by: Literal['newest', 'oldest', 'popular'] = 'newest', content_type: Literal['videos', 'shorts', 'streams'] = 'videos', limit: int = None) -> Optional[List[str]]:
@@ -547,7 +549,7 @@ class YouTube:
                 return None
 
             if extracted_data:
-                found_urls = [f'https://www.youtube.com/watch?v={item.get('videoId')}' for item in extracted_data if item.get('videoId')]
+                found_urls = [f'https://www.youtube.com/watch?v={item.get("videoId")}' for item in extracted_data if item.get('videoId')]
                 return found_urls if found_urls else None
 
 class SoundCloud:
