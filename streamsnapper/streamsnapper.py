@@ -145,7 +145,7 @@ class YouTube:
     def analyze_info(self, check_thumbnails: bool = True) -> None:
         """
         Extract and format relevant information.
-        :check_thumbnails: Quickly add and check the best thumbnails to the output data.
+        :check_thumbnails: Whether thumbnails should be checked and removed if they are offline.
         """
 
         data = self._raw_youtube_data
