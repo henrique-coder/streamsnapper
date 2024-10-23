@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "streamsnapper"
-version = "0.0.7"
+version = "0.0.8"
 description = "StreamSnapper is an intuitive library designed to simplify, enhance, and organize media downloads from a variety of audiovisual platforms. It offers efficient, high-speed media extraction with optional tools for extracting data from these platforms."
 authors = ["henrique-coder <hjyz6rqyb@mozmail.com>"]
 license = "MIT"
