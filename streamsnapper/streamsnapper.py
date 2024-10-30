@@ -4,18 +4,20 @@ from pathlib import Path
 from re import compile as re_compile
 from locale import getlocale
 from datetime import datetime
+from shutil import which
+from subprocess import run, DEVNULL, CalledProcessError
 from typing import Any, Dict, List, Literal, Optional, Union, Type
 
 # Third-party imports
-from pysmartdl2 import SmartDL
-from scrapetube import get_search as scrape_youtube_search, get_playlist as scrape_youtube_playlist, get_channel as scrape_youtube_channel
-from requests import head
 from yt_dlp import YoutubeDL, utils as yt_dlp_utils
+from requests import head
+from scrapetube import get_search as scrape_youtube_search, get_playlist as scrape_youtube_playlist, get_channel as scrape_youtube_channel
 from sclib import SoundcloudAPI, Track as SoundcloudTrack
+from pysmartdl2 import SmartDL
 
 # Local imports
-from .functions import get_value, format_string
-from .exceptions import StreamBaseError, InvalidDataError, ScrapingError, DownloadError
+from .functions import get_value, format_string, convert_to_path
+from .exceptions import StreamBaseError, InvalidDataError, ScrapingError, DownloadError, MergeError
 
 
 class YouTube:
@@ -602,37 +604,76 @@ class SoundCloud:
 class Downloader:
     """A class for downloading direct download URLs. Created to download YouTube videos and audio streams. However, it can be used to download any direct download URL."""
 
-    def __init__(self, url: str, output_file_path: Union[str, PathLike], max_connections: int = 4, show_progress_bar: bool = True, timeout: int = 14400) -> None:
+    def __init__(self, max_connections: int = 4, show_progress_bar: bool = True, timeout: int = 14400) -> None:
         """
         Initialize the Downloader class with the required settings for downloading a file.
 
-        :param url: The download URL to download the file from. *str*
-        :param output_file_path: The path to save the downloaded file to. If the path is a directory, the file name will be generated from the URL (server response). If the path is a file, the file will be saved with the provided name.
         :param max_connections: The maximum number of connections (threads) to use for downloading the file.
         :param show_progress_bar: Show or hide the download progress bar.
         :param timeout: The timeout in seconds for the download process.
         """
 
-        self._url: str = url
-        self._output_file_path: Union[str, PathLike] = output_file_path
         self._max_connections: int = max_connections
         self._show_progress_bar: bool = show_progress_bar
         self._timeout: int = timeout
 
         self.output_file_path: Optional[str] = None
 
-    def download(self) -> None:
+    def download(self, url: str, output_file_path: Union[str, PathLike]) -> None:
         """
         Download the file from the provided URL to the output file path.
 
+        :param url: The download URL to download the file from. *str*
+        :param output_file_path: The path to save the downloaded file to. If the path is a directory, the file name will be generated from the URL (server response). If the path is a file, the file will be saved with the provided name.
         :raises DownloadError: If an error occurs while downloading the file.
         """
 
         try:
-            downloader = SmartDL(urls=self._url, dest=self._output_file_path, threads=self._max_connections, progress_bar=self._show_progress_bar, timeout=self._timeout)
+            downloader = SmartDL(urls=url, dest=Path(output_file_path).resolve().as_posix(), threads=self._max_connections, progress_bar=self._show_progress_bar, timeout=self._timeout)
             downloader.start(blocking=True)
         except Exception as e:
-            raise DownloadError(f'Error occurred while downloading URL: "{self._url}"') from e
+            raise DownloadError(f'Error occurred while downloading URL: "{url}"') from e
 
         output_destination = downloader.get_dest()
         self.output_file_path = Path(output_destination).resolve().as_posix() if output_destination else None
+
+
+class Merger:
+    """A class for merging multiple audio and video streams into a single file."""
+
+    def __init__(self) -> None:
+        """Initialize the Merger class with the required settings for merging audio and video streams."""
+
+        # TODO: Add option to enable/disable FFmpeg logging
+
+        pass
+
+    def merge(self, video_file_path: Union[str, PathLike], audio_file_path: Union[str, PathLike], output_file_path: Union[str, PathLike], ffmpeg_file_path: Union[str, PathLike, Literal['auto']] = 'auto') -> None:
+        """
+        Merge the audio and video streams into a single file.
+
+        :param video_file_path: The path to the video file to merge.
+        :param audio_file_path: The path to the audio file to merge.
+        :param output_file_path: The path to save the merged file to.
+        :param ffmpeg_file_path: The path to the ffmpeg executable. If 'auto', the ffmpeg executable will be searched in the PATH environment variable.
+        :raises MergeError: If an error occurs while merging the files.
+        """
+
+        video_file_path = convert_to_path(video_file_path, check_if_is_file=True)
+        audio_file_path = convert_to_path(audio_file_path, check_if_is_file=True)
+        output_file_path = Path(output_file_path)
+
+        if ffmpeg_file_path == 'auto':
+            found_ffmpeg_binary = which('ffmpeg')
+
+            if found_ffmpeg_binary:
+                ffmpeg_file_path = Path(found_ffmpeg_binary)
+            else:
+                raise FileNotFoundError('The ffmpeg executable was not found. Please provide the path to the ffmpeg executable.')
+        else:
+            ffmpeg_file_path = convert_to_path(ffmpeg_file_path, check_if_is_file=True).resolve()
+
+        try:
+            run([ffmpeg_file_path.resolve().as_posix(), '-y', '-hide_banner', '-i', video_file_path.resolve().as_posix(), '-i', audio_file_path.resolve().as_posix(),'-c', 'copy', '-map', '0:v:0', '-map', '1:a:0', output_file_path.resolve().as_posix()], check=True, stdout=DEVNULL, stderr=DEVNULL)
+        except CalledProcessError as e:
+            raise MergeError(f'Error occurred while merging files: "{self._video_file_path.resolve().as_posix()}" and "{self._audio_file_path.resolve().as_posix()}"') from e
