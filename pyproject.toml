@@ -34,11 +34,6 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = "^3.11"
-pysmartdl2 = "*"
-scrapetube = "*"
-requests = "*"
-yt-dlp = "*"
-soundcloud-lib = "*"
 
 [tool.poetry.extras]
 youtube = ["yt-dlp", "requests", "scrapetube"]
