@@ -39,3 +39,9 @@ scrapetube = "*"
 requests = "*"
 yt-dlp = "*"
 soundcloud-lib = "*"
+
+[tool.poetry.extras]
+youtube = ["yt-dlp", "requests", "scrapetube"]
+soundcloud = ["soundcloud-lib"]
+downloader = ["pysmartdl2"]
+all = ["yt-dlp", "requests", "scrapetube", "soundcloud-lib", "pysmartdl2"]
