@@ -15,4 +15,4 @@ upload_to_pypi.py
 poetry.lock
 
 # Extensions
-*.egg-info
+# ...
