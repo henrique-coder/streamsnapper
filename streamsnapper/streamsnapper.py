@@ -1,11 +1,10 @@
 # Built-in imports
 from os import PathLike
 from pathlib import Path
-from re import sub as re_sub, compile as re_compile
-from unicodedata import normalize
+from re import compile as re_compile
 from locale import getlocale
 from datetime import datetime
-from typing import Any, Dict, List, Literal, Optional, Callable, Union, Type
+from typing import Any, Dict, List, Literal, Optional, Union, Type
 
 # Third-party imports
 from pysmartdl2 import SmartDL
@@ -15,66 +14,17 @@ from yt_dlp import YoutubeDL, utils as yt_dlp_utils
 from sclib import SoundcloudAPI, Track as SoundcloudTrack
 
 # Local imports
-from .exceptions import *
-
-
-def get_value(data: Dict[Any, Any], key: Any, fallback_key: Any = None, convert_to: Callable = None, default_to: Any = None) -> Any:
-    """
-    Get a value from a dictionary, with optional fallback key, conversion and default value.
-    :param data: The dictionary to search for the key.
-    :param key: The key to search for in the dictionary.
-    :param fallback_key: The fallback key to search for in the dictionary if the main key is not found.
-    :param convert_to: The type to convert the value to. If the conversion fails, return the default value. If None, return the value as is.
-    :param default_to: The default value to return if the key is not found.
-    :return: The value from the dictionary, or the default value if the key is not found.
-    """
-
-    try:
-        value = data[key]
-    except KeyError:
-        if fallback_key is not None:
-            try:
-                value = data[fallback_key]
-            except KeyError:
-                return default_to
-        else:
-            return default_to
-
-    if convert_to is not None:
-        try:
-            value = convert_to(value)
-        except (ValueError, TypeError):
-            return default_to
-
-    return value
-
-def format_string(query: str, max_length: int = 128) -> Optional[str]:
-    """
-    Format a string to be used as a filename or directory name. Remove special characters, limit length and normalize the string.
-    :param query: The string to be formatted.
-    :param max_length: The maximum length of the formatted string. If the string is longer, it will be truncated.
-    :return: The formatted string. If the input string is empty or None, return None.
-    """
-
-    if not query:
-        return None
-
-    normalized_string = normalize('NFKD', query).encode('ASCII', 'ignore').decode('utf-8')
-    sanitized_string = re_sub(r'\s+', ' ', re_sub(r'[^a-zA-Z0-9\-_()[\]{}!$#+;,. ]', '', normalized_string)).strip()
-
-    if len(sanitized_string) > max_length:
-        cutoff = sanitized_string[:max_length].rfind(' ')
-        sanitized_string = sanitized_string[:cutoff] if cutoff != -1 else sanitized_string[:max_length]
-
-    return sanitized_string if sanitized_string else None
+from .functions import get_value, format_string
+from .exceptions import StreamBaseError, InvalidDataError, ScrapingError, DownloadError
 
 
 class YouTube:
     """A class for extracting and formatting data from YouTube videos, facilitating access to general video information, video streams, audio streams and subtitles."""
 
-    def __init__(self, enable_ytdlp_log: bool = True) -> None:
+    def __init__(self, enable_ytdlp_log: bool = False) -> None:
         """
         Initialize the Snapper class with optional settings for yt-dlp.
+
         :param enable_ytdlp_log: Enable or disable yt-dlp logging.
         """
 
@@ -108,12 +58,12 @@ class YouTube:
         self.available_video_qualities: List[str] = []
         self.available_audio_languages: List[str] = []
 
-    def run(self, url: str = None, ytdlp_data: Dict[Any, Any] = None) -> None:
+    def run(self, url: Optional[str] = None, ytdlp_data: Optional[Dict[str, Any]] = None) -> None:
         """
         Run the process of extracting and formatting data from a YouTube video.
+
         :param url: The YouTube video URL to extract data from.
         :param ytdlp_data: The raw yt-dlp data to extract and format. If provided, the URL will be ignored (useful for debugging and testing).
-        :raises InvalidURLError: If no YouTube video URL is provided.
         :raises ScrapingError: If an error occurs while scraping the YouTube video.
         :raises InvalidDataError: If the yt-dlp data is invalid or missing required keys.
         """
@@ -121,12 +71,12 @@ class YouTube:
         if ytdlp_data:
             self._raw_youtube_data = ytdlp_data
         elif not url:
-            raise InvalidURLError('No YouTube video URL provided')
+            raise ValueError('No YouTube video URL provided')
         else:
             video_id = self._extractor.extract_video_id(url)
 
             if not video_id:
-                raise InvalidURLError(f'Invalid YouTube video URL: "{url}"')
+                raise ValueError(f'Invalid YouTube video URL: "{url}"')
 
             url = f'https://www.youtube.com/watch?v={video_id}'
 
@@ -145,6 +95,7 @@ class YouTube:
     def analyze_info(self, check_thumbnails: bool = True) -> None:
         """
         Extract and format relevant information.
+
         :check_thumbnails: Whether thumbnails should be checked and removed if they are offline.
         """
 
@@ -211,6 +162,7 @@ class YouTube:
     def analyze_video_streams(self, preferred_quality: Literal['all', 'best', '144p', '240p', '360p', '480p', '720p', '1080p', '1440p', '2160p', '4320p'] = 'all') -> None:
         """
         Extract and format the best video streams.
+
         :param preferred_quality: The preferred quality of the video stream. If "all", all streams will be considered and sorted by quality. If "best", only the best quality streams will be considered. If a specific quality is provided, the stream will be selected according to the chosen quality, however if the quality is not available, the best quality will be selected.
         """
 
@@ -240,7 +192,7 @@ class YouTube:
             335: 'webm',    # VP9.2 HDR HFR - WEBM - 1920x1080
             303: 'webm',    # VP9 HFR - WEBM - 1920x1080
             248: 'webm',    # VP9 - WEBM - 1920x1080
-            # 616: 'webm',  # VP9 - WEBM - 1920x1080 - YouTube Premium Format (M3U8)
+            # TODO: 616: 'webm',  # VP9 - WEBM - 1920x1080 - YouTube Premium Format (M3U8)
             299: 'mp4',     # H.264 HFR - MP4 - 1920x1080
             137: 'mp4',     # H.264 - MP4 - 1920x1080
             216: 'mp4',     # H.264 - MP4 - 1920x1080
@@ -340,6 +292,7 @@ class YouTube:
     def analyze_audio_streams(self, preferred_language: Union[str, Literal['all', 'original', 'auto']] = 'auto') -> None:
         """
         Extract and format the best audio streams.
+
         :param preferred_language: The preferred language code of the audio stream. If "all", all audio streams will be considered, regardless of language. If "original", only the original audios will be considered. If "auto", the language will be automatically selected according to the current operating system language (if not found or video is not available in that language, the fallback will be "original").
         """
 
@@ -409,12 +362,9 @@ class YouTube:
             preferred_language = preferred_language.strip().lower()
 
             if preferred_language == 'auto':
-                try:
-                    if self.system_language not in self.available_audio_languages:
-                        raise ValueError
-
+                if self.system_language in self.available_audio_languages:
                     self.best_audio_streams = [stream for stream in self.best_audio_streams if stream['language'] == self.system_language]
-                except ValueError:
+                else:
                     preferred_language = 'original'
             if preferred_language == 'original':
                 self.best_audio_streams = [stream for stream in self.best_audio_streams if stream['isOriginalAudio']]
@@ -425,9 +375,7 @@ class YouTube:
             self.best_audio_download_url = self.best_audio_stream['url'] if self.best_audio_stream else None
 
     def analyze_subtitle_streams(self) -> None:
-        """
-        Extract and format the subtitle streams.
-        """
+        """Extract and format the subtitle streams."""
 
         data = self._raw_youtube_subtitles
 
@@ -445,6 +393,7 @@ class YouTube:
 
         self.subtitle_streams = dict(sorted(subtitle_streams.items()))
 
+
     class Extractor:
         """A class for extracting data from YouTube URLs and searching for YouTube videos."""
 
@@ -458,6 +407,7 @@ class YouTube:
         def identify_platform(self, url: str) -> Optional[Literal['youtube', 'youtube_music']]:
             """
             Identify the platform of a URL (YouTube or YouTube Music).
+
             :param url: The URL to identify the platform from.
             :return: The identified platform. If the platform is not recognized, return None.
             """
@@ -470,6 +420,7 @@ class YouTube:
         def extract_video_id(self, url: str) -> Optional[str]:
             """
             Extract the YouTube video ID from a URL.
+
             :param url: The URL to extract the video ID from.
             :return: The extracted video ID. If no video ID is found, return None.
             """
@@ -480,6 +431,7 @@ class YouTube:
         def extract_playlist_id(self, url: str) -> Optional[str]:
             """
             Extract the YouTube playlist ID from a URL. (Note: The playlist must be public).
+
             :param url: The URL to extract the playlist ID from.
             :return: The extracted playlist ID. If no playlist ID is found or the playlist is private, return None.
             """
@@ -490,6 +442,7 @@ class YouTube:
         def search(self, query: str, sort_by: Literal['relevance', 'upload_date', 'view_count', 'rating'] = 'relevance', results_type: Literal['video', 'channel', 'playlist', 'movie'] = 'video', limit: int = 1) -> Optional[List[str]]:
             """
             Search for YouTube videos, channels, playlists or movies.
+
             :param query: The search query to search for.
             :param sort_by: The sorting method to use for the search results.
             :param results_type: The type of results to search for.
@@ -528,9 +481,10 @@ class YouTube:
                 found_urls = [f'https://www.youtube.com/watch?v={item.get("videoId")}' for item in extracted_data if item.get('videoId')]
                 return found_urls if found_urls else None
 
-        def get_channel_videos(self, channel_id: str = None, channel_url: str = None, channel_username: str = None, sort_by: Literal['newest', 'oldest', 'popular'] = 'newest', content_type: Literal['videos', 'shorts', 'streams'] = 'videos', limit: int = None) -> Optional[List[str]]:
+        def get_channel_videos(self, channel_id: Optional[str] = None, channel_url: Optional[str] = None, channel_username: Optional[str] = None, sort_by: Literal['newest', 'oldest', 'popular'] = 'newest', content_type: Literal['videos', 'shorts', 'streams'] = 'videos', limit: Optional[int] = None) -> Optional[List[str]]:
             """
             Get the video URLs from a YouTube channel.
+
             :param channel_id: The ID of the YouTube channel.
             :param channel_url: The URL of the YouTube channel.
             :param channel_username: The username of the YouTube channel.
@@ -541,7 +495,7 @@ class YouTube:
             """
 
             if sum([bool(channel_id), bool(channel_url), bool(channel_username)]) != 1:
-                raise BadArgumentError('Provide only one of the following arguments: "channel_id", "channel_url" or "channel_username"')
+                raise ValueError('Provide only one of the following arguments: "channel_id", "channel_url" or "channel_username"')
 
             try:
                 extracted_data = list(scrape_youtube_channel(channel_id=channel_id, channel_url=channel_url, channel_username=channel_username.replace('@', ''), sleep=1, sort_by=sort_by, content_type=content_type, limit=limit))
@@ -552,13 +506,12 @@ class YouTube:
                 found_urls = [f'https://www.youtube.com/watch?v={item.get("videoId")}' for item in extracted_data if item.get('videoId')]
                 return found_urls if found_urls else None
 
+
 class SoundCloud:
     """A class for extracting and formatting data from SoundCloud tracks and playlists, facilitating access to general track information and audio streams."""
 
     def __init__(self) -> None:
-        """
-        Initialize the SoundCloud class.
-        """
+        """Initialize the SoundCloud class."""
 
         self._extractor: Type[SoundCloud.Extractor] = self.Extractor()
         self._soundcloud_api: SoundcloudAPI = SoundcloudAPI(client_id='gJUfQ83SeoGM0qvM3VetdqVTDyHmSusF')
@@ -571,6 +524,7 @@ class SoundCloud:
     def run(self, url: str) -> None:
         """
         Run the process of extracting and formatting data from a SoundCloud track or playlist.
+
         :param url: The SoundCloud track or playlist URL to extract data from.
         :raises ScrapingError: If an error occurs while scraping the SoundCloud track.
         """
@@ -581,9 +535,7 @@ class SoundCloud:
             raise ScrapingError(f'Error occurred while scraping SoundCloud track: "{url}"') from e
 
     def analyze_info(self) -> None:
-        """
-        Extract and format relevant information.
-        """
+        """Extract and format relevant information."""
 
         self.general_info = {
             'id': self._soundcloud_track.id,
@@ -610,11 +562,10 @@ class SoundCloud:
         }
 
     def generate_audio_stream(self) -> None:
-        """
-        Extract and format the best audio stream.
-        """
+        """Extract and format the best audio stream."""
 
         self.best_audio_download_url = self._soundcloud_track.get_stream_url()
+
 
     class Extractor:
         """A class for extracting data from SoundCloud URLs and searching for SoundCloud tracks."""
@@ -628,6 +579,7 @@ class SoundCloud:
         def extract_track_slug(self, url: str) -> Optional[str]:
             """
             Extract the SoundCloud track slug from a URL.
+
             :param url: The URL to extract the track slug from.
             :return: The extracted track slug. If no track slug is found, return None.
             """
@@ -638,6 +590,7 @@ class SoundCloud:
         def extract_playlist_slug(self, url: str) -> Optional[str]:
             """
             Extract the SoundCloud playlist slug from a URL.
+
             :param url: The URL to extract the playlist slug from.
             :return: The extracted playlist slug. If no playlist slug is found, return None.
             """
@@ -645,19 +598,19 @@ class SoundCloud:
             found_match = self._playlist_id_regex.search(url)
             return f'{found_match.group(1)}/sets/{found_match.group(2)}' if found_match else None
 
-class Downloader:
-    """
-    A class for downloading direct download URLs. Created to download YouTube videos and audio streams. However, it can be used to download any direct download URL.
-    """
 
-    def __init__(self, url: str, output_file_path: Union[str, PathLike], max_connections: int = 4, show_progress_bar: bool = True, timeout: int = 120) -> None:
+class Downloader:
+    """A class for downloading direct download URLs. Created to download YouTube videos and audio streams. However, it can be used to download any direct download URL."""
+
+    def __init__(self, url: str, output_file_path: Union[str, PathLike], max_connections: int = 4, show_progress_bar: bool = True, timeout: int = 14400) -> None:
         """
         Initialize the Downloader class with the required settings for downloading a file.
-        :param url: The download URL to download the file from.
+
+        :param url: The download URL to download the file from. *str*
         :param output_file_path: The path to save the downloaded file to. If the path is a directory, the file name will be generated from the URL (server response). If the path is a file, the file will be saved with the provided name.
         :param max_connections: The maximum number of connections (threads) to use for downloading the file.
         :param show_progress_bar: Show or hide the download progress bar.
-        :param timeout: The maximum number of seconds to wait for the server to respond.
+        :param timeout: The timeout in seconds for the download process.
         """
 
         self._url: str = url
@@ -666,11 +619,12 @@ class Downloader:
         self._show_progress_bar: bool = show_progress_bar
         self._timeout: int = timeout
 
-        self.output_downloaded_file_path: Optional[str] = None
+        self.output_file_path: Optional[str] = None
 
     def download(self) -> None:
         """
         Download the file from the provided URL to the output file path.
+
         :raises DownloadError: If an error occurs while downloading the file.
         """
 
@@ -681,4 +635,4 @@ class Downloader:
             raise DownloadError(f'Error occurred while downloading URL: "{self._url}"') from e
 
         output_destination = downloader.get_dest()
-        self.output_downloaded_file_path = Path(output_destination).resolve().as_posix() if output_destination else None
+        self.output_file_path = Path(output_destination).resolve().as_posix() if output_destination else None
