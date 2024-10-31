@@ -9,11 +9,22 @@ from subprocess import run, DEVNULL, CalledProcessError
 from typing import Any, Dict, List, Literal, Optional, Union, Type
 
 # Third-party imports
-from yt_dlp import YoutubeDL, utils as yt_dlp_utils
-from requests import head
-from scrapetube import get_search as scrape_youtube_search, get_playlist as scrape_youtube_playlist, get_channel as scrape_youtube_channel
-from sclib import SoundcloudAPI, Track as SoundcloudTrack
-from pysmartdl2 import SmartDL
+try:
+    from yt_dlp import YoutubeDL, utils as yt_dlp_utils
+    from requests import head
+    from scrapetube import get_search as scrape_youtube_search, get_playlist as scrape_youtube_playlist, get_channel as scrape_youtube_channel
+except (ImportError, ModuleNotFoundError):
+    pass
+
+try:
+    from sclib import SoundcloudAPI, Track as SoundcloudTrack
+except (ImportError, ModuleNotFoundError):
+    pass
+
+try:
+    from pysmartdl2 import SmartDL
+except (ImportError, ModuleNotFoundError):
+    pass
 
 # Local imports
 from .functions import get_value, format_string, convert_to_path
