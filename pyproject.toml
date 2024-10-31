@@ -34,11 +34,15 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = "^3.11"
-yt-dlp = "*"
-requests = "*"
-scrapetube = "*"
+yt-dlp = {version = "*", optional = true}
+requests = {version = "*", optional = true}
+scrapetube = {version = "*", optional = true}
+soundcloud-lib = {version = "*", optional = true}
+pysmartdl2 = {version = "*", optional = true}
 
 [tool.poetry.extras]
+youtube = ["yt-dlp", "requests", "scrapetube"]
 soundcloud = ["soundcloud-lib"]
+merger = []
 downloader = ["pysmartdl2"]
-all = ["soundcloud-lib", "pysmartdl2"]
+all = ["yt-dlp", "requests", "scrapetube", "soundcloud-lib", "pysmartdl2"]
