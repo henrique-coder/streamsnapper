@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "streamsnapper"
-version = "0.1.0"
+version = "0.1.1"
 description = "StreamSnapper is an intuitive library designed to simplify, enhance, and organize media downloads from a variety of audiovisual platforms. It offers efficient, high-speed media extraction with optional tools for extracting data from these platforms."
 authors = ["henrique-coder <hjyz6rqyb@mozmail.com>"]
 license = "MIT"
@@ -13,12 +13,13 @@ homepage = "https://github.com/henrique-coder/streamsnapper"
 documentation = "https://github.com/henrique-coder/streamsnapper"
 repository = "https://github.com/henrique-coder/streamsnapper"
 keywords = [
-    "scraper",
-    "downloader",
     "stream",
     "snapper",
+    "scraper",
     "youtube",
-    "soundcloud"
+    "soundcloud",
+    "downloader",
+    "merger"
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
