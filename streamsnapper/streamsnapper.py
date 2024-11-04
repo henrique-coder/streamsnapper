@@ -1,6 +1,6 @@
 # Built-in imports
-from os import PathLike
 from pathlib import Path
+from os import PathLike
 from re import compile as re_compile
 from locale import getlocale
 from datetime import datetime
@@ -27,8 +27,8 @@ except (ImportError, ModuleNotFoundError):
     pass
 
 # Local imports
-from .functions import get_value, format_string, convert_to_path
-from .exceptions import StreamBaseError, InvalidDataError, ScrapingError, DownloadError, MergeError
+from .functions import get_value, format_string
+from .exceptions import InvalidDataError, ScrapingError, DownloadError, MergeError
 
 
 class YouTube:
@@ -95,7 +95,7 @@ class YouTube:
 
             try:
                 with YoutubeDL(self._ydl_opts) as ydl:
-                    self._raw_youtube_data = ydl.extract_info(url, download=False, process=True)
+                    self._raw_youtube_data = ydl.extract_info(url=url, download=False, process=True)
             except (yt_dlp_utils.DownloadError, yt_dlp_utils.ExtractorError, Exception) as e:
                 raise ScrapingError(f'Error occurred while scraping YouTube video: "{url}"') from e
 
@@ -164,11 +164,13 @@ class YouTube:
         }
 
         if check_thumbnails:
-            for thumbnail in general_info['thumbnails']:
-                r = head(thumbnail, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36'}, allow_redirects=False, timeout=5)
+            while general_info['thumbnails']:
+                r = head(general_info['thumbnails'][0], headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36'}, allow_redirects=False)
 
-                if r.status_code != 200:
-                    general_info['thumbnails'].remove(thumbnail)
+                if r.status_code == 200 or r.ok:
+                    break
+                else:
+                    general_info['thumbnails'].pop(0)
 
         self.general_info = dict(sorted(general_info.items()))
 
@@ -630,34 +632,38 @@ class Downloader:
 
         self.output_file_path: Optional[str] = None
 
-    def download(self, url: str, output_file_path: Union[str, PathLike]) -> None:
+    def download(self, url: str, output_file_path: Union[str, PathLike] = Path.cwd()) -> None:
         """
         Download the file from the provided URL to the output file path.
 
         :param url: The download URL to download the file from. *str*
-        :param output_file_path: The path to save the downloaded file to. If the path is a directory, the file name will be generated from the URL (server response). If the path is a file, the file will be saved with the provided name.
+        :param output_file_path: The path to save the downloaded file to. If the path is a directory, the file name will be generated from the server response. If the path is a file, the file will be saved with the provided name. If not provided, the file will be saved to the current working directory.
         :raises DownloadError: If an error occurs while downloading the file.
         """
 
+        output_file_path = Path(output_file_path).resolve()
+
         try:
-            downloader = SmartDL(urls=url, dest=Path(output_file_path).resolve().as_posix(), threads=self._max_connections, progress_bar=self._show_progress_bar, timeout=self._timeout)
+            downloader = SmartDL(urls=url, dest=output_file_path.as_posix(), threads=self._max_connections, progress_bar=self._show_progress_bar, timeout=self._timeout)
             downloader.start(blocking=True)
         except Exception as e:
-            raise DownloadError(f'Error occurred while downloading URL: "{url}"') from e
+            raise DownloadError(f'Error occurred while downloading URL: "{url}" to "{output_file_path.as_posix()}"') from e
 
         output_destination = downloader.get_dest()
-        self.output_file_path = Path(output_destination).resolve().as_posix() if output_destination else None
+        self.output_file_path = Path(output_destination).as_posix() if output_file_path else None
 
 
 class Merger:
     """A class for merging multiple audio and video streams into a single file."""
 
-    def __init__(self) -> None:
-        """Initialize the Merger class with the required settings for merging audio and video streams."""
+    def __init__(self, enable_ffmpeg_log: bool = False) -> None:
+        """
+        Initialize the Merger class with the required settings for merging audio and video streams.
 
-        # TODO: Add option to enable/disable FFmpeg logging
+        :param enable_ffmpeg_log: Enable or disable the ffmpeg logging.
+        """
 
-        pass
+        self._enable_ffmpeg_log = enable_ffmpeg_log
 
     def merge(self, video_file_path: Union[str, PathLike], audio_file_path: Union[str, PathLike], output_file_path: Union[str, PathLike], ffmpeg_file_path: Union[str, PathLike, Literal['auto']] = 'auto') -> None:
         """
@@ -670,9 +676,9 @@ class Merger:
         :raises MergeError: If an error occurs while merging the files.
         """
 
-        video_file_path = convert_to_path(video_file_path, check_if_is_file=True)
-        audio_file_path = convert_to_path(audio_file_path, check_if_is_file=True)
-        output_file_path = Path(output_file_path)
+        video_file_path = Path(video_file_path).resolve()
+        audio_file_path = Path(audio_file_path).resolve()
+        output_file_path = Path(output_file_path).resolve()
 
         if ffmpeg_file_path == 'auto':
             found_ffmpeg_binary = which('ffmpeg')
@@ -682,9 +688,12 @@ class Merger:
             else:
                 raise FileNotFoundError('The ffmpeg executable was not found. Please provide the path to the ffmpeg executable.')
         else:
-            ffmpeg_file_path = convert_to_path(ffmpeg_file_path, check_if_is_file=True).resolve()
+            ffmpeg_file_path = Path(ffmpeg_file_path).resolve()
+
+        stdout = None if self._enable_ffmpeg_log else DEVNULL
+        stderr = None if self._enable_ffmpeg_log else DEVNULL
 
         try:
-            run([ffmpeg_file_path.resolve().as_posix(), '-y', '-hide_banner', '-i', video_file_path.resolve().as_posix(), '-i', audio_file_path.resolve().as_posix(),'-c', 'copy', '-map', '0:v:0', '-map', '1:a:0', output_file_path.resolve().as_posix()], check=True, stdout=DEVNULL, stderr=DEVNULL)
+            run([ffmpeg_file_path.as_posix(), '-y', '-hide_banner', '-i', video_file_path.as_posix(), '-i', audio_file_path.as_posix(),'-c', 'copy', '-map', '0:v', '-map', '1:a', output_file_path.as_posix()], check=True, stdout=stdout, stderr=stderr)
         except CalledProcessError as e:
-            raise MergeError(f'Error occurred while merging files: "{self._video_file_path.resolve().as_posix()}" and "{self._audio_file_path.resolve().as_posix()}"') from e
+            raise MergeError(f'Error occurred while merging files: "{video_file_path.as_posix()}" and "{audio_file_path.as_posix()}"') from e
