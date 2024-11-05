@@ -6,6 +6,7 @@ from locale import getlocale
 from datetime import datetime
 from shutil import which
 from subprocess import run, DEVNULL, CalledProcessError
+from tempfile import gettempdir
 from typing import Any, Dict, List, Literal, Optional, Union, Type
 
 # Third-party imports
@@ -71,9 +72,9 @@ class YouTube:
         self.available_video_qualities: List[str] = []
         self.available_audio_languages: List[str] = []
 
-    def run(self, url: Optional[str] = None, ytdlp_data: Optional[Dict[str, Any]] = None) -> None:
+    def extract(self, url: Optional[str] = None, ytdlp_data: Optional[Dict[str, Any]] = None) -> None:
         """
-        Run the process of extracting and formatting data from a YouTube video.
+        Extract general video information, video streams, audio streams and subtitles.
 
         :param url: The YouTube video URL to extract data from.
         :param ytdlp_data: The raw yt-dlp data to extract and format. If provided, the URL will be ignored (useful for debugging and testing).
@@ -415,7 +416,7 @@ class YouTube:
         def __init__(self) -> None:
             """Initialize the Extractor class with some regular expressions for analyzing YouTube URLs."""
 
-            self._platform_regex = re_compile(r'(?:https?://)?(?:www\.)?(music\.)?youtube\.com|youtu\.be')
+            self._platform_regex = re_compile(r'(?:https?://)?(?:www\.)?(music\.)?youtube\.com|youtu\.be|youtube\.com/shorts')
             self._video_id_regex = re_compile(r'(?:youtu\.be/|youtube\.com/(?:watch\?v=|embed/|v/|shorts/|music/|.*[?&]v=))([a-zA-Z0-9_-]{11})')
             self._playlist_id_regex = re_compile(r'(?:youtube\.com/(?:playlist\?list=|watch\?.*?&list=|music/playlist\?list=|music\.youtube\.com/watch\?.*?&list=))([a-zA-Z0-9_-]+)')
 
