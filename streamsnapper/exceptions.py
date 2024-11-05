@@ -4,14 +4,20 @@ class StreamBaseError(Exception):
     pass
 
 
+class EmptyDataError(StreamBaseError):
+    """Exception raised when no data is available."""
+
+    pass
+
+
 class InvalidDataError(StreamBaseError):
-    """Exception raised when invalid yt-dlp data is provided."""
+    """Exception raised when invalid data is provided."""
 
     pass
 
 
 class ScrapingError(StreamBaseError):
-    """Exception raised when an error occurs while scraping YouTube data."""
+    """Exception raised when an error occurs while scraping data."""
 
     pass
 
