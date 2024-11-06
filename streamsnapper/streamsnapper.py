@@ -462,13 +462,13 @@ class YouTube:
             return output_file_path.resolve()
         elif video_stream:
             output_file_path = Path(output_path, f'{self.general_info["cleanTitle"]} [{self.general_info["id"]}].{video_stream["extension"]}')
-            downloader = Downloader(max_connections=12, show_progress_bar=show_progress_bar)
+            downloader = Downloader(max_connections=16, show_progress_bar=show_progress_bar)
             downloader.download(video_stream['url'], output_file_path)
 
             return Path(downloader.output_file_path)
         elif audio_stream:
             output_file_path = Path(output_path, f'{self.general_info["cleanTitle"]} [{self.general_info["id"]}].{audio_stream["extension"]}')
-            downloader = Downloader(max_connections=6, show_progress_bar=show_progress_bar)
+            downloader = Downloader(max_connections=8, show_progress_bar=show_progress_bar)
             downloader.download(audio_stream['url'], output_file_path)
 
             return Path(downloader.output_file_path)
