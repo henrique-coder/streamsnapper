@@ -440,11 +440,11 @@ class YouTube:
             tmp_path.mkdir(exist_ok=True)
 
             output_video_file_path = Path(tmp_path, f'.tmp-{self.general_info["id"]}.{video_stream["extension"]}')
-            video_downloader = Downloader(max_connections=12, show_progress_bar=show_progress_bar)
+            video_downloader = Downloader(max_connections=16, show_progress_bar=show_progress_bar)
             video_downloader.download(video_stream['url'], output_video_file_path)
 
             output_audio_file_path = Path(tmp_path, f'.tmp-{self.general_info["id"]}.{audio_stream["extension"]}')
-            audio_downloader = Downloader(max_connections=6, show_progress_bar=show_progress_bar)
+            audio_downloader = Downloader(max_connections=8, show_progress_bar=show_progress_bar)
             audio_downloader.download(audio_stream['url'], output_audio_file_path)
 
             output_file_path = Path(output_path, f'{self.general_info["cleanTitle"]} [{self.general_info["id"]}].{video_stream["extension"]}')
