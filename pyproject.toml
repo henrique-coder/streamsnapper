@@ -42,7 +42,7 @@ soundcloud-lib = {version = "*", optional = true}
 pysmartdl2 = {version = "*", optional = true}
 
 [tool.poetry.extras]
-youtube = ["yt-dlp", "requests", "scrapetube"]
+youtube = ["yt-dlp", "requests", "scrapetube", "pysmartdl2"]
 soundcloud = ["soundcloud-lib"]
 merger = []
 downloader = ["pysmartdl2"]
