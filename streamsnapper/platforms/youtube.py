@@ -3,49 +3,48 @@ from pathlib import Path
 from os import PathLike
 from re import compile as re_compile
 from locale import getlocale
-from datetime import datetime
-from shutil import which, rmtree
-from subprocess import run, DEVNULL, CalledProcessError
+from shutil import rmtree
 from tempfile import gettempdir
 from typing import Any, Dict, List, Literal, Optional, Union, Type
 
 # Third-party imports
 try:
     from yt_dlp import YoutubeDL, utils as yt_dlp_utils
+except (ImportError, ModuleNotFoundError):
+    pass
+
+try:
     from requests import head
+except (ImportError, ModuleNotFoundError):
+    pass
+
+try:
     from scrapetube import get_search as scrape_youtube_search, get_playlist as scrape_youtube_playlist, get_channel as scrape_youtube_channel
 except (ImportError, ModuleNotFoundError):
     pass
 
-try:
-    from sclib import SoundcloudAPI, Track as SoundcloudTrack
-except (ImportError, ModuleNotFoundError):
-    pass
-
-try:
-    from pysmartdl2 import SmartDL
-except (ImportError, ModuleNotFoundError):
-    pass
-
 # Local imports
-from .functions import get_value, format_string
-from .exceptions import EmptyDataError, InvalidDataError, ScrapingError, DownloadError, MergeError
+from ..downloader import Downloader
+from ..merger import Merger
+from ..functions import get_value, format_string
+from ..exceptions import EmptyDataError, InvalidDataError, ScrapingError
 
 
 class YouTube:
     """A class for extracting and formatting data from YouTube videos, facilitating access to general video information, video streams, audio streams and subtitles."""
 
-    def __init__(self, enable_ytdlp_log: bool = False) -> None:
+    def __init__(self, logging: bool = False) -> None:
         """
         Initialize the Snapper class with optional settings for yt-dlp.
 
-        :param enable_ytdlp_log: Enable or disable yt-dlp logging.
+        :param logging: Enable or disable yt-dlp logging.
         """
 
-        self._extractor: Type[YouTube.Extractor] = self.Extractor()
-        enable_ytdlp_log = not enable_ytdlp_log
+        self._extractor: Type[YouTubeExtractor] = YouTubeExtractor()
 
-        self._ydl_opts: Dict[str, bool] = {'extract_flat': True, 'geo_bypass': True, 'noplaylist': True, 'age_limit': None, 'quiet': enable_ytdlp_log, 'no_warnings': enable_ytdlp_log, 'ignoreerrors': enable_ytdlp_log}
+        logging = not logging
+
+        self._ydl_opts: Dict[str, bool] = {'extract_flat': True, 'geo_bypass': True, 'noplaylist': True, 'age_limit': None, 'quiet': logging, 'no_warnings': logging, 'ignoreerrors': logging}
         self._raw_youtube_data: Dict[Any, Any] = {}
         self._raw_youtube_streams: List[Dict[Any, Any]] = []
         self._raw_youtube_subtitles: Dict[str, List[Dict[str, str]]] = {}
@@ -110,7 +109,7 @@ class YouTube:
         """
         Extract and format relevant information.
 
-        :check_thumbnails: Whether thumbnails should be checked and removed if they are offline.
+        :check_thumbnails: Whether thumbnails should be checked and removed if they are not available.
         """
 
         data = self._raw_youtube_data
@@ -175,11 +174,11 @@ class YouTube:
 
         self.general_info = dict(sorted(general_info.items()))
 
-    def analyze_video_streams(self, preferred_quality: Literal['all', 'best', '144p', '240p', '360p', '480p', '720p', '1080p', '1440p', '2160p', '4320p'] = 'all') -> None:
+    def analyze_video_streams(self, preferred_quality: Literal['144p', '240p', '360p', '480p', '720p', '1080p', '1440p', '2160p', '4320p', 'all'] = 'all') -> None:
         """
         Extract and format the best video streams.
 
-        :param preferred_quality: The preferred quality of the video stream. If "all", all streams will be considered and sorted by quality. If "best", only the best quality streams will be considered. If a specific quality is provided, the stream will be selected according to the chosen quality, however if the quality is not available, the best quality will be selected.
+        :param preferred_quality: The preferred quality of the video stream. If a specific quality is provided, the stream will be selected according to the chosen quality, however if the quality is not available, the best quality will be selected. If "all", all streams will be considered and sorted by quality.
         """
 
         data = self._raw_youtube_streams
@@ -259,7 +258,7 @@ class YouTube:
             framerate = stream.get('fps', 0)
             bitrate = stream.get('tbr', 0)
 
-            return width * height * framerate * bitrate
+            return float(width * height * framerate * bitrate)
 
         sorted_video_streams = sorted(video_streams, key=calculate_score, reverse=True)
 
@@ -296,7 +295,7 @@ class YouTube:
         if preferred_quality != 'all':
             preferred_quality = preferred_quality.strip().lower()
 
-            if preferred_quality == 'best' or preferred_quality not in self.available_video_qualities:
+            if preferred_quality not in self.available_video_qualities:
                 best_available_quality = max([stream['quality'] for stream in self.best_video_streams])
                 self.best_video_streams = [stream for stream in self.best_video_streams if stream['quality'] == best_available_quality]
             else:
@@ -305,11 +304,11 @@ class YouTube:
             self.best_video_stream = self.best_video_streams[0] if self.best_video_streams else {}
             self.best_video_download_url = self.best_video_stream['url'] if self.best_video_stream else None
 
-    def analyze_audio_streams(self, preferred_language: Union[str, Literal['all', 'original', 'auto']] = 'auto') -> None:
+    def analyze_audio_streams(self, preferred_language: Union[str, Literal['source', 'local', 'all']] = 'local') -> None:
         """
         Extract and format the best audio streams.
 
-        :param preferred_language: The preferred language code of the audio stream. If "all", all audio streams will be considered, regardless of language. If "original", only the original audios will be considered. If "auto", the language will be automatically selected according to the current operating system language (if not found or video is not available in that language, the fallback will be "original").
+        :param preferred_language: The preferred language code of the audio stream. If "source", only the source audios will be considered. If "auto", the language will be automatically selected according to the current operating system language (if not found or video is not available in that language, the fallback will be "source"). If "all", all audio streams will be considered, regardless of language.
         """
 
         data = self._raw_youtube_streams
@@ -342,7 +341,7 @@ class YouTube:
             bitrate = stream.get('abr', 0)
             sample_rate = stream.get('asr', 0)
 
-            return bitrate * 0.1 + sample_rate / 1000
+            return float(bitrate * 0.1 + sample_rate / 1000)
 
         sorted_audio_streams = sorted(audio_streams, key=calculate_score, reverse=True)
 
@@ -377,14 +376,14 @@ class YouTube:
         if preferred_language != 'all':
             preferred_language = preferred_language.strip().lower()
 
-            if preferred_language == 'auto':
+            if preferred_language == 'local':
                 if self.system_language in self.available_audio_languages:
                     self.best_audio_streams = [stream for stream in self.best_audio_streams if stream['language'] == self.system_language]
                 else:
-                    preferred_language = 'original'
-            if preferred_language == 'original':
+                    preferred_language = 'source'
+            if preferred_language == 'source':
                 self.best_audio_streams = [stream for stream in self.best_audio_streams if stream['isOriginalAudio']]
-            elif preferred_language != 'auto':
+            elif preferred_language != 'local':
                 self.best_audio_streams = [stream for stream in self.best_audio_streams if stream['language'] == preferred_language]
 
             self.best_audio_stream = self.best_audio_streams[0] if self.best_audio_streams else {}
@@ -409,15 +408,15 @@ class YouTube:
 
         self.subtitle_streams = dict(sorted(subtitle_streams.items()))
 
-    def download(self, video_stream: Optional[Dict[str, Any]] = None, audio_stream: Optional[Dict[str, Any]] = None, output_path: Union[str, PathLike] = Path.cwd(), show_progress_bar: bool = True, enable_ffmpeg_log: bool = False) -> Path:
+    def download(self, video_stream: Optional[Dict[str, Any]] = None, audio_stream: Optional[Dict[str, Any]] = None, output_path: Union[str, PathLike] = Path.cwd(), show_progress_bar: bool = True, logging: bool = False) -> Path:
         """
         Downloads specified video and/or audio streams. If both streams are provided, they will be downloaded and merged. If only one stream is provided, it will be downloaded without merging. If no streams are specified, the function will analyze and select default streams with optimized settings.
 
         :param video_stream: Video stream dictionary generated by the YouTube class.
         :param audio_stream: Audio stream dictionary generated by the YouTube class.
-        :param output_path: Directory path to save the downloaded files (default: current working directory).
+        :param output_path: Directory path to save the downloaded file (default: current working directory).
         :param show_progress_bar: Show progress bar during download
-        :param enable_ffmpeg_log: Enable or disable ffmpeg logging
+        :param logging: Enable or disable ffmpeg logging
         :return: Path object of the downloaded file.
         :raises EmptyDataError: If no YouTube data is available
         """
@@ -449,12 +448,12 @@ class YouTube:
 
             output_file_path = Path(output_path, f'{self.general_info["cleanTitle"]} [{self.general_info["id"]}].{video_stream["extension"]}')
 
-            merger = Merger(enable_ffmpeg_log=enable_ffmpeg_log)
+            merger = Merger(logging=enable_ffmpeg_log)
             merger.merge(
                 video_file_path=output_video_file_path,
                 audio_file_path=output_audio_file_path,
                 output_file_path=output_file_path,
-                ffmpeg_file_path='auto'
+                ffmpeg_file_path='local'
             )
 
             rmtree(tmp_path)
@@ -474,291 +473,125 @@ class YouTube:
             return Path(downloader.output_file_path)
 
 
-    class Extractor:
-        """A class for extracting data from YouTube URLs and searching for YouTube videos."""
-
-        def __init__(self) -> None:
-            """Initialize the Extractor class with some regular expressions for analyzing YouTube URLs."""
-
-            self._platform_regex = re_compile(r'(?:https?://)?(?:www\.)?(music\.)?youtube\.com|youtu\.be|youtube\.com/shorts')
-            self._video_id_regex = re_compile(r'(?:youtu\.be/|youtube\.com/(?:watch\?v=|embed/|v/|shorts/|music/|.*[?&]v=))([a-zA-Z0-9_-]{11})')
-            self._playlist_id_regex = re_compile(r'(?:youtube\.com/(?:playlist\?list=|watch\?.*?&list=|music/playlist\?list=|music\.youtube\.com/watch\?.*?&list=))([a-zA-Z0-9_-]+)')
-
-        def identify_platform(self, url: str) -> Optional[Literal['youtube', 'youtube_music']]:
-            """
-            Identify the platform of a URL (YouTube or YouTube Music).
-
-            :param url: The URL to identify the platform from.
-            :return: The identified platform. If the platform is not recognized, return None.
-            """
-
-            found_match = self._platform_regex.search(url)
-
-            if found_match:
-                return 'youtube_music' if found_match.group(1) else 'youtube'
-
-        def extract_video_id(self, url: str) -> Optional[str]:
-            """
-            Extract the YouTube video ID from a URL.
-
-            :param url: The URL to extract the video ID from.
-            :return: The extracted video ID. If no video ID is found, return None.
-            """
-
-            found_match = self._video_id_regex.search(url)
-            return found_match.group(1) if found_match else None
-
-        def extract_playlist_id(self, url: str) -> Optional[str]:
-            """
-            Extract the YouTube playlist ID from a URL. (Note: The playlist must be public).
-
-            :param url: The URL to extract the playlist ID from.
-            :return: The extracted playlist ID. If no playlist ID is found or the playlist is private, return None.
-            """
-
-            found_match = self._playlist_id_regex.search(url)
-            return found_match.group(1) if found_match and len(found_match.group(1)) >= 34 else None
-
-        def search(self, query: str, sort_by: Literal['relevance', 'upload_date', 'view_count', 'rating'] = 'relevance', results_type: Literal['video', 'channel', 'playlist', 'movie'] = 'video', limit: int = 1) -> Optional[List[str]]:
-            """
-            Search for YouTube videos, channels, playlists or movies.
-
-            :param query: The search query to search for.
-            :param sort_by: The sorting method to use for the search results.
-            :param results_type: The type of results to search for.
-            :param limit: The maximum number of video URLs to return.
-            :return: A list of video URLs from the search results. If no videos are found, return None.
-            """
-
-            try:
-                extracted_data = list(scrape_youtube_search(query=query, sleep=1, sort_by=sort_by, results_type=results_type, limit=limit))
-            except Exception:
-                return None
-
-            if extracted_data:
-                found_urls = [f'https://www.youtube.com/watch?v={item.get("videoId")}' for item in extracted_data if item.get('videoId')]
-                return found_urls if found_urls else None
-
-        def get_playlist_videos(self, url: str, limit: int = None) -> Optional[List[str]]:
-            """
-            Get the video URLs from a YouTube playlist.
-            :param url: The URL of the YouTube playlist.
-            :param limit: The maximum number of video URLs to return. If None, return all video URLs.
-            :return: A list of video URLs from the playlist. If no videos are found or the playlist is private, return None.
-            """
-
-            playlist_id = self.extract_playlist_id(url)
-
-            if not playlist_id:
-                return None
-
-            try:
-                extracted_data = list(scrape_youtube_playlist(playlist_id, sleep=1, limit=limit))
-            except Exception:
-                return None
-
-            if extracted_data:
-                found_urls = [f'https://www.youtube.com/watch?v={item.get("videoId")}' for item in extracted_data if item.get('videoId')]
-                return found_urls if found_urls else None
-
-        def get_channel_videos(self, channel_id: Optional[str] = None, channel_url: Optional[str] = None, channel_username: Optional[str] = None, sort_by: Literal['newest', 'oldest', 'popular'] = 'newest', content_type: Literal['videos', 'shorts', 'streams'] = 'videos', limit: Optional[int] = None) -> Optional[List[str]]:
-            """
-            Get the video URLs from a YouTube channel.
-
-            :param channel_id: The ID of the YouTube channel.
-            :param channel_url: The URL of the YouTube channel.
-            :param channel_username: The username of the YouTube channel.
-            :param sort_by: The sorting method to use for the channel videos.
-            :param content_type: The type of videos to get from the channel.
-            :param limit: The maximum number of video URLs to return. If None, return all video URLs.
-            :return: A list of video URLs from the channel. If no videos are found or the channel is non-existent, return None.
-            """
-
-            if sum([bool(channel_id), bool(channel_url), bool(channel_username)]) != 1:
-                raise ValueError('Provide only one of the following arguments: "channel_id", "channel_url" or "channel_username"')
-
-            try:
-                extracted_data = list(scrape_youtube_channel(channel_id=channel_id, channel_url=channel_url, channel_username=channel_username.replace('@', ''), sleep=1, sort_by=sort_by, content_type=content_type, limit=limit))
-            except Exception:
-                return None
-
-            if extracted_data:
-                found_urls = [f'https://www.youtube.com/watch?v={item.get("videoId")}' for item in extracted_data if item.get('videoId')]
-                return found_urls if found_urls else None
-
-
-class SoundCloud:
-    """A class for extracting and formatting data from SoundCloud tracks and playlists, facilitating access to general track information and audio streams."""
+class YouTubeExtractor:
+    """A class for extracting data from YouTube URLs and searching for YouTube videos."""
 
     def __init__(self) -> None:
-        """Initialize the SoundCloud class."""
+        """Initialize the Extractor class with some regular expressions for analyzing YouTube URLs."""
 
-        self._extractor: Type[SoundCloud.Extractor] = self.Extractor()
-        self._soundcloud_api: SoundcloudAPI = SoundcloudAPI(client_id='gJUfQ83SeoGM0qvM3VetdqVTDyHmSusF')
-        self._soundcloud_track: SoundcloudTrack = None
+        self._platform_regex = re_compile(r'(?:https?://)?(?:www\.)?(music\.)?youtube\.com|youtu\.be|youtube\.com/shorts')
+        self._video_id_regex = re_compile(r'(?:youtu\.be/|youtube\.com/(?:watch\?v=|embed/|v/|shorts/|music/|.*[?&]v=))([a-zA-Z0-9_-]{11})')
+        self._playlist_id_regex = re_compile(r'(?:youtube\.com/(?:playlist\?list=|watch\?.*?&list=|music/playlist\?list=|music\.youtube\.com/watch\?.*?&list=))([a-zA-Z0-9_-]+)')
 
-        self.general_info: Dict[str, Any] = {}
-        self.best_audio_stream: Dict[str, Any] = {}
-        self.best_audio_download_url: Optional[str] = None
-
-    def run(self, url: str) -> None:
+    def identify_platform(self, url: str) -> Optional[Literal['youtube', 'youtube_music']]:
         """
-        Run the process of extracting and formatting data from a SoundCloud track or playlist.
+        Identify the platform of a URL (YouTube or YouTube Music).
 
-        :param url: The SoundCloud track or playlist URL to extract data from.
-        :raises ScrapingError: If an error occurs while scraping the SoundCloud track.
+        :param url: The URL to identify the platform from.
+        :return: The identified platform. If the platform is not recognized, return None.
+        """
+
+        found_match = self._platform_regex.search(url)
+
+        if found_match:
+            return 'youtube_music' if found_match.group(1) else 'youtube'
+
+    def extract_video_id(self, url: str) -> Optional[str]:
+        """
+        Extract the YouTube video ID from a URL.
+
+        :param url: The URL to extract the video ID from.
+        :return: The extracted video ID. If no video ID is found, return None.
+        """
+
+        found_match = self._video_id_regex.search(url)
+        return found_match.group(1) if found_match else None
+
+    def extract_playlist_id(self, url: str, include_private: bool = False) -> Optional[str]:
+        """
+        Extract the YouTube playlist ID from a URL.
+
+        :param url: The URL to extract the playlist ID from.
+        :param include_private: Whether to include private playlists, like the mixes YouTube makes for you.
+        :return: The extracted playlist ID. If no playlist ID is found or the playlist is private, return None.
+        """
+
+        found_match = self._playlist_id_regex.search(url)
+
+        if found_match:
+            playlist_id = found_match.group(1)
+
+            if not include_private:
+                return playlist_id if len(playlist_id) == 34 else None
+
+            return playlist_id if len(playlist_id) >= 34 or playlist_id.startswith('RD') else None
+
+        return None
+
+    def search(self, query: str, sort_by: Literal['relevance', 'upload_date', 'view_count', 'rating'] = 'relevance', results_type: Literal['video', 'channel', 'playlist', 'movie'] = 'video', limit: int = 1) -> Optional[List[str]]:
+        """
+        Search for YouTube videos, channels, playlists or movies (provided by scrapetube library).
+
+        :param query: The search query to search for.
+        :param sort_by: The sorting method to use for the search results.
+        :param results_type: The type of results to search for.
+        :param limit: The maximum number of video URLs to return.
+        :return: A list of video URLs from the search results. If no videos are found, return None.
         """
 
         try:
-            self._soundcloud_track = self._soundcloud_api.resolve(url)
-        except Exception as e:
-            raise ScrapingError(f'Error occurred while scraping SoundCloud track: "{url}"') from e
+            extracted_data = list(scrape_youtube_search(query=query, sleep=1, sort_by=sort_by, results_type=results_type, limit=limit))
+        except Exception:
+            return None
 
-    def analyze_info(self) -> None:
-        """Extract and format relevant information."""
+        if extracted_data:
+            found_urls = [f'https://www.youtube.com/watch?v={item.get("videoId")}' for item in extracted_data if item.get('videoId')]
+            return found_urls if found_urls else None
 
-        self.general_info = {
-            'id': self._soundcloud_track.id,
-            'userId': self._soundcloud_track.user_id,
-            'username': self._soundcloud_track.user['username'],
-            'userAvatar': self._soundcloud_track.user['avatar_url'].replace('-large', '-original'),
-            'title': self._soundcloud_track.title,
-            'artist': self._soundcloud_track.artist,
-            'duration': self._soundcloud_track.duration,
-            'fullUrl': self._soundcloud_track.permalink_url,
-            'thumbnail': self._soundcloud_track.artwork_url.replace('-large', '-original'),
-            'commentCount': self._soundcloud_track.comment_count,
-            'likeCount': self._soundcloud_track.likes_count,
-            'downloadCount': self._soundcloud_track.download_count,
-            'playbackCount': self._soundcloud_track.playback_count,
-            'repostCount': self._soundcloud_track.reposts_count,
-            'uploadTimestamp': int(datetime.fromisoformat(self._soundcloud_track.created_at.replace('Z', '+00:00')).timestamp()),
-            'lastModifiedTimestamp': int(datetime.fromisoformat(self._soundcloud_track.last_modified.replace('Z', '+00:00')).timestamp()),
-            'isCommentable': self._soundcloud_track.commentable,
-            'description': self._soundcloud_track.description,
-            'genre': self._soundcloud_track.genre,
-            'tags': self._soundcloud_track.tag_list,
-            'license': self._soundcloud_track.license,
-        }
-
-    def generate_audio_stream(self) -> None:
-        """Extract and format the best audio stream."""
-
-        self.best_audio_download_url = self._soundcloud_track.get_stream_url()
-
-
-    class Extractor:
-        """A class for extracting data from SoundCloud URLs and searching for SoundCloud tracks."""
-
-        def __init__(self) -> None:
-            """Initialize the Extractor class with some regular expressions for analyzing SoundCloud URLs."""
-
-            self._track_id_regex = re_compile(r'(?:soundcloud\.com/|snd\.sc/)([^/]+)/(?!sets)([^/]+)')
-            self._playlist_id_regex = re_compile(r'(?:soundcloud\.com/|snd\.sc/)([^/]+)/sets/([^/]+)')
-
-        def extract_track_slug(self, url: str) -> Optional[str]:
-            """
-            Extract the SoundCloud track slug from a URL.
-
-            :param url: The URL to extract the track slug from.
-            :return: The extracted track slug. If no track slug is found, return None.
-            """
-
-            found_match = self._track_id_regex.search(url)
-            return f'{found_match.group(1)}/{found_match.group(2)}' if found_match else None
-
-        def extract_playlist_slug(self, url: str) -> Optional[str]:
-            """
-            Extract the SoundCloud playlist slug from a URL.
-
-            :param url: The URL to extract the playlist slug from.
-            :return: The extracted playlist slug. If no playlist slug is found, return None.
-            """
-
-            found_match = self._playlist_id_regex.search(url)
-            return f'{found_match.group(1)}/sets/{found_match.group(2)}' if found_match else None
-
-
-class Downloader:
-    """A class for downloading direct download URLs. Created to download YouTube videos and audio streams. However, it can be used to download any direct download URL."""
-
-    def __init__(self, max_connections: int = 4, show_progress_bar: bool = True, timeout: int = 14400) -> None:
+    def get_playlist_videos(self, url: str, limit: Optional[int] = None) -> Optional[List[str]]:
         """
-        Initialize the Downloader class with the required settings for downloading a file.
+        Get the video URLs from a YouTube playlist (provided by scrapetube library).
 
-        :param max_connections: The maximum number of connections (threads) to use for downloading the file.
-        :param show_progress_bar: Show or hide the download progress bar.
-        :param timeout: The timeout in seconds for the download process.
+        :param url: The URL of the YouTube playlist.
+        :param limit: The maximum number of video URLs to return. If None, return all video URLs.
+        :return: A list of video URLs from the playlist. If no videos are found or the playlist is private, return None.
         """
 
-        self._max_connections: int = max_connections
-        self._show_progress_bar: bool = show_progress_bar
-        self._timeout: int = timeout
+        playlist_id = self.extract_playlist_id(url, include_private=False)
 
-        self.output_file_path: Optional[str] = None
-
-    def download(self, url: str, output_file_path: Union[str, PathLike] = Path.cwd()) -> None:
-        """
-        Download the file from the provided URL to the output file path.
-
-        :param url: The download URL to download the file from. *str*
-        :param output_file_path: The path to save the downloaded file to. If the path is a directory, the file name will be generated from the server response. If the path is a file, the file will be saved with the provided name. If not provided, the file will be saved to the current working directory.
-        :raises DownloadError: If an error occurs while downloading the file.
-        """
-
-        output_file_path = Path(output_file_path).resolve()
+        if not playlist_id:
+            return None
 
         try:
-            downloader = SmartDL(urls=url, dest=output_file_path.as_posix(), threads=self._max_connections, progress_bar=self._show_progress_bar, timeout=self._timeout)
-            downloader.start(blocking=True)
-        except Exception as e:
-            raise DownloadError(f'Error occurred while downloading URL: "{url}" to "{output_file_path.as_posix()}"') from e
+            extracted_data = list(scrape_youtube_playlist(playlist_id, sleep=1, limit=limit))
+        except Exception:
+            return None
 
-        output_destination = downloader.get_dest()
-        self.output_file_path = Path(output_destination).as_posix() if output_file_path else None
+        if extracted_data:
+            found_urls = [f'https://www.youtube.com/watch?v={item.get("videoId")}' for item in extracted_data if item.get('videoId')]
+            return found_urls if found_urls else None
 
-
-class Merger:
-    """A class for merging multiple audio and video streams into a single file."""
-
-    def __init__(self, enable_ffmpeg_log: bool = False) -> None:
+    def get_channel_videos(self, channel_id: Optional[str] = None, channel_url: Optional[str] = None, channel_username: Optional[str] = None, sort_by: Literal['newest', 'oldest', 'popular'] = 'newest', content_type: Literal['videos', 'shorts', 'streams'] = 'videos', limit: Optional[int] = None) -> Optional[List[str]]:
         """
-        Initialize the Merger class with the required settings for merging audio and video streams.
+        Get the video URLs from a YouTube channel (provided by scrapetube library).
 
-        :param enable_ffmpeg_log: Enable or disable the ffmpeg logging.
-        """
-
-        self._enable_ffmpeg_log = enable_ffmpeg_log
-
-    def merge(self, video_file_path: Union[str, PathLike], audio_file_path: Union[str, PathLike], output_file_path: Union[str, PathLike], ffmpeg_file_path: Union[str, PathLike, Literal['auto']] = 'auto') -> None:
-        """
-        Merge the audio and video streams into a single file.
-
-        :param video_file_path: The path to the video file to merge.
-        :param audio_file_path: The path to the audio file to merge.
-        :param output_file_path: The path to save the merged file to.
-        :param ffmpeg_file_path: The path to the ffmpeg executable. If 'auto', the ffmpeg executable will be searched in the PATH environment variable.
-        :raises MergeError: If an error occurs while merging the files.
+        :param channel_id: The ID of the YouTube channel.
+        :param channel_url: The URL of the YouTube channel.
+        :param channel_username: The username of the YouTube channel.
+        :param sort_by: The sorting method to use for the channel videos.
+        :param content_type: The type of videos to get from the channel.
+        :param limit: The maximum number of video URLs to return. If None, return all video URLs.
+        :return: A list of video URLs from the channel. If no videos are found or the channel is non-existent, return None.
         """
 
-        video_file_path = Path(video_file_path).resolve()
-        audio_file_path = Path(audio_file_path).resolve()
-        output_file_path = Path(output_file_path).resolve()
-
-        if ffmpeg_file_path == 'auto':
-            found_ffmpeg_binary = which('ffmpeg')
-
-            if found_ffmpeg_binary:
-                ffmpeg_file_path = Path(found_ffmpeg_binary)
-            else:
-                raise FileNotFoundError('The ffmpeg executable was not found. Please provide the path to the ffmpeg executable.')
-        else:
-            ffmpeg_file_path = Path(ffmpeg_file_path).resolve()
-
-        stdout = None if self._enable_ffmpeg_log else DEVNULL
-        stderr = None if self._enable_ffmpeg_log else DEVNULL
+        if sum([bool(channel_id), bool(channel_url), bool(channel_username)]) != 1:
+            raise ValueError('Provide only one of the following arguments: "channel_id", "channel_url" or "channel_username"')
 
         try:
-            run([ffmpeg_file_path.as_posix(), '-y', '-hide_banner', '-i', video_file_path.as_posix(), '-i', audio_file_path.as_posix(),'-c', 'copy', '-map', '0:v', '-map', '1:a', output_file_path.as_posix()], check=True, stdout=stdout, stderr=stderr)
-        except CalledProcessError as e:
-            raise MergeError(f'Error occurred while merging files: "{video_file_path.as_posix()}" and "{audio_file_path.as_posix()}"') from e
+            extracted_data = list(scrape_youtube_channel(channel_id=channel_id, channel_url=channel_url, channel_username=channel_username.replace('@', ''), sleep=1, sort_by=sort_by, content_type=content_type, limit=limit))
+        except Exception:
+            return None
+
+        if extracted_data:
+            found_urls = [f'https://www.youtube.com/watch?v={item.get("videoId")}' for item in extracted_data if item.get('videoId')]
+            return found_urls if found_urls else None

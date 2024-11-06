@@ -1,5 +1,8 @@
 # Local imports
-from .streamsnapper import YouTube, SoundCloud, Downloader, Merger
+from .platforms.youtube import YouTube, YouTubeExtractor
+from .platforms.soundcloud import SoundCloud
+from .downloader import Downloader
+from .merger import Merger
 from .exceptions import StreamBaseError, EmptyDataError, InvalidDataError, ScrapingError, DownloadError, MergeError
 
 
