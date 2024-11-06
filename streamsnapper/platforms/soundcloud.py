@@ -61,10 +61,8 @@ class SoundCloud:
         :raises ScrapingError: If an error occurs while scraping the SoundCloud track.
         """
 
-        silent_buffer = StringIO()
-
         try:
-            with redirect_stderr(silent_buffer):
+            with redirect_stderr(StringIO()):
                 self._soundcloud_track = self._soundcloud_api.resolve(url)
         except TypeError as e:
             self._soundcloud_api.client_id = None
