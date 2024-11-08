@@ -41,6 +41,7 @@ def get_value(
 
     return value
 
+
 def format_string(query: str, max_length: int = 128) -> Optional[str]:
     """
     Format a string to be used as a filename or directory name. Remove special characters, limit length and normalize the string.
