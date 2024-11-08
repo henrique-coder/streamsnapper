@@ -21,7 +21,13 @@ class Merger:
 
         self._logging = logging
 
-    def merge(self, video_file_path: Union[str, PathLike], audio_file_path: Union[str, PathLike], output_file_path: Union[str, PathLike], ffmpeg_file_path: Union[str, PathLike, Literal['local']] = 'local') -> None:
+    def merge(
+        self,
+        video_file_path: Union[str, PathLike],
+        audio_file_path: Union[str, PathLike],
+        output_file_path: Union[str, PathLike],
+        ffmpeg_file_path: Union[str, PathLike, Literal['local']] = 'local',
+    ) -> None:
         """
         Merge the audio and video streams into a single file.
 
@@ -42,7 +48,9 @@ class Merger:
             if found_ffmpeg_binary:
                 ffmpeg_file_path = Path(found_ffmpeg_binary)
             else:
-                raise FileNotFoundError('The ffmpeg executable was not found. Please provide the path to the ffmpeg executable.')
+                raise FileNotFoundError(
+                    'The ffmpeg executable was not found. Please provide the path to the ffmpeg executable.'
+                )
         else:
             ffmpeg_file_path = Path(ffmpeg_file_path).resolve()
 
@@ -50,6 +58,21 @@ class Merger:
         stderr = None if self._logging else DEVNULL
 
         try:
-            run([ffmpeg_file_path.as_posix(), '-y', '-hide_banner', '-i', video_file_path.as_posix(), '-i', audio_file_path.as_posix(),'-c', 'copy', '-map', '0:v', '-map', '1:a', output_file_path.as_posix()], check=True, stdout=stdout, stderr=stderr)
+            run(
+                [
+                    ffmpeg_file_path.as_posix(), '-y', '-hide_banner',
+                    '-i', video_file_path.as_posix(),
+                    '-i', audio_file_path.as_posix(),
+                    '-c', 'copy',
+                    '-map', '0:v',
+                    '-map', '1:a',
+                    output_file_path.as_posix(),
+                ],
+                check=True,
+                stdout=stdout,
+                stderr=stderr,
+            )
         except CalledProcessError as e:
-            raise MergeError(f'Error occurred while merging files: "{video_file_path.as_posix()}" and "{audio_file_path.as_posix()}"') from e
+            raise MergeError(
+                f'Error occurred while merging files: "{video_file_path.as_posix()}" and "{audio_file_path.as_posix()}" to "{output_file_path.as_posix()}".'
+            ) from e
