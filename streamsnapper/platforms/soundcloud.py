@@ -124,6 +124,7 @@ class SoundCloud:
 
         self.best_audio_download_url = self._soundcloud_track.get_stream_url()
 
+
 class SoundCloudExtractor:
     """A class for extracting data from SoundCloud URLs and searching for SoundCloud tracks."""
 
