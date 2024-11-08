@@ -10,7 +10,7 @@ dist
 
 # Files
 debugging.py
-download_video.py
+download_media.py
 test_lib.py
 upload_to_pypi.py
 poetry.lock
