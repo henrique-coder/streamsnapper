@@ -546,7 +546,6 @@ class YouTube:
         :raises EmptyDataError: If no YouTube data is available
         """
 
-
         if not self._raw_youtube_data:
             raise EmptyDataError(
                 'No YouTube data available. Please call .extract() first.'
@@ -575,7 +574,8 @@ class YouTube:
             tmp_path.mkdir(exist_ok=True)
 
             output_video_file_path = Path(
-                tmp_path, f'.tmp-video-{self.general_info["id"]}.{video_stream["extension"]}'
+                tmp_path,
+                f'.tmp-video-{self.general_info["id"]}.{video_stream["extension"]}',
             )
             video_downloader = Downloader(
                 max_connections=16, show_progress_bar=show_progress_bar
@@ -583,7 +583,8 @@ class YouTube:
             video_downloader.download(video_stream['url'], output_video_file_path)
 
             output_audio_file_path = Path(
-                tmp_path, f'.tmp-audio-{self.general_info["id"]}.{audio_stream["extension"]}'
+                tmp_path,
+                f'.tmp-audio-{self.general_info["id"]}.{audio_stream["extension"]}',
             )
             audio_downloader = Downloader(
                 max_connections=8, show_progress_bar=show_progress_bar
