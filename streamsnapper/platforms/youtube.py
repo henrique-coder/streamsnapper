@@ -199,7 +199,7 @@ class YouTube:
                     allow_redirects=False,
                 )
 
-                if r.status_code == 200 or r.ok:
+                if r.status_code == 200:
                     break
                 else:
                     general_info['thumbnails'].pop(0)
