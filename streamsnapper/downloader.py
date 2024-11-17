@@ -16,12 +16,7 @@ from .exceptions import DownloadError
 class Downloader:
     """A class for downloading direct download URLs. Created to download YouTube videos and audio streams. However, it can be used to download any direct download URL."""
 
-    def __init__(
-        self,
-        max_connections: int = 4,
-        show_progress_bar: bool = True,
-        timeout: int = 14400,
-    ) -> None:
+    def __init__(self, max_connections: int = 4, show_progress_bar: bool = True, timeout: int = 14400) -> None:
         """
         Initialize the Downloader class with the required settings for downloading a file.
 
@@ -36,9 +31,7 @@ class Downloader:
 
         self.output_file_path: Optional[str] = None
 
-    def download(
-        self, url: str, output_file_path: Union[str, PathLike] = Path.cwd()
-    ) -> None:
+    def download(self, url: str, output_file_path: Union[str, PathLike] = Path.cwd()) -> None:
         """
         Download the file from the provided URL to the output file path.
 
@@ -59,11 +52,7 @@ class Downloader:
             )
             downloader.start(blocking=True)
         except Exception as e:
-            raise DownloadError(
-                f'Error occurred while downloading URL: "{url}" to "{output_file_path.as_posix()}"'
-            ) from e
+            raise DownloadError(f'Error occurred while downloading URL: "{url}" to "{output_file_path.as_posix()}"') from e
 
         output_destination = downloader.get_dest()
-        self.output_file_path = (
-            Path(output_destination).as_posix() if output_file_path else None
-        )
+        self.output_file_path = Path(output_destination).as_posix() if output_file_path else None

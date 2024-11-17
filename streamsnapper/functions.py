@@ -4,13 +4,7 @@ from unicodedata import normalize
 from typing import Any, Dict, Optional, Callable
 
 
-def get_value(
-    data: Dict[Any, Any],
-    key: Any,
-    fallback_key: Optional[Any] = None,
-    convert_to: Optional[Callable] = None,
-    default_to: Optional[Any] = None,
-) -> Any:
+def get_value(data: Dict[Any, Any], key: Any, fallback_key: Optional[Any] = None, convert_to: Optional[Callable] = None, default_to: Optional[Any] = None) -> Any:
     """
     Get a value from a dictionary, with optional fallback key, conversion and default value.
 
@@ -54,17 +48,11 @@ def format_string(query: str, max_length: int = 128) -> Optional[str]:
     if not query:
         return None
 
-    normalized_string = (
-        normalize('NFKD', query).encode('ASCII', 'ignore').decode('utf-8')
-    )
-    sanitized_string = re_sub(
-        r'\s+', ' ', re_sub(r'[^a-zA-Z0-9\-_()[\]{}!$#+;,. ]', '', normalized_string)
-    ).strip()
+    normalized_string = normalize('NFKD', query).encode('ASCII', 'ignore').decode('utf-8')
+    sanitized_string = re_sub(r'\s+', ' ', re_sub(r'[^a-zA-Z0-9\-_()[\]{}!$#+;,. ]', '', normalized_string)).strip()
 
     if len(sanitized_string) > max_length:
         cutoff = sanitized_string[:max_length].rfind(' ')
-        sanitized_string = (
-            sanitized_string[:cutoff] if cutoff != -1 else sanitized_string[:max_length]
-        )
+        sanitized_string = sanitized_string[:cutoff] if cutoff != -1 else sanitized_string[:max_length]
 
     return sanitized_string if sanitized_string else None

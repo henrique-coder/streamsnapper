@@ -36,9 +36,7 @@ class SoundCloud:
         :param enable_token_cache: Enable or disable token caching for the SoundcloudAPI to improve performance and reduce rate limits.
         """
 
-        self._temporary_file_path = Path(
-            gettempdir(), '.tmp-soundcloud-scraped-client-id.txt'
-        ).resolve()
+        self._temporary_file_path = Path(gettempdir(), '.tmp-soundcloud-scraped-client-id.txt').resolve()
 
         _client_id = self._get_client_id()
 
@@ -73,9 +71,7 @@ class SoundCloud:
             self._set_client_id(self._soundcloud_api.client_id)
             self._soundcloud_track = self._soundcloud_api.resolve(url)
         except Exception as e:
-            raise ScrapingError(
-                f'Error occurred while scraping SoundCloud track: "{url}"'
-            ) from e
+            raise ScrapingError(f'Error occurred while scraping SoundCloud track: "{url}"') from e
 
     def analyze_info(self) -> None:
         """Extract and format relevant information."""
@@ -84,37 +80,21 @@ class SoundCloud:
             'id': self._soundcloud_track.id,
             'userId': self._soundcloud_track.user_id,
             'username': self._soundcloud_track.user['username'],
-            'userAvatar': self._soundcloud_track.user['avatar_url'].replace(
-                '-large', '-original'
-            ),
+            'userAvatar': self._soundcloud_track.user['avatar_url'].replace('-large', '-original'),
             'title': self._soundcloud_track.title,
             'artist': self._soundcloud_track.artist,
             'duration': self._soundcloud_track.duration,
             'fullUrl': self._soundcloud_track.permalink_url,
-            'thumbnail': self._soundcloud_track.artwork_url.replace(
-                '-large', '-original'
-            ),
+            'thumbnail': self._soundcloud_track.artwork_url.replace('-large', '-original'),
             'commentCount': self._soundcloud_track.comment_count,
             'likeCount': self._soundcloud_track.likes_count,
             'downloadCount': self._soundcloud_track.download_count,
             'playbackCount': self._soundcloud_track.playback_count,
             'repostCount': self._soundcloud_track.reposts_count,
-            'uploadTimestamp': int(
-                datetime.fromisoformat(
-                    self._soundcloud_track.created_at.replace('Z', '+00:00')
-                ).timestamp()
-            ),
-            'lastModifiedTimestamp': int(
-                datetime.fromisoformat(
-                    self._soundcloud_track.last_modified.replace('Z', '+00:00')
-                ).timestamp()
-            ),
+            'uploadTimestamp': int(datetime.fromisoformat(self._soundcloud_track.created_at.replace('Z', '+00:00')).timestamp()),
+            'lastModifiedTimestamp': int(datetime.fromisoformat(self._soundcloud_track.last_modified.replace('Z', '+00:00')).timestamp()),
             'isCommentable': self._soundcloud_track.commentable,
-            'description': (
-                self._soundcloud_track.description
-                if self._soundcloud_track.description
-                else None
-            ),
+            'description': self._soundcloud_track.description if self._soundcloud_track.description else None,
             'genre': self._soundcloud_track.genre,
             'license': self._soundcloud_track.license,
         }
@@ -131,12 +111,8 @@ class SoundCloudExtractor:
     def __init__(self) -> None:
         """Initialize the Extractor class with some regular expressions for analyzing SoundCloud URLs."""
 
-        self._track_id_regex = re_compile(
-            r'(?:soundcloud\.com/|snd\.sc/)([^/]+)/(?!sets)([^/]+)'
-        )
-        self._playlist_id_regex = re_compile(
-            r'(?:soundcloud\.com/|snd\.sc/)([^/]+)/sets/([^/]+)'
-        )
+        self._track_id_regex = re_compile(r'(?:soundcloud\.com/|snd\.sc/)([^/]+)/(?!sets)([^/]+)')
+        self._playlist_id_regex = re_compile(r'(?:soundcloud\.com/|snd\.sc/)([^/]+)/sets/([^/]+)')
 
     def extract_track_slug(self, url: str) -> Optional[str]:
         """
@@ -160,8 +136,4 @@ class SoundCloudExtractor:
 
         found_match = self._playlist_id_regex.search(url)
 
-        return (
-            f'{found_match.group(1)}/sets/{found_match.group(2)}'
-            if found_match
-            else None
-        )
+        return f'{found_match.group(1)}/sets/{found_match.group(2)}' if found_match else None
