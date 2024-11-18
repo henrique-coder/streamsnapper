@@ -65,7 +65,7 @@ class SoundCloud:
         try:
             with redirect_stderr(StringIO()):
                 self._soundcloud_track = self._soundcloud_api.resolve(url)
-        except TypeError as e:
+        except TypeError:
             self._soundcloud_api.client_id = None
             self._soundcloud_api.get_credentials()
             self._set_client_id(self._soundcloud_api.client_id)
