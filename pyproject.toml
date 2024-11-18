@@ -42,11 +42,11 @@ soundcloud-lib = {version = "0.6.1", optional = true}
 yt-dlp = {version = "2024.11.18", optional = true}
 
 [tool.poetry.extras]
-youtube = ["yt-dlp", "requests", "scrapetube", "pysmartdl2"]
-soundcloud = ["soundcloud-lib"]
-merger = []
 downloader = ["pysmartdl2"]
-all = ["yt-dlp", "requests", "scrapetube", "soundcloud-lib", "pysmartdl2"]
+merger = []
+soundcloud = ["soundcloud-lib"]
+youtube = ["pysmartdl2", "requests", "scrapetube", "yt-dlp"]
+all = ["pysmartdl2", "requests", "scrapetube", "soundcloud-lib", "yt-dlp"]
 
 [tool.ruff]
 include = ["streamsnapper/*.py", "streamsnapper/platforms/*.py"]
