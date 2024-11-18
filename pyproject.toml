@@ -49,7 +49,7 @@ youtube = ["pysmartdl2", "requests", "scrapetube", "yt-dlp"]
 all = ["pysmartdl2", "requests", "scrapetube", "soundcloud-lib", "yt-dlp"]
 
 [tool.ruff]
-include = ["streamsnapper/*.py", "streamsnapper/platforms/*.py", ".debug/*.py"]
+include = ["streamsnapper/*.py", "streamsnapper/platforms/*.py"]
 exclude = [".venv", "__pycache__", ".ruff_cache"]
 target-version = "py313"
 line-length = 130
