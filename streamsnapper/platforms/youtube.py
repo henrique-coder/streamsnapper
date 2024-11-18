@@ -132,7 +132,11 @@ class YouTube:
         channel_name = get_value(data, 'channel', 'uploader')
         clean_channel_name = format_string(channel_name)
         chapters = [
-            {'title': chapter.get('title'), 'startTime': get_value(chapter, 'start_time', convert_to=float), 'endTime': get_value(chapter, 'end_time', convert_to=float)}
+            {
+                'title': chapter.get('title'),
+                'startTime': get_value(chapter, 'start_time', convert_to=float),
+                'endTime': get_value(chapter, 'end_time', convert_to=float),
+            }
             for chapter in get_value(data, 'chapters', convert_to=list, default_to=[])
         ]
 
@@ -173,18 +177,26 @@ class YouTube:
 
         if check_thumbnails:
             while general_info['thumbnails']:
-                if head(
-                    general_info['thumbnails'][0],
-                    headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36'},
-                    allow_redirects=False,
-                ).status_code == 200:
+                if (
+                    head(
+                        general_info['thumbnails'][0],
+                        headers={
+                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36'
+                        },
+                        allow_redirects=False,
+                    ).status_code
+                    == 200
+                ):
                     break
                 else:
                     general_info['thumbnails'].pop(0)
 
         self.general_info = dict(sorted(general_info.items()))
 
-    def analyze_video_streams(self, preferred_quality: Literal['144p', '240p', '360p', '480p', '720p', '1080p', '1440p', '2160p', '4320p', 'all'] = 'all') -> None:
+    def analyze_video_streams(
+        self,
+        preferred_quality: Literal['144p', '240p', '360p', '480p', '720p', '1080p', '1440p', '2160p', '4320p', 'all'] = 'all',
+    ) -> None:
         """
         Extract and format the best video streams.
 
@@ -194,70 +206,74 @@ class YouTube:
         data = self._raw_youtube_streams
 
         format_id_extension_map = {
-            702: 'mp4',   # AV1 HFR High - MP4 - 7680x4320
-            402: 'mp4',   # AV1 HFR - MP4 - 7680x4320
-            571: 'mp4',   # AV1 HFR - MP4 - 7680x4320
+            702: 'mp4',  # AV1 HFR High - MP4 - 7680x4320
+            402: 'mp4',  # AV1 HFR - MP4 - 7680x4320
+            571: 'mp4',  # AV1 HFR - MP4 - 7680x4320
             272: 'webm',  # VP9 HFR - WEBM - 7680x4320
-            701: 'mp4',   # AV1 HFR High - MP4 - 3840x2160
-            401: 'mp4',   # AV1 HFR - MP4 - 3840x2160
+            701: 'mp4',  # AV1 HFR High - MP4 - 3840x2160
+            401: 'mp4',  # AV1 HFR - MP4 - 3840x2160
             337: 'webm',  # VP9.2 HDR HFR - WEBM - 3840x2160
             315: 'webm',  # VP9 HFR - WEBM - 3840x2160
             313: 'webm',  # VP9 - WEBM - 3840x2160
-            305: 'mp4',   # H.264 HFR - MP4 - 3840x2160
-            266: 'mp4',   # H.264 - MP4 - 3840x2160
-            700: 'mp4',   # AV1 HFR High - MP4 - 2560x1440
-            400: 'mp4',   # AV1 HFR - MP4 - 2560x1440
+            305: 'mp4',  # H.264 HFR - MP4 - 3840x2160
+            266: 'mp4',  # H.264 - MP4 - 3840x2160
+            700: 'mp4',  # AV1 HFR High - MP4 - 2560x1440
+            400: 'mp4',  # AV1 HFR - MP4 - 2560x1440
             336: 'webm',  # VP9.2 HDR HFR - WEBM - 2560x1440
             308: 'webm',  # VP9 HFR - WEBM - 2560x1440
             271: 'webm',  # VP9 - WEBM - 2560x1440
-            304: 'mp4',   # H.264 HFR - MP4 - 2560x1440
-            264: 'mp4',   # H.264 - MP4 - 2560x1440
-            699: 'mp4',   # AV1 HFR High - MP4 - 1920x1080
-            399: 'mp4',   # AV1 HFR - MP4 - 1920x1080
+            304: 'mp4',  # H.264 HFR - MP4 - 2560x1440
+            264: 'mp4',  # H.264 - MP4 - 2560x1440
+            699: 'mp4',  # AV1 HFR High - MP4 - 1920x1080
+            399: 'mp4',  # AV1 HFR - MP4 - 1920x1080
             335: 'webm',  # VP9.2 HDR HFR - WEBM - 1920x1080
             303: 'webm',  # VP9 HFR - WEBM - 1920x1080
             248: 'webm',  # VP9 - WEBM - 1920x1080
             # 616: 'webm',  # VP9 - WEBM - 1920x1080 - YouTube Premium Format (M3U8)
-            299: 'mp4',   # H.264 HFR - MP4 - 1920x1080
-            137: 'mp4',   # H.264 - MP4 - 1920x1080
-            216: 'mp4',   # H.264 - MP4 - 1920x1080
+            299: 'mp4',  # H.264 HFR - MP4 - 1920x1080
+            137: 'mp4',  # H.264 - MP4 - 1920x1080
+            216: 'mp4',  # H.264 - MP4 - 1920x1080
             170: 'webm',  # VP8 - WEBM - 1920x1080
-            698: 'mp4',   # AV1 HFR High - MP4 - 1280x720
-            398: 'mp4',   # AV1 HFR - MP4 - 1280x720
+            698: 'mp4',  # AV1 HFR High - MP4 - 1280x720
+            398: 'mp4',  # AV1 HFR - MP4 - 1280x720
             334: 'webm',  # VP9.2 HDR HFR - WEBM - 1280x720
             302: 'webm',  # VP9 HFR - WEBM - 1280x720
             612: 'webm',  # VP9 HFR - WEBM - 1280x720
             247: 'webm',  # VP9 - WEBM - 1280x720
-            298: 'mp4',   # H.264 HFR - MP4 - 1280x720
-            136: 'mp4',   # H.264 - MP4 - 1280x720
+            298: 'mp4',  # H.264 HFR - MP4 - 1280x720
+            136: 'mp4',  # H.264 - MP4 - 1280x720
             169: 'webm',  # VP8 - WEBM - 1280x720
-            697: 'mp4',   # AV1 HFR High - MP4 - 854x480
-            397: 'mp4',   # AV1 - MP4 - 854x480
+            697: 'mp4',  # AV1 HFR High - MP4 - 854x480
+            397: 'mp4',  # AV1 - MP4 - 854x480
             333: 'webm',  # VP9.2 HDR HFR - WEBM - 854x480
             244: 'webm',  # VP9 - WEBM - 854x480
-            135: 'mp4',   # H.264 - MP4 - 854x480
+            135: 'mp4',  # H.264 - MP4 - 854x480
             168: 'webm',  # VP8 - WEBM - 854x480
-            696: 'mp4',   # AV1 HFR High - MP4 - 640x360
-            396: 'mp4',   # AV1 - MP4 - 640x360
+            696: 'mp4',  # AV1 HFR High - MP4 - 640x360
+            396: 'mp4',  # AV1 - MP4 - 640x360
             332: 'webm',  # VP9.2 HDR HFR - WEBM - 640x360
             243: 'webm',  # VP9 - WEBM - 640x360
-            134: 'mp4',   # H.264 - MP4 - 640x360
+            134: 'mp4',  # H.264 - MP4 - 640x360
             167: 'webm',  # VP8 - WEBM - 640x360
-            695: 'mp4',   # AV1 HFR High - MP4 - 426x240
-            395: 'mp4',   # AV1 - MP4 - 426x240
+            695: 'mp4',  # AV1 HFR High - MP4 - 426x240
+            395: 'mp4',  # AV1 - MP4 - 426x240
             331: 'webm',  # VP9.2 HDR HFR - WEBM - 426x240
             242: 'webm',  # VP9 - WEBM - 426x240
-            133: 'mp4',   # H.264 - MP4 - 426x240
-            694: 'mp4',   # AV1 HFR High - MP4 - 256x144
-            394: 'mp4',   # AV1 - MP4 - 256x144
+            133: 'mp4',  # H.264 - MP4 - 426x240
+            694: 'mp4',  # AV1 HFR High - MP4 - 256x144
+            394: 'mp4',  # AV1 - MP4 - 256x144
             330: 'webm',  # VP9.2 HDR HFR - WEBM - 256x144
             278: 'webm',  # VP9 - WEBM - 256x144
             598: 'webm',  # VP9 - WEBM - 256x144
-            160: 'mp4',   # H.264 - MP4 - 256x144
-            597: 'mp4',   # H.264 - MP4 - 256x144
+            160: 'mp4',  # H.264 - MP4 - 256x144
+            597: 'mp4',  # H.264 - MP4 - 256x144
         }
 
-        video_streams = [stream for stream in data if stream.get('vcodec') != 'none' and int(get_value(stream, 'format_id').split('-')[0]) in format_id_extension_map]
+        video_streams = [
+            stream
+            for stream in data
+            if stream.get('vcodec') != 'none' and int(get_value(stream, 'format_id').split('-')[0]) in format_id_extension_map
+        ]
 
         def calculate_score(stream: Dict[Any, Any]) -> float:
             width = stream.get('width', 0)
@@ -293,7 +309,9 @@ class YouTube:
                 'youtubeFormatId': youtube_format_id,
             }
 
-        self.best_video_streams = [extract_stream_info(stream) for stream in sorted_video_streams] if sorted_video_streams else None
+        self.best_video_streams = (
+            [extract_stream_info(stream) for stream in sorted_video_streams] if sorted_video_streams else None
+        )
         self.best_video_stream = self.best_video_streams[0] if self.best_video_streams else None
         self.best_video_download_url = self.best_video_stream['url'] if self.best_video_stream else None
 
@@ -306,9 +324,13 @@ class YouTube:
 
             if preferred_quality not in self.available_video_qualities:
                 best_available_quality = max([stream['quality'] for stream in self.best_video_streams])
-                self.best_video_streams = [stream for stream in self.best_video_streams if stream['quality'] == best_available_quality]
+                self.best_video_streams = [
+                    stream for stream in self.best_video_streams if stream['quality'] == best_available_quality
+                ]
             else:
-                self.best_video_streams = [stream for stream in self.best_video_streams if stream['quality'] == int(preferred_quality.replace('p', ''))]
+                self.best_video_streams = [
+                    stream for stream in self.best_video_streams if stream['quality'] == int(preferred_quality.replace('p', ''))
+                ]
 
             self.best_video_stream = self.best_video_streams[0] if self.best_video_streams else {}
             self.best_video_download_url = self.best_video_stream['url'] if self.best_video_stream else None
@@ -324,24 +346,28 @@ class YouTube:
 
         format_id_extension_map = {
             338: 'webm',  # Opus - (VBR) ~480 KBPS - Quadraphonic (4)
-            380: 'mp4',   # AC3 - 384 KBPS - Surround (5.1)
-            328: 'mp4',   # EAC3 - 384 KBPS - Surround (5.1)
-            325: 'mp4',   # DTSE (DTS Express) - 384 KBPS - Surround (5.1)
-            258: 'mp4',   # AAC (LC) - 384 KBPS - Surround (5.1)
-            327: 'mp4',   # AAC (LC) - 256 KBPS - Surround (5.1)
-            141: 'mp4',   # AAC (LC) - 256 KBPS - Stereo (2)
+            380: 'mp4',  # AC3 - 384 KBPS - Surround (5.1)
+            328: 'mp4',  # EAC3 - 384 KBPS - Surround (5.1)
+            325: 'mp4',  # DTSE (DTS Express) - 384 KBPS - Surround (5.1)
+            258: 'mp4',  # AAC (LC) - 384 KBPS - Surround (5.1)
+            327: 'mp4',  # AAC (LC) - 256 KBPS - Surround (5.1)
+            141: 'mp4',  # AAC (LC) - 256 KBPS - Stereo (2)
             774: 'webm',  # Opus - (VBR) ~256 KBPS - Stereo (2)
-            256: 'mp4',   # AAC (HE v1) - 192 KBPS - Surround (5.1)
+            256: 'mp4',  # AAC (HE v1) - 192 KBPS - Surround (5.1)
             251: 'webm',  # Opus - (VBR) <=160 KBPS - Stereo (2)
-            140: 'mp4',   # AAC (LC) - 128 KBPS - Stereo (2)
+            140: 'mp4',  # AAC (LC) - 128 KBPS - Stereo (2)
             250: 'webm',  # Opus - (VBR) ~70 KBPS - Stereo (2)
             249: 'webm',  # Opus - (VBR) ~50 KBPS - Stereo (2)
-            139: 'mp4',   # AAC (HE v1) - 48 KBPS - Stereo (2)
+            139: 'mp4',  # AAC (HE v1) - 48 KBPS - Stereo (2)
             600: 'webm',  # Opus - (VBR) ~35 KBPS - Stereo (2)
-            599: 'mp4',   # AAC (HE v1) - 30 KBPS - Stereo (2)
+            599: 'mp4',  # AAC (HE v1) - 30 KBPS - Stereo (2)
         }
 
-        audio_streams = [stream for stream in data if stream.get('acodec') != 'none' and int(get_value(stream, 'format_id').split('-')[0]) in format_id_extension_map]
+        audio_streams = [
+            stream
+            for stream in data
+            if stream.get('acodec') != 'none' and int(get_value(stream, 'format_id').split('-')[0]) in format_id_extension_map
+        ]
 
         def calculate_score(stream: Dict[Any, Any]) -> float:
             bitrate = stream.get('abr', 0)
@@ -373,7 +399,9 @@ class YouTube:
                 'youtubeFormatId': youtube_format_id,
             }
 
-        self.best_audio_streams = [extract_stream_info(stream) for stream in sorted_audio_streams] if sorted_audio_streams else None
+        self.best_audio_streams = (
+            [extract_stream_info(stream) for stream in sorted_audio_streams] if sorted_audio_streams else None
+        )
         self.best_audio_stream = self.best_audio_streams[0] if self.best_audio_streams else None
         self.best_audio_download_url = self.best_audio_stream['url'] if self.best_audio_stream else None
 
@@ -386,13 +414,17 @@ class YouTube:
 
             if preferred_language == 'local':
                 if self.system_language in self.available_audio_languages:
-                    self.best_audio_streams = [stream for stream in self.best_audio_streams if stream['language'] == self.system_language]
+                    self.best_audio_streams = [
+                        stream for stream in self.best_audio_streams if stream['language'] == self.system_language
+                    ]
                 else:
                     preferred_language = 'source'
             if preferred_language == 'source':
                 self.best_audio_streams = [stream for stream in self.best_audio_streams if stream['isOriginalAudio']]
             elif preferred_language != 'local':
-                self.best_audio_streams = [stream for stream in self.best_audio_streams if stream['language'] == preferred_language]
+                self.best_audio_streams = [
+                    stream for stream in self.best_audio_streams if stream['language'] == preferred_language
+                ]
 
             self.best_audio_stream = self.best_audio_streams[0] if self.best_audio_streams else {}
             self.best_audio_download_url = self.best_audio_stream['url'] if self.best_audio_stream else None
@@ -406,12 +438,21 @@ class YouTube:
 
         for stream in data:
             subtitle_streams[stream] = [
-                {'extension': subtitle.get('ext'), 'url': subtitle.get('url'), 'language': subtitle.get('name')} for subtitle in data[stream]
+                {'extension': subtitle.get('ext'), 'url': subtitle.get('url'), 'language': subtitle.get('name')}
+                for subtitle in data[stream]
             ]
 
         self.subtitle_streams = dict(sorted(subtitle_streams.items()))
 
-    def download(self, video_stream: Optional[Dict[str, Any]] = None, audio_stream: Optional[Dict[str, Any]] = None, output_file_path: Union[str, PathLike] = Path.cwd(), max_connections: int = 16, show_progress_bar: bool = True, logging: bool = False) -> Path:
+    def download(
+        self,
+        video_stream: Optional[Dict[str, Any]] = None,
+        audio_stream: Optional[Dict[str, Any]] = None,
+        output_file_path: Union[str, PathLike] = Path.cwd(),
+        max_connections: int = 16,
+        show_progress_bar: bool = True,
+        logging: bool = False,
+    ) -> Path:
         """
         Downloads specified video and/or audio streams. If both streams are provided, they will be downloaded and merged. If only one stream is provided, it will be downloaded without merging. If no streams are specified, the function will analyze and select default streams with optimized settings.
 
@@ -442,12 +483,14 @@ class YouTube:
 
         if video_stream and audio_stream:
             if output_file_path.is_dir():
-                output_file_path = Path(output_file_path, f'{self.general_info["cleanTitle"]} [{self.general_info["id"]}].{video_stream["extension"]}')
+                output_file_path = Path(
+                    output_file_path, f'{self.general_info["cleanTitle"]} [{self.general_info["id"]}].{video_stream["extension"]}'
+                )
 
             tmp_path = Path(gettempdir(), '.tmp-streamsnapper-merger')
             tmp_path.mkdir(exist_ok=True)
 
-            output_video_file_path = Path(tmp_path, f'.tmp-video-{self.general_info["id"]}.{video_stream["extension"]}',)
+            output_video_file_path = Path(tmp_path, f'.tmp-video-{self.general_info["id"]}.{video_stream["extension"]}')
             video_downloader = Downloader(max_connections=max_connections, show_progress_bar=show_progress_bar)
             video_downloader.download(video_stream['url'], output_video_file_path)
 
@@ -468,7 +511,9 @@ class YouTube:
             return output_file_path.resolve()
         elif video_stream:
             if output_file_path.is_dir():
-                output_file_path = Path(output_file_path, f'{self.general_info["cleanTitle"]} [{self.general_info["id"]}].{video_stream["extension"]}')
+                output_file_path = Path(
+                    output_file_path, f'{self.general_info["cleanTitle"]} [{self.general_info["id"]}].{video_stream["extension"]}'
+                )
 
             downloader = Downloader(max_connections=16, show_progress_bar=show_progress_bar)
             downloader.download(video_stream['url'], output_file_path)
@@ -476,7 +521,9 @@ class YouTube:
             return Path(downloader.output_file_path)
         elif audio_stream:
             if output_file_path.is_dir():
-                output_file_path = Path(output_file_path, f'{self.general_info["cleanTitle"]} [{self.general_info["id"]}].{audio_stream["extension"]}')
+                output_file_path = Path(
+                    output_file_path, f'{self.general_info["cleanTitle"]} [{self.general_info["id"]}].{audio_stream["extension"]}'
+                )
 
             downloader = Downloader(max_connections=8, show_progress_bar=show_progress_bar)
             downloader.download(audio_stream['url'], output_file_path)
@@ -491,8 +538,12 @@ class YouTubeExtractor:
         """Initialize the Extractor class with some regular expressions for analyzing YouTube URLs."""
 
         self._platform_regex = re_compile(r'(?:https?://)?(?:www\.)?(music\.)?youtube\.com|youtu\.be|youtube\.com/shorts')
-        self._video_id_regex = re_compile(r'(?:youtu\.be/|youtube\.com/(?:watch\?v=|embed/|v/|shorts/|music/|.*[?&]v=))([a-zA-Z0-9_-]{11})')
-        self._playlist_id_regex = re_compile(r'(?:youtube\.com/(?:playlist\?list=|watch\?.*?&list=|music/playlist\?list=|music\.youtube\.com/watch\?.*?&list=))([a-zA-Z0-9_-]+)')
+        self._video_id_regex = re_compile(
+            r'(?:youtu\.be/|youtube\.com/(?:watch\?v=|embed/|v/|shorts/|music/|.*[?&]v=))([a-zA-Z0-9_-]{11})'
+        )
+        self._playlist_id_regex = re_compile(
+            r'(?:youtube\.com/(?:playlist\?list=|watch\?.*?&list=|music/playlist\?list=|music\.youtube\.com/watch\?.*?&list=))([a-zA-Z0-9_-]+)'
+        )
 
     def identify_platform(self, url: str) -> Optional[Literal['youtube', 'youtubeMusic']]:
         """
@@ -540,7 +591,13 @@ class YouTubeExtractor:
 
         return None
 
-    def search(self, query: str, sort_by: Literal['relevance', 'upload_date', 'view_count', 'rating'] = 'relevance', results_type: Literal['video', 'channel', 'playlist', 'movie'] = 'video', limit: int = 1) -> Optional[List[str]]:
+    def search(
+        self,
+        query: str,
+        sort_by: Literal['relevance', 'upload_date', 'view_count', 'rating'] = 'relevance',
+        results_type: Literal['video', 'channel', 'playlist', 'movie'] = 'video',
+        limit: int = 1,
+    ) -> Optional[List[str]]:
         """
         Search for YouTube videos, channels, playlists or movies (provided by scrapetube library).
 
@@ -552,12 +609,16 @@ class YouTubeExtractor:
         """
 
         try:
-            extracted_data = list(scrape_youtube_search(query=query, sleep=1, sort_by=sort_by, results_type=results_type, limit=limit))
+            extracted_data = list(
+                scrape_youtube_search(query=query, sleep=1, sort_by=sort_by, results_type=results_type, limit=limit)
+            )
         except Exception:
             return None
 
         if extracted_data:
-            found_urls = [f'https://www.youtube.com/watch?v={item.get("videoId")}' for item in extracted_data if item.get('videoId')]
+            found_urls = [
+                f'https://www.youtube.com/watch?v={item.get("videoId")}' for item in extracted_data if item.get('videoId')
+            ]
 
             return found_urls if found_urls else None
 
@@ -581,11 +642,21 @@ class YouTubeExtractor:
             return None
 
         if extracted_data:
-            found_urls = [f'https://www.youtube.com/watch?v={item.get("videoId")}' for item in extracted_data if item.get('videoId')]
+            found_urls = [
+                f'https://www.youtube.com/watch?v={item.get("videoId")}' for item in extracted_data if item.get('videoId')
+            ]
 
             return found_urls if found_urls else None
 
-    def get_channel_videos(self, channel_id: Optional[str] = None, channel_url: Optional[str] = None, channel_username: Optional[str] = None, sort_by: Literal['newest', 'oldest', 'popular'] = 'newest', content_type: Literal['videos', 'shorts', 'streams'] = 'videos', limit: Optional[int] = None) -> Optional[List[str]]:
+    def get_channel_videos(
+        self,
+        channel_id: Optional[str] = None,
+        channel_url: Optional[str] = None,
+        channel_username: Optional[str] = None,
+        sort_by: Literal['newest', 'oldest', 'popular'] = 'newest',
+        content_type: Literal['videos', 'shorts', 'streams'] = 'videos',
+        limit: Optional[int] = None,
+    ) -> Optional[List[str]]:
         """
         Get the video URLs from a YouTube channel (provided by scrapetube library).
 
@@ -602,11 +673,23 @@ class YouTubeExtractor:
             raise ValueError('Provide only one of the following arguments: "channel_id", "channel_url" or "channel_username"')
 
         try:
-            extracted_data = list(scrape_youtube_channel(channel_id=channel_id, channel_url=channel_url, channel_username=channel_username.replace('@', ''), sleep=1, sort_by=sort_by, content_type=content_type, limit=limit))
+            extracted_data = list(
+                scrape_youtube_channel(
+                    channel_id=channel_id,
+                    channel_url=channel_url,
+                    channel_username=channel_username.replace('@', ''),
+                    sleep=1,
+                    sort_by=sort_by,
+                    content_type=content_type,
+                    limit=limit,
+                )
+            )
         except Exception:
             return None
 
         if extracted_data:
-            found_urls = [f'https://www.youtube.com/watch?v={item.get("videoId")}' for item in extracted_data if item.get('videoId')]
+            found_urls = [
+                f'https://www.youtube.com/watch?v={item.get("videoId")}' for item in extracted_data if item.get('videoId')
+            ]
 
             return found_urls if found_urls else None

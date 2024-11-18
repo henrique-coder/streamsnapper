@@ -92,7 +92,9 @@ class SoundCloud:
             'playbackCount': self._soundcloud_track.playback_count,
             'repostCount': self._soundcloud_track.reposts_count,
             'uploadTimestamp': int(datetime.fromisoformat(self._soundcloud_track.created_at.replace('Z', '+00:00')).timestamp()),
-            'lastModifiedTimestamp': int(datetime.fromisoformat(self._soundcloud_track.last_modified.replace('Z', '+00:00')).timestamp()),
+            'lastModifiedTimestamp': int(
+                datetime.fromisoformat(self._soundcloud_track.last_modified.replace('Z', '+00:00')).timestamp()
+            ),
             'isCommentable': self._soundcloud_track.commentable,
             'description': self._soundcloud_track.description if self._soundcloud_track.description else None,
             'genre': self._soundcloud_track.genre,

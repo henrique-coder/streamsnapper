@@ -48,9 +48,7 @@ class Merger:
             if found_ffmpeg_binary:
                 ffmpeg_file_path = Path(found_ffmpeg_binary)
             else:
-                raise FileNotFoundError(
-                    'The ffmpeg executable was not found. Please provide the path to the ffmpeg executable.'
-                )
+                raise FileNotFoundError('The ffmpeg executable was not found. Please provide the path to the ffmpeg executable.')
         else:
             ffmpeg_file_path = Path(ffmpeg_file_path).resolve()
 
@@ -60,12 +58,19 @@ class Merger:
         try:
             run(
                 [
-                    ffmpeg_file_path.as_posix(), '-y', '-hide_banner',
-                    '-i', video_file_path.as_posix(),
-                    '-i', audio_file_path.as_posix(),
-                    '-c', 'copy',
-                    '-map', '0:v',
-                    '-map', '1:a',
+                    ffmpeg_file_path.as_posix(),
+                    '-y',
+                    '-hide_banner',
+                    '-i',
+                    video_file_path.as_posix(),
+                    '-i',
+                    audio_file_path.as_posix(),
+                    '-c',
+                    'copy',
+                    '-map',
+                    '0:v',
+                    '-map',
+                    '1:a',
                     output_file_path.as_posix(),
                 ],
                 check=True,

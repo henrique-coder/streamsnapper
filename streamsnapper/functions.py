@@ -4,7 +4,13 @@ from unicodedata import normalize
 from typing import Any, Dict, Optional, Callable
 
 
-def get_value(data: Dict[Any, Any], key: Any, fallback_key: Optional[Any] = None, convert_to: Optional[Callable] = None, default_to: Optional[Any] = None) -> Any:
+def get_value(
+    data: Dict[Any, Any],
+    key: Any,
+    fallback_key: Optional[Any] = None,
+    convert_to: Optional[Callable] = None,
+    default_to: Optional[Any] = None,
+) -> Any:
     """
     Get a value from a dictionary, with optional fallback key, conversion and default value.
 
