@@ -1,13 +1,13 @@
 # Built-in imports
 from re import sub as re_sub
 from unicodedata import normalize
-from typing import Any, Dict, Optional, Callable
+from typing import Any, Dict, List, Optional, Callable
 
 
 def get_value(
     data: Dict[Any, Any],
     key: Any,
-    fallback_key: Optional[Any] = None,
+    fallback_keys: Optional[List[Any]] = None,
     convert_to: Optional[Callable] = None,
     default_to: Optional[Any] = None,
 ) -> Any:
@@ -16,7 +16,7 @@ def get_value(
 
     :param data: The dictionary to search for the key.
     :param key: The key to search for in the dictionary.
-    :param fallback_key: The fallback key to search for in the dictionary if the main key is not found.
+    :param fallback_keys: A list of fallback keys to try if the main key is not found.
     :param convert_to: The type to convert the value to. If the conversion fails, return the default value. If None, return the value as is.
     :param default_to: The default value to return if the key is not found.
     :return: The value from the dictionary. If the key is not found, return the default value.
@@ -25,13 +25,20 @@ def get_value(
     try:
         value = data[key]
     except KeyError:
-        if fallback_key is not None:
-            try:
-                value = data[fallback_key]
-            except KeyError:
-                return default_to
-        else:
-            return default_to
+        value = None
+
+    if value is None and fallback_keys:
+        for fallback_key in fallback_keys:
+            if fallback_key is not None:
+                try:
+                    value = data[fallback_key]
+                    if value is not None:
+                        break
+                except KeyError:
+                    continue
+
+    if value is None:
+        return default_to
 
     if convert_to is not None:
         try:
