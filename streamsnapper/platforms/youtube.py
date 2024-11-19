@@ -5,6 +5,7 @@ from re import compile as re_compile
 from locale import getlocale
 from shutil import rmtree
 from tempfile import gettempdir
+from urllib.parse import unquote
 from typing import Any, Dict, List, Literal, Optional, Union, Type
 
 # Third-party imports
@@ -14,7 +15,7 @@ except (ImportError, ModuleNotFoundError):
     pass
 
 try:
-    from requests import head
+    from requests import get, head
 except (ImportError, ModuleNotFoundError):
     pass
 
@@ -117,23 +118,25 @@ class YouTube:
         except KeyError as e:
             raise InvalidDataError(f'Invalid yt-dlp data. Missing required key: "{e.args[0]}"') from e
 
-    def analyze_info(self, check_thumbnails: bool = True) -> None:
+    def analyze_info(self, check_thumbnails: bool = True, retrieve_dislike_count: bool = True) -> None:
         """
         Extract and format relevant information.
 
         :check_thumbnails: Whether thumbnails should be checked and removed if they are not available.
+        :retrieve_dislike_count: Whether to retrieve the dislike count for the video. If False, the dislike count will be set to None.
         """
 
         data = self._raw_youtube_data
 
-        id_ = data.get('id')
-        title = get_value(data, 'fulltitle', 'title')
+        id_ = get_value(data, 'id')
+        title = get_value(data, 'title', ['fulltitle'])
         clean_title = format_string(title)
-        channel_name = get_value(data, 'channel', 'uploader')
+        description = get_value(data, 'description')
+        channel_name = get_value(data, 'channel', ['uploader'])
         clean_channel_name = format_string(channel_name)
         chapters = [
             {
-                'title': chapter.get('title'),
+                'title': get_value(chapter, 'title'),
                 'startTime': get_value(chapter, 'start_time', convert_to=float),
                 'endTime': get_value(chapter, 'end_time', convert_to=float),
             }
@@ -147,9 +150,9 @@ class YouTube:
             'id': id_,
             'title': title,
             'cleanTitle': clean_title,
-            'description': data.get('description'),
-            'channelId': data.get('channel_id'),
-            'channelUrl': get_value(data, 'uploader_url', 'channel_url'),
+            'description': description if description else None,
+            'channelId': get_value(data, 'channel_id'),
+            'channelUrl': get_value(data, 'channel_url', ['uploader_url']),
             'channelName': channel_name,
             'cleanChannelName': clean_channel_name,
             'isVerifiedChannel': get_value(data, 'channel_is_verified', default_to=False),
@@ -159,11 +162,22 @@ class YouTube:
             'categories': get_value(data, 'categories', default_to=[]),
             'tags': get_value(data, 'tags', default_to=[]),
             'isStreaming': get_value(data, 'is_live'),
-            'uploadTimestamp': get_value(data, 'timestamp', 'release_timestamp'),
+            'uploadTimestamp': get_value(data, 'timestamp', ['release_timestamp']),
             'availability': get_value(data, 'availability'),
             'chapters': chapters,
-            'commentCount': get_value(data, 'comment_count'),
+            'commentCount': get_value(data, 'comment_count', default_to=0),
             'likeCount': get_value(data, 'like_count'),
+            'dislikeCount': get_value(
+                get(
+                    'https://returnyoutubedislikeapi.com/votes',
+                    headers={
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36'
+                    },
+                    params={'videoId': id_},
+                ).json(),
+                'dislikes',
+                convert_to=int,
+            ),
             'followCount': get_value(data, 'channel_follower_count'),
             'language': get_value(data, 'language'),
             'thumbnails': [
@@ -272,42 +286,45 @@ class YouTube:
         video_streams = [
             stream
             for stream in data
-            if stream.get('vcodec') != 'none' and int(get_value(stream, 'format_id').split('-')[0]) in format_id_extension_map
+            if get_value(stream, 'vcodec') != 'none' and get_value(stream, 'format_id', convert_to=int) in format_id_extension_map
         ]
 
         def calculate_score(stream: Dict[Any, Any]) -> float:
-            width = stream.get('width', 0)
-            height = stream.get('height', 0)
-            framerate = stream.get('fps', 0)
-            bitrate = stream.get('tbr', 0)
+            width = get_value(stream, 'width', 0, convert_to=int)
+            height = get_value(stream, 'height', 0, convert_to=int)
+            framerate = get_value(stream, 'fps', 0, convert_to=float)
+            bitrate = get_value(stream, 'tbr', 0, convert_to=float)
 
             return float(width * height * framerate * bitrate)
 
         sorted_video_streams = sorted(video_streams, key=calculate_score, reverse=True)
 
         def extract_stream_info(stream: Dict[Any, Any]) -> Dict[str, Any]:
-            codec = stream.get('vcodec', '')
-            codec_parts = codec.split('.', 1)
-            quality_note = stream.get('format_note')
-            youtube_format_id = int(get_value(stream, 'format_id').split('-')[0])
+            codec = get_value(stream, 'vcodec')
+            codec_parts = codec.split('.', 1) if codec else []
+            quality_note = get_value(stream, 'format_note')
+            youtube_format_id = get_value(stream, 'format_id', convert_to=int)
 
-            return {
-                'url': stream.get('url'),
+            data = {
+                'url': unquote(get_value(stream, 'url')),
                 'codec': codec_parts[0] if codec_parts else None,
                 'codecVariant': codec_parts[1] if len(codec_parts) > 1 else None,
                 'rawCodec': codec,
-                'extension': format_id_extension_map.get(youtube_format_id, 'mp3'),
-                'width': stream.get('width'),
-                'height': stream.get('height'),
-                'framerate': stream.get('fps'),
-                'bitrate': stream.get('tbr'),
-                'quality': stream.get('height'),
+                'extension': get_value(format_id_extension_map, youtube_format_id, default_to='mp4'),
+                'width': get_value(stream, 'width', convert_to=int),
+                'height': get_value(stream, 'height', convert_to=int),
+                'framerate': get_value(stream, 'fps', convert_to=float),
+                'bitrate': get_value(stream, 'tbr', convert_to=float),
                 'qualityNote': quality_note,
                 'isHDR': 'hdr' in quality_note.lower() if quality_note else False,
-                'size': stream.get('filesize'),
-                'language': stream.get('language'),
+                'size': get_value(stream, 'filesize', convert_to=int),
+                'language': get_value(stream, 'language'),
                 'youtubeFormatId': youtube_format_id,
             }
+
+            data['quality'] = data['height']
+
+            return dict(sorted(data.items()))
 
         self.best_video_streams = (
             [extract_stream_info(stream) for stream in sorted_video_streams] if sorted_video_streams else None
@@ -366,38 +383,44 @@ class YouTube:
         audio_streams = [
             stream
             for stream in data
-            if stream.get('acodec') != 'none' and int(get_value(stream, 'format_id').split('-')[0]) in format_id_extension_map
+            if get_value(stream, 'acodec') != 'none' and get_value(stream, 'format_id', convert_to=int) in format_id_extension_map
         ]
 
         def calculate_score(stream: Dict[Any, Any]) -> float:
-            bitrate = stream.get('abr', 0)
-            sample_rate = stream.get('asr', 0)
+            bitrate = get_value(stream, 'abr', 0, convert_to=float)
+            sample_rate = get_value(stream, 'asr', 0, convert_to=float)
 
-            return float((bitrate * 0.1) + (sample_rate / 1000))
+            bitrate_priority = 0.1  # Change this value to adjust the bitrate priority (lower = higher bitrate priority)
+
+            return float((bitrate * bitrate_priority) + (sample_rate / 1000))
 
         sorted_audio_streams = sorted(audio_streams, key=calculate_score, reverse=True)
 
         def extract_stream_info(stream: Dict[Any, Any]) -> Dict[str, Any]:
-            codec = stream.get('acodec', '')
-            codec_parts = codec.split('.', 1)
-            youtube_format_id = int(get_value(stream, 'format_id').split('-')[0])
-            youtube_format_note = stream.get('format_note', '')
+            codec = get_value(stream, 'acodec')
+            codec_parts = codec.split('.', 1) if codec else []
+            youtube_format_id = get_value(stream, 'format_id', convert_to=int)
+            youtube_format_note = get_value(stream, 'format_note')
 
-            return {
-                'url': stream.get('url'),
+            data = {
+                'url': unquote(get_value(stream, 'url')),
                 'codec': codec_parts[0] if codec_parts else None,
                 'codecVariant': codec_parts[1] if len(codec_parts) > 1 else None,
-                'rawCodec': codec if codec else None,
-                'extension': format_id_extension_map.get(youtube_format_id, 'mp3'),
-                'bitrate': stream.get('abr'),
-                'qualityNote': youtube_format_note if youtube_format_note else None,
-                'isOriginalAudio': '(default)' in youtube_format_note or youtube_format_note.islower(),
-                'size': stream.get('filesize'),
-                'samplerate': stream.get('asr'),
-                'channels': stream.get('audio_channels'),
-                'language': stream.get('language'),
+                'rawCodec': codec,
+                'extension': get_value(format_id_extension_map, youtube_format_id, 'mp3'),
+                'bitrate': get_value(stream, 'abr', convert_to=float),
+                'qualityNote': youtube_format_note,
+                'isOriginalAudio': '(default)' in youtube_format_note or youtube_format_note.islower()
+                if youtube_format_note
+                else None,
+                'size': get_value(stream, 'filesize', convert_to=int),
+                'samplerate': get_value(stream, 'asr', convert_to=int),
+                'channels': get_value(stream, 'audio_channels', convert_to=int),
+                'language': get_value(stream, 'language'),
                 'youtubeFormatId': youtube_format_id,
             }
+
+            return dict(sorted(data.items()))
 
         self.best_audio_streams = (
             [extract_stream_info(stream) for stream in sorted_audio_streams] if sorted_audio_streams else None
@@ -438,7 +461,11 @@ class YouTube:
 
         for stream in data:
             subtitle_streams[stream] = [
-                {'extension': subtitle.get('ext'), 'url': subtitle.get('url'), 'language': subtitle.get('name')}
+                {
+                    'extension': get_value(subtitle, 'ext'),
+                    'url': get_value(subtitle, 'url'),
+                    'language': get_value(subtitle, 'name'),
+                }
                 for subtitle in data[stream]
             ]
 
@@ -487,7 +514,7 @@ class YouTube:
                     output_file_path, f'{self.general_info["cleanTitle"]} [{self.general_info["id"]}].{video_stream["extension"]}'
                 )
 
-            tmp_path = Path(gettempdir(), '.tmp-streamsnapper-merger')
+            tmp_path = Path(gettempdir(), '.tmp-streamsnapper-downloader')
             tmp_path.mkdir(exist_ok=True)
 
             output_video_file_path = Path(tmp_path, f'.tmp-video-{self.general_info["id"]}.{video_stream["extension"]}')
