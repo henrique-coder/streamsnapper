@@ -16,7 +16,7 @@ class Merger:
         """
         Initialize the Merger class with the required settings for merging audio and video streams.
 
-        :param logging: Enable or disable the ffmpeg logging.
+        :param logging: Enable or disable the FFmpeg logging.
         """
 
         self._logging = logging

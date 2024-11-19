@@ -35,7 +35,7 @@ class Downloader:
         """
         Download the file from the provided URL to the output file path.
 
-        :param url: The download URL to download the file from. *str*
+        :param url: The download URL to download the file from.
         :param output_file_path: The path to save the downloaded file to. If the path is a directory, the file name will be generated from the server response. If the path is a file, the file will be saved with the provided name. If not provided, the file will be saved to the current working directory.
         :raises DownloadError: If an error occurs while downloading the file.
         """
