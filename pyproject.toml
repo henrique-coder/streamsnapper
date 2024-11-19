@@ -35,18 +35,18 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = "^3.11"
+lxml = {version = "5.3.0", optional = true}
 pysmartdl2 = {version = "2.0.1", optional = true}
 requests = {version = "2.32.3", optional = true}
 scrapetube = {version = "2.5.1", optional = true}
-soundcloud-lib = {version = "0.6.1", optional = true}
 yt-dlp = {version = "2024.11.18", optional = true}
 
 [tool.poetry.extras]
 downloader = ["pysmartdl2"]
 merger = []
-soundcloud = ["soundcloud-lib"]
+soundcloud = ["lxml", "requests"]
 youtube = ["pysmartdl2", "requests", "scrapetube", "yt-dlp"]
-all = ["pysmartdl2", "requests", "scrapetube", "soundcloud-lib", "yt-dlp"]
+all = ["lxml", "pysmartdl2", "requests", "scrapetube", "yt-dlp"]
 
 [tool.ruff]
 include = ["streamsnapper/*.py", "streamsnapper/platforms/*.py"]
