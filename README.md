@@ -24,7 +24,7 @@ pip install -U streamsnapper[all]  # It has all features available at once
 #### `streamsnapper[downloader]`
 
 ```python
-from streamsnapper import Downloader, DownloadError
+from streamsnapper import Downloader, DownloadError, StreamBaseError
 
 
 # A class for downloading direct download URLs. Created to download YouTube videos and audio streams. However, it can be used to download any direct download URL.
@@ -51,7 +51,7 @@ downloader.output_file_path  # The path of the downloaded file (default: None) (
 #### `streamsnapper[merger]`
 
 ```python
-from streamsnapper import Merger, MergeError
+from streamsnapper import Merger, MergeError, StreamBaseError
 
 
 # A class for merging multiple audio and video streams into a single file.
@@ -75,7 +75,9 @@ merger.merge(
 #### `streamsnapper[youtube]`
 
 ```python
-from streamsnapper import YouTube, YouTubeExtractor
+from streamsnapper import (
+    YouTube, YouTubeExtractor, EmptyDataError, InvalidDataError, ScrapingError, DownloadError, MergeError, StreamBaseError
+)
 
 
 # ... (YouTube class documentation will be added soon)
