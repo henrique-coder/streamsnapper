@@ -26,6 +26,9 @@ pip install -U streamsnapper[all]  # It has all features available at once
 ```python
 from streamsnapper import Downloader, DownloadError, StreamBaseError
 
+# Optional imports
+from pathlib import Path
+
 
 # A class for downloading direct download URLs. Created to download YouTube videos and audio streams. However, it can be used to download any direct download URL.
 downloader = Downloader(
@@ -38,7 +41,7 @@ downloader = Downloader(
 # Download the file from the provided URL to the output file path.
 downloader.download(
     url='YOUR_DOWNLOAD_URL',  # The download URL to download the file from. (required)
-    output_file_path=Path.cwd()  # The path to save the downloaded file to. If the path is a directory, the file name will be generated from the server response. If the path is a file, the file will be saved with the provided name. If not provided, the file will be saved to the current working directory. (default: Path.cwd() (from pathlib))
+    output_file_path=Path.cwd()  # The path to save the downloaded file to. If the path is a directory, the file name will be generated from the server response. If the path is a file, the file will be saved with the provided name. If not provided, the file will be saved to the current working directory (from pathlib.Path.cwd()). (default: Path.cwd())
 )
 
 # Available attributes
