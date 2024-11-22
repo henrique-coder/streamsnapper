@@ -38,16 +38,16 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = "^3.8"
-pysmartdl2 = {version = "2.0.1", optional = true}
 requests = {version = "2.32.3", optional = true}
+rich = {version = "13.9.4", optional = true}
 scrapetube = {version = "2.5.1", optional = true}
 yt-dlp = {version = "2024.11.18", optional = true}
 
 [tool.poetry.extras]
-downloader = ["pysmartdl2"]
+downloader = ["requests", "rich"]
 merger = []
-youtube = ["pysmartdl2", "requests", "scrapetube", "yt-dlp"]
-all = ["pysmartdl2", "requests", "scrapetube", "yt-dlp"]
+youtube = ["requests", "rich", "scrapetube", "yt-dlp"]
+all = ["requests", "rich", "scrapetube", "yt-dlp"]
 
 [tool.ruff]
 include = ["streamsnapper/*.py", "streamsnapper/platforms/*.py"]
