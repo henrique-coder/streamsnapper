@@ -77,22 +77,24 @@ class Downloader:
 
         return unique_filename
 
-    def _get_filename_from_url(self, url: str, headers: Dict[Any, Any]) -> str:
-        if 'Content-Disposition' in headers:
-            content_disposition = headers['Content-Disposition']
+    def _get_filename_from_url(self, headers: Dict[Any, Any]) -> str:
+        content_disposition = headers.get('Content-Disposition', '')
 
-            if 'filename=' in content_disposition:
-                return content_disposition.split('filename=')[-1].strip().strip('"')
+        if 'filename=' in content_disposition:
+            filename = content_disposition.split('filename=')[-1].strip().strip('"')
 
-        url_filename = url.split('/')[-1]
-
-        if '.' in url_filename:
-            return url_filename
+            if filename:
+                return filename
 
         mimetype = headers.get('Content-Type', '')
-        extension = guess_mimetype_extension(mimetype.split(';')[0]) if mimetype else ''
 
-        return f'file{extension}' if extension else 'file'
+        if mimetype:
+            extension = guess_mimetype_extension(mimetype.split(';')[0])
+
+            if extension:
+                return f'{mimetype.split('/')[0]}{extension}'
+
+        return 'file.unknown'
 
     def _calculate_threads(self, file_size: int) -> int:
         if isinstance(self.max_connections, int):
@@ -148,9 +150,7 @@ class Downloader:
             raise ValueError('Could not determine the file size or access the URL.')
 
         file_size = int(r.headers['Content-Length'])
-
-        filename = self._get_filename_from_url(url, r.headers)
-        mimetype = r.headers.get('Content-Type', 'unknown')
+        filename = self._get_filename_from_url(r.headers)
 
         if output_file_path.is_dir():
             output_file_path = Path(output_file_path, filename)
@@ -170,9 +170,11 @@ class Downloader:
             temp_file = unique_filename
             self._queue.put((url, start, end, temp_file))
 
+        mimetype = r.headers.get('Content-Type')
+
         context_manager = (
             Progress(
-                TextColumn(f'Downloading "{filename}" ({mimetype}) to "{output_file_path.as_posix()}"'),
+                TextColumn(f'Downloading a {mimetype.split("/")[0] if mimetype else "file"} ({mimetype or "unknown"})'),
                 BarColumn(),
                 DownloadColumn(),
                 TransferSpeedColumn(),
