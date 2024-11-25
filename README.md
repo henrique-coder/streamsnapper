@@ -30,12 +30,13 @@ from streamsnapper import Downloader, DownloadError, StreamBaseError
 from pathlib import Path
 
 
-# A class for downloading direct download URLs. Created to download YouTube videos and audio streams. However, it can be used to download any direct download URL.
+# A class for downloading direct download URLs.
 downloader = Downloader(
     # Initialize the Downloader class with the required settings for downloading a file.
-    max_connections=4,  # The maximum number of connections (threads) to use for downloading the file. (default: 4)
+    max_connections='auto',  # The maximum number of connections (threads) to use for downloading the file. (default: 'auto')
+    overwrite=True,  # Overwrite the file if it already exists. Otherwise, a "_1", "_2", etc. suffix will be added. (default: True)
     show_progress_bar=True,  # Show or hide the download progress bar. (default: True)
-    timeout=14400  # The timeout in seconds for the download process. (default: 14400)
+    timeout=14400  # The timeout in seconds for the download process. Or None for no timeout. (default: 14400)
 )
 
 # Download the file from the provided URL to the output file path.
