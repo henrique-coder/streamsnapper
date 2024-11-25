@@ -9,24 +9,13 @@ from urllib.parse import unquote
 from typing import Any, Dict, List, Literal, Optional, Union, Type
 
 # Third-party imports
-try:
-    from yt_dlp import YoutubeDL, utils as yt_dlp_utils
-except (ImportError, ModuleNotFoundError):
-    pass
-
-try:
-    from requests import get, head
-except (ImportError, ModuleNotFoundError):
-    pass
-
-try:
-    from scrapetube import (
-        get_search as scrape_youtube_search,
-        get_playlist as scrape_youtube_playlist,
-        get_channel as scrape_youtube_channel,
-    )
-except (ImportError, ModuleNotFoundError):
-    pass
+from yt_dlp import YoutubeDL, utils as yt_dlp_utils
+from requests import get, head
+from scrapetube import (
+    get_search as scrape_youtube_search,
+    get_playlist as scrape_youtube_playlist,
+    get_channel as scrape_youtube_channel,
+)
 
 # Local imports
 from ..downloader import Downloader
