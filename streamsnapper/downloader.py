@@ -44,6 +44,8 @@ class Downloader:
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
         }
 
+        self.output_file_path: str = None
+
     def _calculate_connections(self, file_size: int) -> int:
         if self._max_connections != 'auto':
             return self._max_connections
@@ -147,6 +149,8 @@ class Downloader:
                 while output_path.exists():
                     output_path = output_path.parent / f'{base}_{counter}{ext}'
                     counter += 1
+
+            self.output_file_path = output_path.as_posix()
 
             progress_columns = [
                 TextColumn(f'Downloading "{output_path.name}" ({mime_type})'),
