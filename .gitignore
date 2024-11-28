@@ -4,17 +4,14 @@
 __pycache__
 
 # Directories
-.ruff_cache
 .debug
-build
-dist
+.ruff_cache
 
 # Files
 requirements-dev.txt
 debugging.py
 download_media.py
 test_lib.py
-upload_to_pypi.py
 poetry.lock
 tempCodeRunnerFile.py
 
