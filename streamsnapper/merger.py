@@ -1,6 +1,6 @@
 # Built-in imports
-from pathlib import Path
 from os import PathLike
+from pathlib import Path
 from shutil import which
 from subprocess import run, DEVNULL, CalledProcessError
 from typing import Union, Literal

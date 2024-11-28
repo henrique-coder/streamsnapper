@@ -1,27 +1,23 @@
 # Built-in imports
-from pathlib import Path
-from os import PathLike
-from re import compile as re_compile
 from locale import getlocale
+from os import PathLike
+from pathlib import Path
+from re import compile as re_compile
 from shutil import rmtree
 from tempfile import gettempdir
-from urllib.parse import unquote
 from typing import Any, Dict, List, Literal, Optional, Union, Type
+from urllib.parse import unquote
 
 # Third-party imports
-from yt_dlp import YoutubeDL, utils as yt_dlp_utils
 from requests import get, head
-from scrapetube import (
-    get_search as scrape_youtube_search,
-    get_playlist as scrape_youtube_playlist,
-    get_channel as scrape_youtube_channel,
-)
+from scrapetube import get_search as scrape_youtube_search, get_playlist as scrape_youtube_playlist, get_channel as scrape_youtube_channel
+from yt_dlp import YoutubeDL, utils as yt_dlp_utils
 
 # Local imports
 from ..downloader import Downloader
-from ..merger import Merger
-from ..functions import get_value, format_string
 from ..exceptions import EmptyDataError, InvalidDataError, ScrapingError
+from ..functions import get_value, format_string
+from ..merger import Merger
 
 
 class YouTube:
