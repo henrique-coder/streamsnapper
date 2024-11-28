@@ -29,7 +29,7 @@ class YouTube:
 
     def __init__(self, logging: bool = False) -> None:
         """
-        Initialize the Snapper class with optional settings for yt-dlp.
+        Initialize the YouTube class (provided by yt-dlp library).
 
         :param logging: Enable or disable yt-dlp logging.
         """
@@ -86,7 +86,7 @@ class YouTube:
         if ytdlp_data:
             self._raw_youtube_data = ytdlp_data
         elif not url:
-            raise ValueError('No YouTube video URL provided')
+            raise ValueError('No YouTube video URL or yt-dlp data provided')
         else:
             video_id = self._extractor.extract_video_id(url)
 
@@ -101,11 +101,11 @@ class YouTube:
             except (yt_dlp_utils.DownloadError, yt_dlp_utils.ExtractorError, Exception) as e:
                 raise ScrapingError(f'Error occurred while scraping YouTube video: "{url}"') from e
 
-        try:
-            self._raw_youtube_streams = self._raw_youtube_data['formats']
-            self._raw_youtube_subtitles = self._raw_youtube_data['subtitles']
-        except KeyError as e:
-            raise InvalidDataError(f'Invalid yt-dlp data. Missing required key: "{e.args[0]}"') from e
+        self._raw_youtube_streams = get_value(self._raw_youtube_data, 'formats', convert_to=list)
+        self._raw_youtube_subtitles = get_value(self._raw_youtube_data, 'subtitles', convert_to=dict, default_to={})
+
+        if self._raw_youtube_streams is None:
+            raise InvalidDataError('Invalid yt-dlp data. Missing required keys: "formats"')
 
     def analyze_info(self, check_thumbnails: bool = True, retrieve_dislike_count: bool = True) -> None:
         """
@@ -166,7 +166,9 @@ class YouTube:
                 ).json(),
                 'dislikes',
                 convert_to=int,
-            ),
+            )
+            if retrieve_dislike_count
+            else None,
             'followCount': get_value(data, 'channel_follower_count'),
             'language': get_value(data, 'language'),
             'thumbnails': [
