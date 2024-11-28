@@ -31,7 +31,7 @@ class Downloader:
         :param max_connections: The maximum number of connections (threads) to use for downloading the file.
         :param overwrite: Overwrite the file if it already exists. Otherwise, a "_1", "_2", etc. suffix will be added.
         :param show_progress_bar: Show or hide the download progress bar.
-        :param timeout: The timeout in seconds for the download process. Or None for no timeout.
+        :param timeout: Timeout in seconds for the download process. Or None for no timeout.
         """
 
         self._max_connections: Union[int, Literal['auto']] = max_connections
