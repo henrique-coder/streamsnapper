@@ -10,7 +10,11 @@ from urllib.parse import unquote
 
 # Third-party imports
 from requests import get, head
-from scrapetube import get_search as scrape_youtube_search, get_playlist as scrape_youtube_playlist, get_channel as scrape_youtube_channel
+from scrapetube import (
+    get_search as scrape_youtube_search,
+    get_playlist as scrape_youtube_playlist,
+    get_channel as scrape_youtube_channel,
+)
 from yt_dlp import YoutubeDL, utils as yt_dlp_utils
 
 # Local imports
