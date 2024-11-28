@@ -1,7 +1,7 @@
 # Built-in imports
 from re import sub as re_sub
-from unicodedata import normalize
 from typing import Any, Dict, List, Optional, Callable
+from unicodedata import normalize
 
 
 def get_value(
@@ -32,6 +32,7 @@ def get_value(
             if fallback_key is not None:
                 try:
                     value = data[fallback_key]
+
                     if value is not None:
                         break
                 except KeyError:

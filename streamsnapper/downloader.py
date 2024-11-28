@@ -1,11 +1,11 @@
 # Built-in imports
+from concurrent.futures import ThreadPoolExecutor
+from math import ceil
+from mimetypes import guess_extension as guess_mimetype_extension
 from os import PathLike
 from pathlib import Path
-from mimetypes import guess_extension as guess_mimetype_extension
-from math import ceil
-from urllib.parse import urlparse, unquote
-from concurrent.futures import ThreadPoolExecutor
 from typing import Union, Literal, Optional, Dict, List, Tuple
+from urllib.parse import urlparse, unquote
 
 # Third-party imports
 from requests import get, head, exceptions as requests_exceptions
@@ -84,11 +84,10 @@ class Downloader:
                 filename = Path(path).name
 
                 if not filename:
-                    filename = 'downloaded_file'
-                    ext = guess_mimetype_extension(content_type)
+                    extension = guess_mimetype_extension(content_type)
 
-                    if ext:
-                        filename += ext
+                    if extension:
+                        filename = 'downloaded_file' + extension
 
             return content_length, content_type, filename
 
@@ -123,7 +122,7 @@ class Downloader:
 
             return chunk
         except requests_exceptions.RequestException as e:
-            raise Exception(f'Erro ao baixar chunk: {str(e)}')
+            raise DownloadError(f'An error occurred while downloading chunk: {str(e)}') from e
 
     def download(self, url: str, output_file_path: Union[str, PathLike] = Path.cwd()) -> None:
         """
@@ -140,14 +139,14 @@ class Downloader:
             output_path = Path(output_file_path)
 
             if output_path.is_dir():
-                output_path = output_path / suggested_filename
+                output_path = Path(output_path, suggested_filename)
 
             if not self._overwrite:
                 base, ext = output_path.stem, output_path.suffix
                 counter = 1
 
                 while output_path.exists():
-                    output_path = output_path.parent / f'{base}_{counter}{ext}'
+                    output_path = Path(output_path.parent, f'{base}_{counter}{ext}')
                     counter += 1
 
             self.output_file_path = output_path.as_posix()
