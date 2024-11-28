@@ -107,7 +107,7 @@ class YouTube:
         if self._raw_youtube_streams is None:
             raise InvalidDataError('Invalid yt-dlp data. Missing required keys: "formats"')
 
-    def analyze_info(self, check_thumbnails: bool = True, retrieve_dislike_count: bool = True) -> None:
+    def analyze_info(self, check_thumbnails: bool = False, retrieve_dislike_count: bool = False) -> None:
         """
         Extract and format relevant information.
 
