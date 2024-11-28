@@ -1,1 +1,1 @@
-# TODO: Add CLI feature
+# TODO: Add command line interface (CLI)
