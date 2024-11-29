@@ -23,7 +23,8 @@ class Downloader:
         max_connections: Union[int, Literal['auto']] = 'auto',
         overwrite: bool = True,
         show_progress_bar: bool = True,
-        timeout: Optional[int] = 1440,
+        headers: Optional[Dict[str, str]] = None,
+        timeout: Optional[int] = None,
     ) -> None:
         """
         Initialize the Downloader class with the required settings for downloading a file.
@@ -31,6 +32,7 @@ class Downloader:
         :param max_connections: The maximum number of connections (threads) to use for downloading the file.
         :param overwrite: Overwrite the file if it already exists. Otherwise, a "_1", "_2", etc. suffix will be added.
         :param show_progress_bar: Show or hide the download progress bar.
+        :param headers: Custom headers to include in the request. If None, default headers will be used.
         :param timeout: Timeout in seconds for the download process. Or None for no timeout.
         """
 
@@ -38,11 +40,19 @@ class Downloader:
         self._overwrite: bool = overwrite
         self._show_progress_bar: bool = show_progress_bar
         self._timeout: Optional[int] = timeout
-        self._headers: Dict[str, str] = {
+
+        imutable_headers = ['Accept-Encoding', 'Range']
+
+        self.headers: Dict[str, str] = {
             'Accept': '*/*',
             'Accept-Encoding': 'identity',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
         }
+
+        if headers:
+            for key, value in headers.items():
+                if key.title() not in imutable_headers:
+                    self.headers[key.title()] = value
 
         self.output_file_path: str = None
 
@@ -63,36 +73,29 @@ class Downloader:
         else:
             return 32
 
-    def _get_file_info(self, url: str) -> tuple[int, str, str]:
+    def _get_file_info(self, url: str) -> Tuple[int, str, str]:
         try:
-            response = head(url, headers=self._headers, timeout=self._timeout, allow_redirects=True)
-
-            if response.status_code == 405:
-                response = get(url, headers=self._headers, timeout=self._timeout, stream=True)
-
-            response.raise_for_status()
-
-            content_length = int(response.headers.get('content-length', 0))
-            content_type = response.headers.get('content-type', 'application/octet-stream').split(';')[0]
-
-            content_disp = response.headers.get('content-disposition')
-
-            if content_disp and 'filename=' in content_disp:
-                filename = content_disp.split('filename=')[-1].strip('"\'')
-            else:
-                path = unquote(urlparse(url).path)
-                filename = Path(path).name
-
-                if not filename:
-                    extension = guess_mimetype_extension(content_type)
-
-                    if extension:
-                        filename = 'downloaded_file' + extension
-
-            return content_length, content_type, filename
-
+            r = head(url, headers=self.headers, timeout=self._timeout, allow_redirects=True)
         except requests_exceptions.RequestException as e:
             raise DownloadError(f'An error occurred while getting file info: {str(e)}') from e
+
+        content_length = int(r.headers.get('content-length', 0))
+        content_type = r.headers.get('content-type', 'application/octet-stream').split(';')[0]
+        content_disposition = r.headers.get('content-disposition')
+
+        if content_disposition and 'filename=' in content_disposition:
+            filename = content_disposition.split('filename=')[-1].strip('"\'')
+        else:
+            path = unquote(urlparse(url).path)
+            filename = Path(path).name
+
+            if not filename:
+                extension = guess_mimetype_extension(content_type)
+
+                if extension:
+                    filename = 'downloaded_file' + extension
+
+        return content_length, content_type, filename
 
     def _get_chunk_ranges(self, total_size: int) -> List[Tuple[int, int]]:
         if total_size == 0:
@@ -109,7 +112,7 @@ class Downloader:
         return ranges
 
     def _download_chunk(self, url: str, start: int, end: int, progress: Progress, task_id: int) -> bytes:
-        headers = {**self._headers}
+        headers = {**self.headers}
 
         if end > 0:
             headers['Range'] = f'bytes={start}-{end}'
@@ -135,7 +138,6 @@ class Downloader:
 
         try:
             total_size, mime_type, suggested_filename = self._get_file_info(url)
-
             output_path = Path(output_file_path)
 
             if output_path.is_dir():
@@ -152,7 +154,7 @@ class Downloader:
             self.output_file_path = output_path.as_posix()
 
             progress_columns = [
-                TextColumn(f'Downloading "{output_path.name}" ({mime_type})'),
+                TextColumn(f'Downloading a {mime_type.split("/")[0] if mime_type else "unknown"} file ({mime_type})'),
                 BarColumn(),
                 DownloadColumn(),
                 TransferSpeedColumn(),
@@ -165,8 +167,8 @@ class Downloader:
                 if total_size == 0:
                     chunk = self._download_chunk(url, 0, 0, progress, task_id)
 
-                    with open(output_path, 'wb') as f:
-                        f.write(chunk)
+                    with Path(output_path).open('wb') as fo:
+                        fo.write(chunk)
                 else:
                     chunks = []
                     ranges = self._get_chunk_ranges(total_size)
@@ -178,8 +180,8 @@ class Downloader:
                         ]
                         chunks = [f.result() for f in futures]
 
-                    with open(output_path, 'wb') as f:
+                    with Path(output_path).open('wb') as fo:
                         for chunk in chunks:
-                            f.write(chunk)
+                            fo.write(chunk)
         except Exception as e:
             raise DownloadError(f'An error occurred while downloading file: {str(e)}') from e

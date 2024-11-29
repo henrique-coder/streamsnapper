@@ -468,7 +468,7 @@ class YouTube:
         audio_stream: Optional[Dict[str, Any]] = None,
         output_file_path: Union[str, PathLike] = Path.cwd(),
         show_progress_bar: bool = True,
-        timeout: Optional[int] = 1440,
+        timeout: Optional[int] = None,
         logging: bool = False,
     ) -> Path:
         """
