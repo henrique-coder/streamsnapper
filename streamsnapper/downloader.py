@@ -30,7 +30,7 @@ class Downloader:
         Initialize the Downloader class with the required settings for downloading a file.
 
         Args:
-            max_connections: The maximum number of connections (threads) to use for downloading the file. (default: 'auto')
+            max_connections: The maximum number of connections to use for downloading the file. (default: 'auto')
             overwrite: Overwrite the file if it already exists. Otherwise, a "_1", "_2", etc. suffix will be added. (default: True)
             show_progress_bar: Show or hide the download progress bar. (default: True)
             headers: Custom headers to include in the request. If None, default headers will be used. (default: None)
@@ -59,7 +59,7 @@ class Downloader:
 
     def _calculate_connections(self, file_size: int) -> int:
         """
-        Calculates the number of connections (threads) to use for downloading the file.
+        Calculates the number of connections to use for downloading the file.
 
         The following table is used to determine the number of connections based on the file size:
 
