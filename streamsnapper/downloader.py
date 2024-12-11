@@ -4,15 +4,15 @@ from math import ceil
 from mimetypes import guess_extension as guess_mimetype_extension
 from os import PathLike
 from pathlib import Path
-from typing import Union, Literal, Optional, Dict, List, Tuple
-from urllib.parse import urlparse, unquote
+from typing import Dict, List, Literal, Optional, Tuple, Union
+from urllib.parse import unquote, urlparse
 
 # Third-party imports
 from requests import get, head, exceptions as requests_exceptions
-from rich.progress import Progress, DownloadColumn, TransferSpeedColumn, TextColumn, TimeRemainingColumn, BarColumn
+from rich.progress import BarColumn, DownloadColumn, Progress, TextColumn, TimeRemainingColumn, TransferSpeedColumn
 
 # Local imports
-from .exceptions import DownloadError
+from .exceptions import DownloadError, RequestError
 
 
 class Downloader:
@@ -29,11 +29,12 @@ class Downloader:
         """
         Initialize the Downloader class with the required settings for downloading a file.
 
-        :param max_connections: The maximum number of connections (threads) to use for downloading the file.
-        :param overwrite: Overwrite the file if it already exists. Otherwise, a "_1", "_2", etc. suffix will be added.
-        :param show_progress_bar: Show or hide the download progress bar.
-        :param headers: Custom headers to include in the request. If None, default headers will be used.
-        :param timeout: Timeout in seconds for the download process. Or None for no timeout.
+        Args:
+            max_connections: The maximum number of connections (threads) to use for downloading the file. (default: 'auto')
+            overwrite: Overwrite the file if it already exists. Otherwise, a "_1", "_2", etc. suffix will be added. (default: True)
+            show_progress_bar: Show or hide the download progress bar. (default: True)
+            headers: Custom headers to include in the request. If None, default headers will be used. (default: None)
+            timeout: Timeout in seconds for the download process. Or None for no timeout. (default: None)
         """
 
         self._max_connections: Union[int, Literal['auto']] = max_connections
@@ -57,6 +58,27 @@ class Downloader:
         self.output_file_path: str = None
 
     def _calculate_connections(self, file_size: int) -> int:
+        """
+        Calculates the number of connections (threads) to use for downloading the file.
+
+        The following table is used to determine the number of connections based on the file size:
+
+        | File size       | Connections |
+        |-----------------|-------------|
+        | < 1 MB          | 1           |
+        | 1 MB - 5 MB     | 4           |
+        | 5 MB - 50 MB    | 8           |
+        | 50 MB - 200 MB  | 16          |
+        | 200 MB - 400 MB | 24          |
+        | > 400 MB        | 32          |
+
+        Args:
+            file_size: The size of the file to download. (required)
+
+        Returns:
+            The number of connections to use.
+        """
+
         if self._max_connections != 'auto':
             return self._max_connections
 
@@ -74,10 +96,27 @@ class Downloader:
             return 32
 
     def _get_file_info(self, url: str) -> Tuple[int, str, str]:
+        """
+        Retrieve file information from a given URL.
+
+        This method sends a HEAD request to the specified URL to obtain the file's content length, content type, and filename.
+        If the filename is not present in the 'Content-Disposition' header, it attempts to extract it from the URL path.
+        If the filename cannot be determined, a default name with the appropriate extension is generated based on the content type.
+
+        Args:
+            url: The URL of the file to retrieve information from. (required)
+
+        Returns:
+            A tuple containing the content length (int), content type (str), and filename (str).
+
+        Raises:
+            RequestError: If an error occurs while sending the HEAD request.
+        """
+
         try:
             r = head(url, headers=self.headers, timeout=self._timeout, allow_redirects=True)
         except requests_exceptions.RequestException as e:
-            raise DownloadError(f'An error occurred while getting file info: {str(e)}') from e
+            raise RequestError(f'An error occurred while getting file info: {str(e)}') from e
 
         content_length = int(r.headers.get('content-length', 0))
         content_type = r.headers.get('content-type', 'application/octet-stream').split(';')[0]
@@ -95,9 +134,23 @@ class Downloader:
                 if extension:
                     filename = 'downloaded_file' + extension
 
-        return content_length, content_type, filename
+        return (content_length, content_type, filename)
 
     def _get_chunk_ranges(self, total_size: int) -> List[Tuple[int, int]]:
+        """
+        Calculate and return the chunk ranges for downloading a file.
+
+        This method divides the total file size into smaller chunks based on the number of connections calculated.
+        Each chunk is represented as a tuple containing the start and end byte positions.
+
+        Args:
+            total_size: The total size of the file to be downloaded. (required)
+
+        Returns:
+            A list of tuples, where each tuple contains the start and end positions (in bytes) for each chunk.
+            If the total size is zero, returns a single chunk with both start and end as zero.
+        """
+
         if total_size == 0:
             return [(0, 0)]
 
@@ -112,6 +165,26 @@ class Downloader:
         return ranges
 
     def _download_chunk(self, url: str, start: int, end: int, progress: Progress, task_id: int) -> bytes:
+        """
+        Downloads a chunk of a file from the given URL.
+
+        This method sends a GET request with a 'Range' header to the specified URL to obtain the specified chunk of the file.
+        The chunk is then returned as bytes.
+
+        Args:
+            url: The URL to download the chunk from. (required)
+            start: The start byte of the chunk. (required)
+            end: The end byte of the chunk. (required)
+            progress: The Progress object to update with the chunk's size. (required)
+            task_id: The task ID to update in the Progress object. (required)
+
+        Returns:
+            The downloaded chunk as bytes.
+
+        Raises:
+            DownloadError: If an error occurs while downloading the chunk.
+        """
+
         headers = {**self.headers}
 
         if end > 0:
@@ -120,6 +193,7 @@ class Downloader:
         try:
             response = get(url, headers=headers, timeout=self._timeout)
             response.raise_for_status()
+
             chunk = response.content
             progress.update(task_id, advance=len(chunk))
 
@@ -127,28 +201,36 @@ class Downloader:
         except requests_exceptions.RequestException as e:
             raise DownloadError(f'An error occurred while downloading chunk: {str(e)}') from e
 
-    def download(self, url: str, output_file_path: Union[str, PathLike] = Path.cwd()) -> None:
+    def download(self, url: str, output_path: Union[str, PathLike] = Path.cwd()) -> None:
         """
-        Downloads specified file from the given URL.
+        Downloads a file from the provided URL to the output file path.
 
-        :param url: The URL to download from.
-        :param output_file_path: The file path to save the downloaded file to. If it's a directory, the file name will be generated from the server response. Defaults to the current working directory.
-        :raises DownloadError: If an error occurs while downloading the file.
+        If the output_path is a directory, the file name will be generated from the server response.
+        If the output_path is a file, the file will be saved with the provided name.
+        If not provided, the file will be saved to the current working directory.
+
+        Args:
+            url: The download URL to download the file from. (required)
+            output_path: The path to save the downloaded file to. If the path is a directory, the file name will be generated from the server response. If the path is a file, the file will be saved with the provided name. If not provided, the file will be saved to the current working directory. (default: Path.cwd())
+
+        Raises:
+            DownloadError: If an error occurs while downloading the file.
         """
 
         try:
             total_size, mime_type, suggested_filename = self._get_file_info(url)
-            output_path = Path(output_file_path)
+            output_path = Path(output_path)
 
             if output_path.is_dir():
                 output_path = Path(output_path, suggested_filename)
 
             if not self._overwrite:
-                base, ext = output_path.stem, output_path.suffix
+                base_name = output_path.stem
+                extension = output_path.suffix
                 counter = 1
 
                 while output_path.exists():
-                    output_path = Path(output_path.parent, f'{base}_{counter}{ext}')
+                    output_path = Path(output_path.parent, f'{base_name}_{counter}{extension}')
                     counter += 1
 
             self.output_file_path = output_path.as_posix()
