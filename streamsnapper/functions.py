@@ -1,6 +1,6 @@
 # Built-in imports
 from re import sub as re_sub
-from typing import Any, Dict, List, Optional, Callable
+from typing import Any, Callable, Dict, List, Optional
 from unicodedata import normalize
 
 

@@ -2,8 +2,8 @@
 from os import PathLike
 from pathlib import Path
 from shutil import which
-from subprocess import run, DEVNULL, CalledProcessError
-from typing import Union, Literal
+from subprocess import DEVNULL, CalledProcessError, run
+from typing import Literal, Union
 
 # Local imports
 from .exceptions import MergeError

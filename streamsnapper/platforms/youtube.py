@@ -5,7 +5,7 @@ from pathlib import Path
 from re import compile as re_compile
 from shutil import rmtree
 from tempfile import gettempdir
-from typing import Any, Dict, List, Literal, Optional, Union, Type
+from typing import Any, Dict, List, Literal, Optional, Type, Union
 from urllib.parse import unquote
 
 # Third-party imports
@@ -20,7 +20,7 @@ from yt_dlp import YoutubeDL, utils as yt_dlp_utils
 # Local imports
 from ..downloader import Downloader
 from ..exceptions import EmptyDataError, InvalidDataError, ScrapingError
-from ..functions import get_value, format_string
+from ..functions import format_string, get_value
 from ..merger import Merger
 
 
