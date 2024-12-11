@@ -28,6 +28,12 @@ class DownloadError(StreamBaseError):
     pass
 
 
+class RequestError(StreamBaseError):
+    """Exception raised when an error occurs while making a request."""
+
+    pass
+
+
 class MergeError(StreamBaseError):
     """Exception raised when an error occurs while merging files."""
 
