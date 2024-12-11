@@ -12,14 +12,23 @@ def get_value(
     default_to: Optional[Any] = None,
 ) -> Any:
     """
-    Get a value from a dictionary, with optional fallback key, conversion and default value.
+    Get a value from a dictionary or a list of fallback keys.
 
-    :param data: The dictionary to search for the key.
-    :param key: The key to search for in the dictionary.
-    :param fallback_keys: A list of fallback keys to try if the main key is not found.
-    :param convert_to: The type to convert the value to. If the conversion fails, return the default value. If None, return the value as is.
-    :param default_to: The default value to return if the key is not found.
-    :return: The value from the dictionary. If the key is not found, return the default value.
+    If the provided key does not exist in the dictionary, the function will return the default value if provided, or None otherwise.
+
+    If a list of fallback keys is provided, the function will try to get the value from the dictionary with the fallback keys. If the value is not found in the dictionary with any of the fallback keys, the function will return the default value if provided, or None otherwise.
+
+    If the value is not None and a conversion function is provided, the function will try to convert the value using the provided conversion function. If the conversion fails with a ValueError or TypeError, the function will return the default value if provided, or None otherwise.
+
+    Args:
+        data: The dictionary to get the value from. (required)
+        key: The key to get the value from. (required)
+        fallback_keys: A list of fallback keys to try if the key does not exist in the dictionary. (default: None)
+        convert_to: A conversion function to convert the value. (default: None)
+        default_to: A default value to return if the value is not found in the dictionary or if the conversion fails. (default: None)
+
+    Returns:
+        The value from the dictionary or the default value if the value is not found in the dictionary or if the conversion fails.
     """
 
     try:
@@ -50,13 +59,16 @@ def get_value(
     return value
 
 
-def format_string(query: str, max_length: int = 128) -> Optional[str]:
+def format_string(query: str, max_length: Optional[int] = None) -> Optional[str]:
     """
-    Format a string to be used as a filename or directory name. Remove special characters, limit length and normalize the string.
+    Sanitizes a given string by removing all non-ASCII characters and non-alphanumeric characters, and trims it to a given maximum length.
 
-    :param query: The string to be formatted.
-    :param max_length: The maximum length of the formatted string. If the string is longer, it will be truncated.
-    :return: The formatted string. If the input string is empty, return None.
+    Args:
+        query: The string to sanitize. (required)
+        max_length: The maximum length to trim the sanitized string to. (default: None)
+
+    Returns:
+        The sanitized string, or None if the sanitized string is empty.
     """
 
     if not query:
@@ -65,7 +77,7 @@ def format_string(query: str, max_length: int = 128) -> Optional[str]:
     normalized_string = normalize('NFKD', query).encode('ASCII', 'ignore').decode('utf-8')
     sanitized_string = re_sub(r'\s+', ' ', re_sub(r'[^a-zA-Z0-9\-_()[\]{}!$#+;,. ]', '', normalized_string)).strip()
 
-    if len(sanitized_string) > max_length:
+    if max_length is not None and len(sanitized_string) > max_length:
         cutoff = sanitized_string[:max_length].rfind(' ')
         sanitized_string = sanitized_string[:cutoff] if cutoff != -1 else sanitized_string[:max_length]
 
