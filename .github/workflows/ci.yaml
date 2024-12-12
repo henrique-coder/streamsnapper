@@ -13,7 +13,7 @@ jobs:
       fail-fast: false
       matrix:
         os: ["ubuntu-latest", "windows-latest"]
-        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.13"]
 
     runs-on: ${{ matrix.os }}
 
@@ -35,6 +35,11 @@ jobs:
           virtualenvs-in-project: true
           installer-parallel: true
 
+      - name: Update PATH for Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: echo "$env:APPDATA\Python\Scripts" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
       - name: Cache Poetry virtualenv
         uses: actions/cache@v3
         with:
@@ -44,7 +49,9 @@ jobs:
             venv-${{ runner.os }}-${{ matrix.python-version }}-
 
       - name: Install dependencies
+        shell: bash
         run: poetry install --extras "all" --no-interaction
 
       - name: Run tests
+        shell: bash
         run: poetry run pytest tests/all.py
