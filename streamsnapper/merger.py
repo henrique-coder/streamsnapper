@@ -39,7 +39,7 @@ class Merger:
             ffmpeg_path: The path to the FFmpeg executable. If 'local', the FFmpeg executable will be searched in the PATH environment variable. (default: 'local')
 
         Raises:
-            FileNotFoundError: If the FFmpeg executable was not found.
+            FFmpegNotFoundError: If the FFmpeg executable was not found.
             MergeError: If an error occurs while merging the files.
         """
 
