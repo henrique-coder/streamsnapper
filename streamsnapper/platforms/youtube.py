@@ -656,7 +656,7 @@ class YouTubeExtractor:
         found_match = self._platform_regex.search(url)
 
         if found_match:
-            return 'youtube_music' if found_match.group(1) else 'youtube'
+            return 'youtubeMusic' if found_match.group(1) else 'youtube'
 
     def extract_video_id(self, url: str) -> Optional[str]:
         """
