@@ -179,7 +179,7 @@ files = [
 name = "markdown-it-py"
 version = "3.0.0"
 description = "Python port of markdown-it. Markdown parsing, done right!"
-optional = false
+optional = true
 python-versions = ">=3.8"
 files = [
     {file = "markdown-it-py-3.0.0.tar.gz", hash = "sha256:e3f60a94fa066dc52ec76661e37c851cb232d92f9886b15cb560aaada2df8feb"},
@@ -203,7 +203,7 @@ testing = ["coverage", "pytest", "pytest-cov", "pytest-regressions"]
 name = "mdurl"
 version = "0.1.2"
 description = "Markdown URL utilities"
-optional = false
+optional = true
 python-versions = ">=3.7"
 files = [
     {file = "mdurl-0.1.2-py3-none-any.whl", hash = "sha256:84008a41e51615a49fc9966191ff91509e3c40b939176e643fd50a5c2196b8f8"},
@@ -324,7 +324,7 @@ testing = ["pytest", "pytest-benchmark"]
 name = "pygments"
 version = "2.18.0"
 description = "Pygments is a syntax highlighting package written in Python."
-optional = false
+optional = true
 python-versions = ">=3.8"
 files = [
     {file = "pygments-2.18.0-py3-none-any.whl", hash = "sha256:b8e6aca0523f3ab76fee51799c488e38782ac06eafcf95e7ba832985c8e7b13a"},
@@ -381,7 +381,7 @@ use-chardet-on-py3 = ["chardet (>=3.0.2,<6)"]
 name = "rich"
 version = "13.9.4"
 description = "Render rich text, tables, progress bars, syntax highlighting, markdown and more to the terminal"
-optional = false
+optional = true
 python-versions = ">=3.8.0"
 files = [
     {file = "rich-13.9.4-py3-none-any.whl", hash = "sha256:6049d5e6ec054bf2779ab3358186963bac2ea89175919d699e378b99738c2a90"},
@@ -455,7 +455,7 @@ files = [
 name = "typing-extensions"
 version = "4.12.2"
 description = "Backported and Experimental Type Hints for Python 3.8+"
-optional = false
+optional = true
 python-versions = ">=3.8"
 files = [
     {file = "typing_extensions-4.12.2-py3-none-any.whl", hash = "sha256:04e5ca0351e0f3f85c6853954072df659d0d13fac324d0072316b67d7794700d"},
@@ -509,4 +509,4 @@ youtube = ["requests", "rich", "scrapetube", "yt-dlp"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "626b338d8fdd7e69b2fbb787f45caa382d91c4335e8aca207fc980886bedb4e3"
+content-hash = "b52eddc173c984c6e52df0e7f259278e1e5153aff40755b7913b2b71d7ea0b59"
