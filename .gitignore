@@ -11,7 +11,6 @@ __pycache__
 requirements-dev.txt
 debugging.py
 download_media.py
-test_lib.py
 tempCodeRunnerFile.py
 
 # Extensions
