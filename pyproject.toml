@@ -35,6 +35,10 @@ rich = { version = "13.9.4", optional = true }
 scrapetube = { version = "2.5.1", optional = true }
 yt-dlp = { version = "2024.12.6", optional = true }
 
+[tool.poetry.dev-dependencies]
+pytest = "*"
+rich = "*"
+
 [tool.poetry.extras]
 downloader = ["requests", "rich"]
 merger = []
