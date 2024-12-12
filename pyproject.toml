@@ -12,14 +12,7 @@ readme = "README.md"
 homepage = "https://github.com/henrique-coder/streamsnapper"
 documentation = "https://github.com/henrique-coder/streamsnapper"
 repository = "https://github.com/henrique-coder/streamsnapper"
-keywords = [
-    "stream",
-    "snapper",
-    "scraper",
-    "downloader",
-    "merger",
-    "youtube"
-]
+keywords = ["stream", "snapper", "scraper", "downloader", "merger", "youtube"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
@@ -32,15 +25,15 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: Implementation :: CPython",
-    "Programming Language :: Python :: Implementation :: PyPy"
+    "Programming Language :: Python :: Implementation :: PyPy",
 ]
 
 [tool.poetry.dependencies]
 python = "^3.9"
-requests = {version = "2.32.3", optional = true}
-rich = {version = "13.9.4", optional = true}
-scrapetube = {version = "2.5.1", optional = true}
-yt-dlp = {version = "2024.11.18", optional = true}
+requests = { version = "2.32.3", optional = true }
+rich = { version = "13.9.4", optional = true }
+scrapetube = { version = "2.5.1", optional = true }
+yt-dlp = { version = "2024.12.6", optional = true }
 
 [tool.poetry.extras]
 downloader = ["requests", "rich"]
