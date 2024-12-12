@@ -26,10 +26,10 @@ jobs:
       - name: Install Poetry
         run: |
           python -m pip install --upgrade pip
-          pip install poetry
+          pip install --upgrade poetry
 
-      - name: Install dependencies with Poetry
-        run: poetry install
+      - name: Install dependencies with Poetry and extras
+        run: poetry install --extras "all"
 
       - name: Run tests
         run: poetry run pytest tests/all.py
