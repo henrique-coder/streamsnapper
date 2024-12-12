@@ -38,7 +38,6 @@ yt-dlp = { version = "2024.12.6", optional = true }
 [tool.poetry.dev-dependencies]
 orjson = "*"
 pytest = "*"
-rich = "*"
 
 [tool.poetry.extras]
 downloader = ["requests", "rich"]
