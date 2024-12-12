@@ -1,4 +1,5 @@
 # Built-in imports
+from json import JSONDecodeError
 from locale import getlocale
 from os import PathLike
 from pathlib import Path
@@ -15,7 +16,8 @@ from scrapetube import (
     get_playlist as scrape_youtube_playlist,
     get_channel as scrape_youtube_channel,
 )
-from yt_dlp import YoutubeDL, utils as yt_dlp_utils
+from yt_dlp import YoutubeDL
+from yt_dlp import utils as yt_dlp_utils
 
 # Local imports
 from ..downloader import Downloader
@@ -29,12 +31,11 @@ class YouTube:
 
     def __init__(self, logging: bool = False) -> None:
         """
-        Initialize the YouTube class (provided by yt-dlp library).
+        Initialize the YouTube class with the required settings for extracting and formatting data from YouTube videos (raw data provided by yt-dlp library).
 
-        :param logging: Enable or disable yt-dlp logging.
+        Args:
+            logging: Enable or disable logging for the YouTube class. Defaults to False. (default: False)
         """
-
-        self._extractor: Type[YouTubeExtractor] = YouTubeExtractor()
 
         logging = not logging
 
@@ -47,6 +48,7 @@ class YouTube:
             'no_warnings': logging,
             'ignoreerrors': logging,
         }
+        self._extractor: Type[YouTubeExtractor] = YouTubeExtractor()
         self._raw_youtube_data: Dict[Any, Any] = {}
         self._raw_youtube_streams: List[Dict[Any, Any]] = []
         self._raw_youtube_subtitles: Dict[str, List[Dict[str, str]]] = {}
@@ -73,14 +75,22 @@ class YouTube:
         self.available_video_qualities: List[str] = []
         self.available_audio_languages: List[str] = []
 
-    def extract(self, url: Optional[str] = None, ytdlp_data: Optional[Dict[str, Any]] = None) -> None:
+    def extract(self, url: Optional[str] = None, ytdlp_data: Optional[Dict[Any, Any]] = None) -> None:
         """
-        Extract general video information, video streams, audio streams and subtitles.
+        Extract the YouTube video data from a URL or provided previously extracted yt-dlp data.
 
-        :param url: The YouTube video URL to extract data from.
-        :param ytdlp_data: The raw yt-dlp data to extract and format. If provided, the URL will be ignored (useful for debugging and testing).
-        :raises ScrapingError: If an error occurs while scraping the YouTube video.
-        :raises InvalidDataError: If the yt-dlp data is invalid or missing required keys.
+        - If a URL is provided, it will be used to scrape the YouTube video data.
+        - If yt-dlp data is provided, it will be used directly.
+        - If both URL and yt-dlp data are provided, the yt-dlp data will be used.
+
+        Args:
+            url: The YouTube video URL to extract data from. (default: None)
+            ytdlp_data: The previously extracted yt-dlp data. (default: None)
+
+        Raises:
+            ValueError: If no URL or yt-dlp data is provided.
+            InvalidDataError: If the provided yt-dlp data is invalid.
+            ScrapingError: If an error occurs while scraping the YouTube video.
         """
 
         if ytdlp_data:
@@ -109,16 +119,20 @@ class YouTube:
 
     def analyze_info(self, check_thumbnails: bool = False, retrieve_dislike_count: bool = False) -> None:
         """
-        Extract and format relevant information.
+        Analyze the general information of the YouTube video.
 
-        :check_thumbnails: Whether thumbnails should be checked and removed if they are not available.
-        :retrieve_dislike_count: Whether to retrieve the dislike count for the video. If False, the dislike count will be set to None.
+        Args:
+            check_thumbnails: Check if all video thumbnails are available. (default: False)
+            retrieve_dislike_count: Retrieve the dislike count from the returnyoutubedislike.com API. (default: False)
+
+        Raises:
+            InvalidDataError: If the provided yt-dlp data is invalid.
         """
 
         data = self._raw_youtube_data
 
         id_ = get_value(data, 'id')
-        title = get_value(data, 'title', ['fulltitle'])
+        title = get_value(data, 'fulltitle', ['title'])
         clean_title = format_string(title)
         description = get_value(data, 'description')
         channel_name = get_value(data, 'channel', ['uploader'])
@@ -131,6 +145,23 @@ class YouTube:
             }
             for chapter in get_value(data, 'chapters', convert_to=list, default_to=[])
         ]
+
+        dislike_count = None
+
+        if retrieve_dislike_count:
+            r = get(
+                'https://returnyoutubedislikeapi.com/votes',
+                params={'videoId': id_},
+                headers={
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
+                },
+            )
+
+            if r.status_code == 200:
+                try:
+                    dislike_count = get_value(r.json(), 'dislikes', convert_to=int)
+                except JSONDecodeError:
+                    pass
 
         general_info = {
             'fullUrl': f'https://www.youtube.com/watch?v={id_}',
@@ -156,19 +187,7 @@ class YouTube:
             'chapters': chapters,
             'commentCount': get_value(data, 'comment_count', default_to=0),
             'likeCount': get_value(data, 'like_count'),
-            'dislikeCount': get_value(
-                get(
-                    'https://returnyoutubedislikeapi.com/votes',
-                    headers={
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36'
-                    },
-                    params={'videoId': id_},
-                ).json(),
-                'dislikes',
-                convert_to=int,
-            )
-            if retrieve_dislike_count
-            else None,
+            'dislikeCount': dislike_count,
             'followCount': get_value(data, 'channel_follower_count'),
             'language': get_value(data, 'language'),
             'thumbnails': [
@@ -203,9 +222,10 @@ class YouTube:
         preferred_quality: Literal['144p', '240p', '360p', '480p', '720p', '1080p', '1440p', '2160p', '4320p', 'all'] = 'all',
     ) -> None:
         """
-        Extract and format the best video streams.
+        Analyze the video streams of the YouTube video and select the best stream based on the preferred quality.
 
-        :param preferred_quality: The preferred quality of the video stream. If a specific quality is provided, the stream will be selected according to the chosen quality, however if the quality is not available, the best quality will be selected. If "all", all streams will be considered and sorted by quality.
+        Args:
+            preferred_quality: The preferred quality of the video stream. If a specific quality is provided, the stream will be selected according to the chosen quality, however if the quality is not available, the best quality will be selected. If 'all', all streams will be considered and sorted by quality. (default: 'all')
         """
 
         data = self._raw_youtube_streams
@@ -281,6 +301,19 @@ class YouTube:
         ]
 
         def calculate_score(stream: Dict[Any, Any]) -> float:
+            """
+            Calculate a score for a given video stream.
+
+            - The score is a product of the stream's width, height, framerate, and bitrate.
+            - The score is used to sort the streams in order of quality.
+
+            Args:
+                stream: The video stream to calculate the score for. (required)
+
+            Returns:
+                The calculated score for the stream.
+            """
+
             width = get_value(stream, 'width', 0, convert_to=int)
             height = get_value(stream, 'height', 0, convert_to=int)
             framerate = get_value(stream, 'fps', 0, convert_to=float)
@@ -290,7 +323,17 @@ class YouTube:
 
         sorted_video_streams = sorted(video_streams, key=calculate_score, reverse=True)
 
-        def extract_stream_info(stream: Dict[Any, Any]) -> Dict[str, Any]:
+        def extract_stream_info(stream: Dict[Any, Any]) -> Dict[str, Optional[Union[str, int, float, bool]]]:
+            """
+            Extract the information of a given video stream.
+
+            Args:
+                stream: The video stream to extract the information from. (required)
+
+            Returns:
+                A dictionary containing the extracted information of the stream.
+            """
+
             codec = get_value(stream, 'vcodec')
             codec_parts = codec.split('.', 1) if codec else []
             quality_note = get_value(stream, 'format_note')
@@ -345,9 +388,10 @@ class YouTube:
 
     def analyze_audio_streams(self, preferred_language: Union[str, Literal['source', 'local', 'all']] = 'local') -> None:
         """
-        Extract and format the best audio streams.
+        Analyze the audio streams of the YouTube video and select the best stream based on the preferred quality.
 
-        :param preferred_language: The preferred language code of the audio stream. If "source", only the source audios will be considered. If "auto", the language will be automatically selected according to the current operating system language (if not found or video is not available in that language, the fallback will be "source"). If "all", all audio streams will be considered, regardless of language.
+        Args:
+            preferred_language: The preferred language for the audio stream. If 'source', use the original audio language. If 'local', use the system language. If 'all', return all available audio streams. (default: 'local')
         """
 
         data = self._raw_youtube_streams
@@ -378,16 +422,39 @@ class YouTube:
         ]
 
         def calculate_score(stream: Dict[Any, Any]) -> float:
+            """
+            Calculate a score for a given audio stream.
+
+            - The score is a product of the stream's bitrate and sample rate.
+            - The score is used to sort the streams in order of quality.
+
+            Args:
+                stream: The audio stream to calculate the score for. (required)
+
+            Returns:
+                The calculated score for the stream.
+            """
+
             bitrate = get_value(stream, 'abr', 0, convert_to=float)
             sample_rate = get_value(stream, 'asr', 0, convert_to=float)
 
-            bitrate_priority = 0.1  # Change this value to adjust the bitrate priority (lower = higher bitrate priority)
+            bitrate_priority = 0.1  # The lower the value, the higher the priority of bitrate over samplerate
 
             return float((bitrate * bitrate_priority) + (sample_rate / 1000))
 
         sorted_audio_streams = sorted(audio_streams, key=calculate_score, reverse=True)
 
-        def extract_stream_info(stream: Dict[Any, Any]) -> Dict[str, Any]:
+        def extract_stream_info(stream: Dict[Any, Any]) -> Dict[str, Optional[Union[str, int, float, bool]]]:
+            """
+            Extract the information of a given audio stream.
+
+            Args:
+                stream: The audio stream to extract the information from. (required)
+
+            Returns:
+                A dictionary containing the extracted information of the stream.
+            """
+
             codec = get_value(stream, 'acodec')
             codec_parts = codec.split('.', 1) if codec else []
             youtube_format_id = get_value(stream, 'format_id', convert_to=int)
@@ -444,7 +511,7 @@ class YouTube:
             self.best_audio_download_url = self.best_audio_stream['url'] if self.best_audio_stream else None
 
     def analyze_subtitle_streams(self) -> None:
-        """Extract and format the subtitle streams."""
+        """Analyze the subtitle streams of the YouTube video."""
 
         data = self._raw_youtube_subtitles
 
@@ -454,7 +521,7 @@ class YouTube:
             subtitle_streams[stream] = [
                 {
                     'extension': get_value(subtitle, 'ext'),
-                    'url': get_value(subtitle, 'url'),
+                    'url': get_value(subtitle, 'url', convert_to=unquote),
                     'language': get_value(subtitle, 'name'),
                 }
                 for subtitle in data[stream]
@@ -466,22 +533,33 @@ class YouTube:
         self,
         video_stream: Optional[Dict[str, Any]] = None,
         audio_stream: Optional[Dict[str, Any]] = None,
-        output_file_path: Union[str, PathLike] = Path.cwd(),
+        output_path: Union[str, PathLike] = Path.cwd(),
+        ffmpeg_path: Union[str, PathLike, Literal['local']] = 'local',
         show_progress_bar: bool = True,
         timeout: Optional[int] = None,
         logging: bool = False,
     ) -> Path:
         """
-        Downloads specified video and/or audio streams. If both streams are provided, they will be downloaded and merged. If only one stream is provided, it will be downloaded without merging. If no streams are specified, the function will analyze and select default streams with optimized settings.
+        Download the YouTube video and/or audio using the provided streams.
 
-        :param video_stream: Video stream dictionary generated by the YouTube class.
-        :param audio_stream: Audio stream dictionary generated by the YouTube class.
-        :param output_file_path: The path to save the output file to. If the path is a directory, the file name will be generated automatically ({cleanTitle} [{id}].{extension}). If the path is a file, the file will be saved with the provided name. If not provided, the file will be saved to the current working directory.
-        :param show_progress_bar: Show progress bar during download.
-        :param timeout: Timeout in seconds for the download process. Or None for no timeout.
-        :param logging: Enable or disable ffmpeg logging.
-        :return: Path object of the output file.
-        :raises EmptyDataError: If no YouTube data is available.
+        - If no streams are provided, the best video and/or audio streams will be used.
+        - If one stream is provided, it will be used to download the video or audio, without merging.
+        - If both streams are provided, they will be merged into a single file.
+
+        Args:
+            video_stream: The video stream generated by .analyze_video_streams(). (default: None)
+            audio_stream: The audio stream generated by .analyze_audio_streams(). (default: None)
+            output_path: The output path to save the downloaded video and/or audio to. If a directory is provided, the file name will be generated based on the video title and ID, like 'title - [id].extension'. If a file is provided, the file will be saved with the provided name. (default: Path.cwd())
+            ffmpeg_path: The path to the ffmpeg executable. If 'local', the ffmpeg executable will be searched in the PATH environment variable. (default: 'local')
+            show_progress_bar: Show or hide the download progress bar. (default: True)
+            timeout: Timeout in seconds for the download process. Or None for no timeout. (default: None)
+            logging: Enable or disable ffmpeg logging. (default: False)
+
+        Returns:
+            The Path object of the finished file.
+
+        Raises:
+            EmptyDataError: If no YouTube data is available. Please call .extract() first.
         """
 
         if not self._raw_youtube_data:
@@ -497,60 +575,57 @@ class YouTube:
             video_stream = self.best_video_stream
             audio_stream = self.best_audio_stream
 
-        output_file_path = Path(output_file_path)
+        output_path = Path(output_path)
 
         if video_stream and audio_stream:
-            if output_file_path.is_dir():
-                output_file_path = Path(
-                    output_file_path, f'{self.general_info["cleanTitle"]} [{self.general_info["id"]}].{video_stream["extension"]}'
+            if output_path.is_dir():
+                output_path = Path(
+                    output_path, f'{self.general_info["cleanTitle"]} [{self.general_info["id"]}].{video_stream["extension"]}'
                 )
 
             tmp_path = Path(gettempdir(), '.tmp-streamsnapper-downloader')
             tmp_path.mkdir(exist_ok=True)
 
-            output_video_file_path = Path(tmp_path, f'.tmp-video-{self.general_info["id"]}.{video_stream["extension"]}')
+            output_video_path = Path(tmp_path, f'.tmp-video-{self.general_info["id"]}.{video_stream["extension"]}')
             video_downloader = Downloader(
                 max_connections='auto', show_progress_bar=show_progress_bar, overwrite=True, timeout=timeout
             )
-            video_downloader.download(video_stream['url'], output_video_file_path)
+            video_downloader.download(video_stream['url'], output_video_path)
 
-            output_audio_file_path = Path(tmp_path, f'.tmp-audio-{self.general_info["id"]}.{audio_stream["extension"]}')
+            output_audio_path = Path(tmp_path, f'.tmp-audio-{self.general_info["id"]}.{audio_stream["extension"]}')
             audio_downloader = Downloader(
                 max_connections='auto', show_progress_bar=show_progress_bar, overwrite=True, timeout=timeout
             )
-            audio_downloader.download(audio_stream['url'], output_audio_file_path)
+            audio_downloader.download(audio_stream['url'], output_audio_path)
 
             merger = Merger(logging=logging)
             merger.merge(
-                video_file_path=output_video_file_path,
-                audio_file_path=output_audio_file_path,
-                output_file_path=output_file_path,
-                ffmpeg_file_path='local',
+                video_path=output_video_path, audio_path=output_audio_path, output_path=output_path, ffmpeg_path=ffmpeg_path
             )
 
             rmtree(tmp_path)
 
-            return output_file_path.resolve()
+            return output_path.resolve()
         elif video_stream:
-            if output_file_path.is_dir():
-                output_file_path = Path(
-                    output_file_path, f'{self.general_info["cleanTitle"]} [{self.general_info["id"]}].{video_stream["extension"]}'
+            if output_path.is_dir():
+                output_path = Path(
+                    output_path, f'{self.general_info["cleanTitle"]} [{self.general_info["id"]}].{video_stream["extension"]}'
                 )
 
             downloader = Downloader(max_connections='auto', show_progress_bar=show_progress_bar, overwrite=True, timeout=timeout)
-            downloader.download(video_stream['url'], output_file_path)
+            downloader.download(video_stream['url'], output_path)
 
             return Path(downloader.output_file_path)
         elif audio_stream:
-            if output_file_path.is_dir():
-                output_file_path = Path(
-                    output_file_path, f'{self.general_info["cleanTitle"]} [{self.general_info["id"]}].{audio_stream["extension"]}'
+            if output_path.is_dir():
+                output_path = Path(
+                    output_path, f'{self.general_info["cleanTitle"]} [{self.general_info["id"]}].{audio_stream["extension"]}'
                 )
 
             downloader = Downloader(max_connections='auto', show_progress_bar=show_progress_bar, overwrite=True, timeout=timeout)
-            downloader.download(audio_stream['url'], output_file_path)
+            downloader.download(audio_stream['url'], output_path)
 
-            return Path(downloader.output_file_path)
+            return Path(downloader.output_path)
 
 
 class YouTubeExtractor:
@@ -569,10 +644,13 @@ class YouTubeExtractor:
 
     def identify_platform(self, url: str) -> Optional[Literal['youtube', 'youtubeMusic']]:
         """
-        Identify the platform of a URL (YouTube or YouTube Music).
+        Identify the platform of a given URL as either YouTube or YouTube Music.
 
-        :param url: The URL to identify the platform from.
-        :return: The identified platform. If the platform is not recognized, return None.
+        Args:
+            url: The URL to identify the platform from. (required)
+
+        Returns:
+            'youtube' if the URL corresponds to YouTube, 'youtubeMusic' if it corresponds to YouTube Music. Returns None if the platform is not recognized.
         """
 
         found_match = self._platform_regex.search(url)
@@ -584,8 +662,11 @@ class YouTubeExtractor:
         """
         Extract the YouTube video ID from a URL.
 
-        :param url: The URL to extract the video ID from.
-        :return: The extracted video ID. If no video ID is found, return None.
+        Args:
+            url: The URL to extract the video ID from. (required)
+
+        Returns:
+            The extracted video ID. If no video ID is found, return None.
         """
 
         found_match = self._video_id_regex.search(url)
@@ -596,9 +677,12 @@ class YouTubeExtractor:
         """
         Extract the YouTube playlist ID from a URL.
 
-        :param url: The URL to extract the playlist ID from.
-        :param include_private: Whether to include private playlists, like the mixes YouTube makes for you.
-        :return: The extracted playlist ID. If no playlist ID is found or the playlist is private, return None.
+        Args:
+            url: The URL to extract the playlist ID from. (required)
+            include_private: Whether to include private playlists, like the mixes YouTube makes for you. (default: False)
+
+        Returns:
+            The extracted playlist ID. If no playlist ID is found or the playlist is private and include_private is False, return None.
         """
 
         found_match = self._playlist_id_regex.search(url)
@@ -621,13 +705,16 @@ class YouTubeExtractor:
         limit: int = 1,
     ) -> Optional[List[str]]:
         """
-        Search for YouTube videos, channels, playlists or movies (provided by scrapetube library).
+        Search for YouTube content based on a query and return a list of URLs (raw data provided by scrapetube library).
 
-        :param query: The search query to search for.
-        :param sort_by: The sorting method to use for the search results.
-        :param results_type: The type of results to search for.
-        :param limit: The maximum number of video URLs to return.
-        :return: A list of video URLs from the search results. If no videos are found, return None.
+        Args:
+            query: The search query string. (required)
+            sort_by: The sorting method to use for the search results. Options are 'relevance', 'upload_date', 'view_count', and 'rating' (default: 'relevance').
+            results_type: The type of content to search for. Options are 'video', 'channel', 'playlist', and 'movie' (default: 'video').
+            limit: The maximum number of video URLs to return (default: 1).
+
+        Returns:
+            A list of video URLs from the search results. If no videos are found, returns None.
         """
 
         try:
@@ -646,11 +733,14 @@ class YouTubeExtractor:
 
     def get_playlist_videos(self, url: str, limit: Optional[int] = None) -> Optional[List[str]]:
         """
-        Get the video URLs from a YouTube playlist (provided by scrapetube library).
+        Get the video URLs from a YouTube playlist (raw data provided by scrapetube library).
 
-        :param url: The URL of the YouTube playlist.
-        :param limit: The maximum number of video URLs to return. If None, return all video URLs.
-        :return: A list of video URLs from the playlist. If no videos are found or the playlist is private, return None.
+        Args:
+            url: The URL of the YouTube playlist. (required)
+            limit: The maximum number of video URLs to return. If None, return all video URLs. (default: None)
+
+        Returns:
+            A list of video URLs from the playlist. If no videos are found or the playlist is private, return None.
         """
 
         playlist_id = self.extract_playlist_id(url, include_private=False)
@@ -680,15 +770,21 @@ class YouTubeExtractor:
         limit: Optional[int] = None,
     ) -> Optional[List[str]]:
         """
-        Get the video URLs from a YouTube channel (provided by scrapetube library).
+        Get the video URLs from a YouTube channel (raw data provided by scrapetube library).
 
-        :param channel_id: The ID of the YouTube channel.
-        :param channel_url: The URL of the YouTube channel.
-        :param channel_username: The username of the YouTube channel.
-        :param sort_by: The sorting method to use for the channel videos.
-        :param content_type: The type of videos to get from the channel.
-        :param limit: The maximum number of video URLs to return. If None, return all video URLs.
-        :return: A list of video URLs from the channel. If no videos are found or the channel is non-existent, return None.
+        - If channel_id, channel_url, and channel_username are all None, return None.
+        - If more than one of channel_id, channel_url, and channel_username is provided, raise ValueError.
+
+        Args:
+            channel_id: The ID of the YouTube channel. (default: None)
+            channel_url: The URL of the YouTube channel. (default: None)
+            channel_username: The username of the YouTube channel. (default: None)
+            sort_by: The sorting method to use for the channel videos. Options are 'newest', 'oldest', and 'popular' (default: 'newest').
+            content_type: The type of content to search for. Options are 'videos', 'shorts', and 'streams' (default: 'videos').
+            limit: The maximum number of video URLs to return. If None, return all video URLs. (default: None)
+
+        Returns:
+            A list of video URLs from the channel. If no videos are found or the channel is non-existent, return None.
         """
 
         if sum([bool(channel_id), bool(channel_url), bool(channel_username)]) != 1:
