@@ -709,9 +709,9 @@ class YouTubeExtractor:
 
         Args:
             query: The search query string. (required)
-            sort_by: The sorting method to use for the search results. Options are 'relevance', 'upload_date', 'view_count', and 'rating' (default: 'relevance').
-            results_type: The type of content to search for. Options are 'video', 'channel', 'playlist', and 'movie' (default: 'video').
-            limit: The maximum number of video URLs to return (default: 1).
+            sort_by: The sorting method to use for the search results. Options are 'relevance', 'upload_date', 'view_count', and 'rating'. (default: 'relevance')
+            results_type: The type of content to search for. Options are 'video', 'channel', 'playlist', and 'movie'. (default: 'video')
+            limit: The maximum number of video URLs to return. (default: 1)
 
         Returns:
             A list of video URLs from the search results. If no videos are found, returns None.

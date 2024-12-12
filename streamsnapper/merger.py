@@ -17,7 +17,7 @@ class Merger:
         Initialize the Merger class with the required settings for merging audio and video streams.
 
         Args:
-            logging: Enable or disable ffmpeg logging. (default: False)
+            logging: Enable or disable FFmpeg logging. (default: False)
         """
 
         self._logging = logging
@@ -36,10 +36,10 @@ class Merger:
             video_path: The path to the video file to merge. (required)
             audio_path: The path to the audio file to merge. (required)
             output_path: The path to save the output file to. (required)
-            ffmpeg_path: The path to the ffmpeg executable. If 'local', the ffmpeg executable will be searched in the PATH environment variable. (default: 'local')
+            ffmpeg_path: The path to the FFmpeg executable. If 'local', the FFmpeg executable will be searched in the PATH environment variable. (default: 'local')
 
         Raises:
-            FileNotFoundError: If the ffmpeg executable was not found.
+            FileNotFoundError: If the FFmpeg executable was not found.
             MergeError: If an error occurs while merging the files.
         """
 
@@ -54,7 +54,7 @@ class Merger:
                 ffmpeg_path = Path(found_ffmpeg_binary)
             else:
                 raise FFmpegNotFoundError(
-                    'The ffmpeg executable was not found. Please provide the path to the ffmpeg executable.'
+                    'The FFmpeg executable was not found. Please provide the path to the FFmpeg executable.'
                 )
         else:
             ffmpeg_path = Path(ffmpeg_path).resolve()
