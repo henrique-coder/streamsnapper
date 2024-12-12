@@ -17,7 +17,7 @@ class Merger:
         Initialize the Merger class with the required settings for merging audio and video streams.
 
         Args:
-            logging: Enable or disable ffmpeg logging. Defaults to False. (default: False)
+            logging: Enable or disable ffmpeg logging. (default: False)
         """
 
         self._logging = logging
