@@ -215,6 +215,7 @@ class Downloader:
 
         Raises:
             DownloadError: If an error occurs while downloading the file.
+            RequestError: If an error occurs while getting file info.
         """
 
         try:
