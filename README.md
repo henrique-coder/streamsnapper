@@ -2,14 +2,14 @@
 
 StreamSnapper is an intuitive library designed to simplify, enhance, and organize media downloads from a variety of audiovisual platforms. It offers efficient, high-speed media extraction with optional tools for extracting data from these platforms.
 
-![PyPI - Version](https://img.shields.io/pypi/v/streamsnapper?style=flat&logo=pypi&logoColor=blue&color=blue)
-![PyPI - Downloads](https://img.shields.io/pypi/dm/streamsnapper?style=flat&logo=pypi&logoColor=blue&color=blue)
-![PyPI - Status](https://img.shields.io/pypi/status/streamsnapper?style=flat&logo=pypi&logoColor=blue&color=blue)
-![PyPI - Format](https://img.shields.io/pypi/format/streamsnapper?style=flat&logo=pypi&logoColor=blue&color=blue)
-![PyPI - License](https://img.shields.io/pypi/l/streamsnapper?style=flat&logo=pypi&logoColor=blue&color=blue)
-![PyPI - Python Version](https://img.shields.io/pypi/pyversions/streamsnapper?style=flat&logo=pypi&logoColor=blue&color=blue)
+![PyPI - Version](https://img.shields.io/pypi/v/streamsnapper?style=flat&logo=pypi&logoColor=blue&color=blue&link=https://pypi.org/project/streamsnapper)
+![PyPI - Downloads](https://img.shields.io/pypi/dm/streamsnapper?style=flat&logo=pypi&logoColor=blue&color=blue&link=https://pypi.org/project/streamsnapper)
+![PyPI - Code Style](https://img.shields.io/badge/code%20style-ruff-blue?style=flat&logo=ruff&logoColor=blue&color=blue&link=https://github.com/astral-sh/ruff)
+![PyPI - Format](https://img.shields.io/pypi/format/streamsnapper?style=flat&logo=pypi&logoColor=blue&color=blue&link=https://pypi.org/project/streamsnapper)
+![PyPI - License](https://img.shields.io/pypi/l/streamsnapper?style=flat&logo=github&logoColor=blue&color=blue&link=https://github.com/henrique-coder/streamsnapper/blob/main/LICENSE)
+![PyPI - Python Compatible Versions](https://img.shields.io/pypi/pyversions/streamsnapper?style=flat&logo=python&logoColor=blue&color=blue&link=https://pypi.org/project/streamsnapper)
 
-#### Installation (from PyPI)
+#### Installation (from [PyPI](https://pypi.org/project/streamsnapper))
 
 ```bash
 pip install -U streamsnapper  # It does not have any features by default, but it can be extended with optional features
@@ -24,30 +24,28 @@ pip install -U streamsnapper[all]  # It has all features available at once
 #### `streamsnapper[downloader]`
 
 ```python
-from streamsnapper import Downloader, DownloadError, StreamBaseError
-
-# Optional imports
-from pathlib import Path
+from streamsnapper import Downloader
+from pathlib import Path  # Optional
 
 
 # A class for downloading direct download URLs.
 downloader = Downloader(
     # Initialize the Downloader class with the required settings for downloading a file.
-    max_connections='auto',  # The maximum number of connections (threads) to use for downloading the file. (default: 'auto')
+    max_connections='auto',  # The maximum number of connections to use for downloading the file. (default: 'auto')
     overwrite=True,  # Overwrite the file if it already exists. Otherwise, a "_1", "_2", etc. suffix will be added. (default: True)
     show_progress_bar=True,  # Show or hide the download progress bar. (default: True)
     headers=None,  # Custom headers to include in the request. If None, default headers will be used. (default: None)
     timeout=None  # Timeout in seconds for the download process. Or None for no timeout. (default: None)
 )
 
-# Download the file from the provided URL to the output file path.
+# Downloads a file from the provided URL to the output file path.
+# - If the output_path is a directory, the file name will be generated from the server response.
+# - If the output_path is a file, the file will be saved with the provided name.
+# - If not provided, the file will be saved to the current working directory.
 downloader.download(
-    url='YOUR_DOWNLOAD_URL',  # The download URL to download the file from. (required)
-    output_file_path=Path.cwd()  # The path to save the downloaded file to. If the path is a directory, the file name will be generated from the server response. If the path is a file, the file will be saved with the provided name. If not provided, the file will be saved to the current working directory (from pathlib.Path.cwd()). (default: Path.cwd())
+    url='https://example.com/file',  # The download URL to download the file from. (required)
+    output_path=Path.cwd()  # The path to save the downloaded file to. If the path is a directory, the file name will be generated from the server response. If the path is a file, the file will be saved with the provided name. If not provided, the file will be saved to the current working directory. (default: Path.cwd())
 )
-
-# Available attributes
-downloader.output_file_path  # The path of the downloaded file (default: None) (str)
 
 # All functions are documented and have detailed typings, use your development IDE to learn more.
 
@@ -56,21 +54,21 @@ downloader.output_file_path  # The path of the downloaded file (default: None) (
 #### `streamsnapper[merger]`
 
 ```python
-from streamsnapper import Merger, MergeError, StreamBaseError
+from streamsnapper import Merger
 
 
 # A class for merging multiple audio and video streams into a single file.
 merger = Merger(
     # Initialize the Merger class with the required settings for merging audio and video streams.
-    logging=True  # Enable or disable the FFmpeg logging.
+    logging=True  # Enable or disable FFmpeg logging. (default: False)
 )
 
-# Merge the audio and video streams into a single file.
+# Merge the video and audio streams into a single file.
 merger.merge(
-    video_file_path='YOUR_INPUT_VIDEO_FILE_PATH',  # The path to the video file to merge. (required)
-    audio_file_path='YOUR_INPUT_AUDIO_FILE_PATH',  # The path to the audio file to merge. (required)
-    output_file_path='YOUR_OUTPUT_MERGED_FILE_PATH',  # The path to save the merged file to. (required)
-    ffmpeg_file_path='local'  # The path to the ffmpeg executable. If 'local', the ffmpeg executable will be searched in the PATH environment variable. (default: 'local')
+    video_path='path/to/video',  # The path to the video file to merge. (required)
+    audio_path='path/to/audio',  # The path to the audio file to merge. (required)
+    output_path='path/to/output',  # The path to save the output file to. (required)
+    ffmpeg_path='local'  # The path to the FFmpeg executable. If 'local', the FFmpeg executable will be searched in the PATH environment variable. (default: 'local')
 )
 
 # All functions are documented and have detailed typings, use your development IDE to learn more.
@@ -80,59 +78,62 @@ merger.merge(
 #### `streamsnapper[youtube]`
 
 ```python
-from streamsnapper import (
-    YouTube, YouTubeExtractor, EmptyDataError, InvalidDataError, ScrapingError, DownloadError, MergeError, StreamBaseError
-)
+from streamsnapper import YouTube
 
 
-# ... (YouTube class documentation will be added soon)
+# YouTube class documentation will be added soon
+# ...
 
-# ---
+
+from streamsnapper import YouTubeExtractor
+
 
 # A class for extracting data from YouTube URLs and searching for YouTube videos.
 youtube_extractor = YouTubeExtractor(
     # Initialize the Extractor class with some regular expressions for analyzing YouTube URLs.
 )
 
-# Identify the platform of a URL (YouTube or YouTube Music).
+# Identify the platform of a given URL as either YouTube or YouTube Music.
 youtube_extractor.identify_platform(
-    url='YOUR_YOUTUBE_URL'  # The URL to identify the platform from. (required)
-)  # --> Return the identified platform. If the platform is not recognized, return None.
+    url='https://music.youtube.com/watch?v=***********'  # The URL to identify the platform from. (required)
+)  # --> Returns 'youtube' if the URL corresponds to YouTube, 'youtubeMusic' if it corresponds to YouTube Music. Returns None if the platform is not recognized.
 
 # Extract the YouTube video ID from a URL.
 youtube_extractor.extract_video_id(
-    url='YOUR_YOUTUBE_URL'  # The URL to extract the video ID from. (required)
-)  # --> Return the extracted video ID. If no video ID is found, return None.
+    url='https://www.youtube.com/watch?v=***********'  # The URL to extract the video ID from. (required)
+)  # --> Returns the extracted video ID. If no video ID is found, return None.
 
 # Extract the YouTube playlist ID from a URL.
 youtube_extractor.extract_playlist_id(
-    url='YOUR_YOUTUBE_URL',  # The URL to extract the playlist ID from. (required)
+    url='https://www.youtube.com/playlist?list=**********************************',  # The URL to extract the playlist ID from. (required)
     include_private=False  # Whether to include private playlists, like the mixes YouTube makes for you. (default: False)
-)  # --> Return the extracted playlist ID. If no playlist ID is found or the playlist is private, return None.
+)  # --> Returns the extracted playlist ID. If no playlist ID is found or the playlist is private and include_private is False, return None.
 
-# Search for YouTube videos, channels, playlists or movies (provided by scrapetube library).
+# Search for YouTube content based on a query and return a list of URLs (raw data provided by scrapetube library).
 youtube_extractor.search(
-    query='YOUR_SEARCH_QUERY',  # The search query to search for. (required)
-    sort_by='relevance',  # The sorting method to use for the search results. (default: 'relevance')
-    results_type='video',  # The type of results to search for. (default: 'video')
+    query='A cool music name',  # The search query string. (required)
+    sort_by='relevance',  # The sorting method to use for the search results. Options are 'relevance', 'upload_date', 'view_count', and 'rating'. (default: 'relevance')
+    results_type='video',  # The type of content to search for. Options are 'video', 'channel', 'playlist', and 'movie'. (default: 'video')
     limit=1  # The maximum number of video URLs to return. (default: 1)
-)  # --> Return a list of video URLs from the search results. If no videos are found, return None.
+)  # --> Returns a list of video URLs from the search results. If no videos are found, returns None.
 
-# Get the video URLs from a YouTube playlist (provided by scrapetube library).
+# Get the video URLs from a YouTube playlist (raw data provided by scrapetube library).
 youtube_extractor.get_playlist_videos(
-    url='YOUR_YOUTUBE_PLAYLIST_URL',  # The URL of the YouTube playlist. (required)
+    url='https://www.youtube.com/playlist?list=**********************************',  # The URL of the YouTube playlist. (required)
     limit=None  # The maximum number of video URLs to return. If None, return all video URLs. (default: None)
-)  # --> Return a list of video URLs from the playlist. If no videos are found or the playlist is private, return None.
+)  # --> Returns a list of video URLs from the playlist. If no videos are found or the playlist is private, return None.
 
-# Get the video URLs from a YouTube channel (provided by scrapetube library).
+# Get the video URLs from a YouTube channel (raw data provided by scrapetube library).
+# - If channel_id, channel_url, and channel_username are all None, return None.
+# - If more than one of channel_id, channel_url, and channel_username is provided, raise ValueError.
 youtube_extractor.get_channel_videos(
-    channel_id='YOUR_YOUTUBE_CHANNEL_ID' or None,  # The ID of the YouTube channel. (default: None) ----------------------╲
-    channel_url='YOUR_YOUTUBE_CHANNEL_URL' or None,  # The URL of the YouTube channel. (default: None) --------------------〉 You can only put one argument from these three.
-    channel_username='YOUR_YOUTUBE_CHANNEL_USERNAME' or None,  # The username of the YouTube channel. (default: None) ----╱
-    sort_by='newest',  # The sorting method to use for the channel videos. (default: 'newest')
-    content_type='videos',  # The type of videos to get from the channel. (default: 'videos')
+    channel_id='************************',  # The ID of the YouTube channel. (default: None)
+    channel_url='https://www.youtube.com/@********',  # The URL of the YouTube channel. (default: None)
+    channel_username='********',  # The username of the YouTube channel. (default: None)
+    sort_by='newest',  # The sorting method to use for the channel videos. Options are 'newest', 'oldest', and 'popular' (default: 'newest').
+    content_type='videos',  # The type of content to search for. Options are 'videos', 'shorts', and 'streams' (default: 'videos').
     limit=None  # The maximum number of video URLs to return. If None, return all video URLs. (default: None)
-)  # --> Return A list of video URLs from the channel. If no videos are found or the channel is non-existent, return None.
+)  # --> Returns a list of video URLs from the channel. If no videos are found or the channel is non-existent, return None.
 
 # All functions are documented and have detailed typings, use your development IDE to learn more.
 
