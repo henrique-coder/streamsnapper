@@ -14,11 +14,9 @@ def get_value(
     """
     Get a value from a dictionary or a list of fallback keys.
 
-    If the provided key does not exist in the dictionary, the function will return the default value if provided, or None otherwise.
-
-    If a list of fallback keys is provided, the function will try to get the value from the dictionary with the fallback keys. If the value is not found in the dictionary with any of the fallback keys, the function will return the default value if provided, or None otherwise.
-
-    If the value is not None and a conversion function is provided, the function will try to convert the value using the provided conversion function. If the conversion fails with a ValueError or TypeError, the function will return the default value if provided, or None otherwise.
+    - If the provided key does not exist in the dictionary, the function will return the default value if provided, or None otherwise.
+    - If a list of fallback keys is provided, the function will try to get the value from the dictionary with the fallback keys. If the value is not found in the dictionary with any of the fallback keys, the function will return the default value if provided, or None otherwise.
+    - If the value is not None and a conversion function is provided, the function will try to convert the value using the provided conversion function. If the conversion fails with a ValueError or TypeError, the function will return the default value if provided, or None otherwise.
 
     Args:
         data: The dictionary to get the value from. (required)

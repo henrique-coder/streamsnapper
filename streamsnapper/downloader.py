@@ -61,7 +61,7 @@ class Downloader:
         """
         Calculates the number of connections to use for downloading the file.
 
-        The following table is used to determine the number of connections based on the file size:
+        - The following table is used to determine the number of connections based on the file size:
 
         | File size       | Connections |
         |-----------------|-------------|
@@ -99,9 +99,9 @@ class Downloader:
         """
         Retrieve file information from a given URL.
 
-        This method sends a HEAD request to the specified URL to obtain the file's content length, content type, and filename.
-        If the filename is not present in the 'Content-Disposition' header, it attempts to extract it from the URL path.
-        If the filename cannot be determined, a default name with the appropriate extension is generated based on the content type.
+        - This method sends a HEAD request to the specified URL to obtain the file's content length, content type, and filename.
+        - If the filename is not present in the 'Content-Disposition' header, it attempts to extract it from the URL path.
+        - If the filename cannot be determined, a default name with the appropriate extension is generated based on the content type.
 
         Args:
             url: The URL of the file to retrieve information from. (required)
@@ -140,8 +140,8 @@ class Downloader:
         """
         Calculate and return the chunk ranges for downloading a file.
 
-        This method divides the total file size into smaller chunks based on the number of connections calculated.
-        Each chunk is represented as a tuple containing the start and end byte positions.
+        - This method divides the total file size into smaller chunks based on the number of connections calculated.
+        - Each chunk is represented as a tuple containing the start and end byte positions.
 
         Args:
             total_size: The total size of the file to be downloaded. (required)
@@ -168,8 +168,8 @@ class Downloader:
         """
         Downloads a chunk of a file from the given URL.
 
-        This method sends a GET request with a 'Range' header to the specified URL to obtain the specified chunk of the file.
-        The chunk is then returned as bytes.
+        - This method sends a GET request with a 'Range' header to the specified URL to obtain the specified chunk of the file.
+        - The chunk is then returned as bytes.
 
         Args:
             url: The URL to download the chunk from. (required)
@@ -205,9 +205,9 @@ class Downloader:
         """
         Downloads a file from the provided URL to the output file path.
 
-        If the output_path is a directory, the file name will be generated from the server response.
-        If the output_path is a file, the file will be saved with the provided name.
-        If not provided, the file will be saved to the current working directory.
+        - If the output_path is a directory, the file name will be generated from the server response.
+        - If the output_path is a file, the file will be saved with the provided name.
+        - If not provided, the file will be saved to the current working directory.
 
         Args:
             url: The download URL to download the file from. (required)
