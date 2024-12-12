@@ -6,7 +6,7 @@ from subprocess import DEVNULL, CalledProcessError, run
 from typing import Literal, Union
 
 # Local imports
-from .exceptions import MergeError
+from .exceptions import FFmpegNotFoundError, MergeError
 
 
 class Merger:
@@ -16,41 +16,48 @@ class Merger:
         """
         Initialize the Merger class with the required settings for merging audio and video streams.
 
-        :param logging: Enable or disable the FFmpeg logging.
+        Args:
+            logging: Enable or disable ffmpeg logging. Defaults to False. (default: False)
         """
 
         self._logging = logging
 
     def merge(
         self,
-        video_file_path: Union[str, PathLike],
-        audio_file_path: Union[str, PathLike],
-        output_file_path: Union[str, PathLike],
-        ffmpeg_file_path: Union[str, PathLike, Literal['local']] = 'local',
+        video_path: Union[str, PathLike],
+        audio_path: Union[str, PathLike],
+        output_path: Union[str, PathLike],
+        ffmpeg_path: Union[str, PathLike, Literal['local']] = 'local',
     ) -> None:
         """
-        Merge the audio and video streams into a single file.
+        Merge the video and audio streams into a single file.
 
-        :param video_file_path: The path to the video file to merge.
-        :param audio_file_path: The path to the audio file to merge.
-        :param output_file_path: The path to save the merged file to.
-        :param ffmpeg_file_path: The path to the ffmpeg executable. If 'local', the ffmpeg executable will be searched in the PATH environment variable.
-        :raises MergeError: If an error occurs while merging the files.
+        Args:
+            video_path: The path to the video file to merge. (required)
+            audio_path: The path to the audio file to merge. (required)
+            output_path: The path to save the output file to. (required)
+            ffmpeg_path: The path to the ffmpeg executable. If 'local', the ffmpeg executable will be searched in the PATH environment variable. (default: 'local')
+
+        Raises:
+            FileNotFoundError: If the ffmpeg executable was not found.
+            MergeError: If an error occurs while merging the files.
         """
 
-        video_file_path = Path(video_file_path).resolve()
-        audio_file_path = Path(audio_file_path).resolve()
-        output_file_path = Path(output_file_path).resolve()
+        video_path = Path(video_path).resolve()
+        audio_path = Path(audio_path).resolve()
+        output_path = Path(output_path).resolve()
 
-        if ffmpeg_file_path == 'local':
+        if ffmpeg_path == 'local':
             found_ffmpeg_binary = which('ffmpeg')
 
             if found_ffmpeg_binary:
-                ffmpeg_file_path = Path(found_ffmpeg_binary)
+                ffmpeg_path = Path(found_ffmpeg_binary)
             else:
-                raise FileNotFoundError('The ffmpeg executable was not found. Please provide the path to the ffmpeg executable.')
+                raise FFmpegNotFoundError(
+                    'The ffmpeg executable was not found. Please provide the path to the ffmpeg executable.'
+                )
         else:
-            ffmpeg_file_path = Path(ffmpeg_file_path).resolve()
+            ffmpeg_path = Path(ffmpeg_path).resolve()
 
         stdout = None if self._logging else DEVNULL
         stderr = None if self._logging else DEVNULL
@@ -58,20 +65,20 @@ class Merger:
         try:
             run(
                 [
-                    ffmpeg_file_path.as_posix(),
+                    ffmpeg_path.as_posix(),
                     '-y',
                     '-hide_banner',
                     '-i',
-                    video_file_path.as_posix(),
+                    video_path.as_posix(),
                     '-i',
-                    audio_file_path.as_posix(),
+                    audio_path.as_posix(),
                     '-c',
                     'copy',
                     '-map',
                     '0:v',
                     '-map',
                     '1:a',
-                    output_file_path.as_posix(),
+                    output_path.as_posix(),
                 ],
                 check=True,
                 stdout=stdout,
@@ -79,5 +86,5 @@ class Merger:
             )
         except CalledProcessError as e:
             raise MergeError(
-                f'Error occurred while merging files: "{video_file_path.as_posix()}" and "{audio_file_path.as_posix()}" to "{output_file_path.as_posix()}".'
+                f'Error occurred while merging files: "{video_path.as_posix()}" and "{audio_path.as_posix()}" to "{output_path.as_posix()}".'
             ) from e
