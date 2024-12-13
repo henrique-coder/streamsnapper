@@ -7,11 +7,16 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   create-release:
     name: 🏷️ Create New Release
     runs-on: ubuntu-latest
     if: startsWith(github.event.head_commit.message, 'Bump version to')
+    timeout-minutes: 5
 
     steps:
       - name: 📥 Checkout Repository
@@ -22,16 +27,13 @@ jobs:
       - name: 📝 Extract Version
         id: version
         run: |
-          echo "🔍 Extracting version from commit message..."
-          MESSAGE="${{ github.event.head_commit.message }}"
-          VERSION=$(echo $MESSAGE | grep -oP 'Bump version to \K[^ ]+')
+          VERSION=$(echo "${{ github.event.head_commit.message }}" | grep -oP 'Bump version to \K[^ ]+')
           echo "Version detected: $VERSION"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: 🏷️ Get Previous Tag
         id: previoustag
         run: |
-          echo "📋 Finding previous release tag..."
           PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
           echo "Previous tag: $PREV_TAG"
           echo "tag=$PREV_TAG" >> $GITHUB_OUTPUT

@@ -4,18 +4,26 @@ on:
   push:
     branches: ["main"]
     paths:
-      - ".github/workflows/ci.yaml"
-      - "pyproject.toml"
-      - "poetry.lock"
-      - "tests/**"
-      - "streamsnapper/**"
+      [
+        ".github/workflows/ci.yaml",
+        "pyproject.toml",
+        "poetry.lock",
+        "tests/**",
+        "streamsnapper/**",
+      ]
   pull_request:
     paths:
-      - ".github/workflows/ci.yaml"
-      - "pyproject.toml"
-      - "poetry.lock"
-      - "tests/**"
-      - "streamsnapper/**"
+      [
+        ".github/workflows/ci.yaml",
+        "pyproject.toml",
+        "poetry.lock",
+        "tests/**",
+        "streamsnapper/**",
+      ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
@@ -23,20 +31,24 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ["ubuntu-latest"] # "windows-latest"
+        os: ["ubuntu-latest"]
         python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
 
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
 
     steps:
       - name: 📥 Checkout Repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - name: 🐍 Setup Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-          cache: "pip"
+          cache: pip
+          check-latest: true
 
       - name: 📦 Install Poetry
         uses: snok/install-poetry@v1
@@ -53,22 +65,16 @@ jobs:
           echo "⚙️ Adding Python Scripts to PATH..."
           echo "$env:APPDATA\Python\Scripts" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
-      - name: 💾 Cache Dependencies
+      - name: 💾 Cache Poetry Dependencies
         uses: actions/cache@v3
         with:
           path: .venv
-          key: venv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
+          key: poetry-${{ runner.os }}-py${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
           restore-keys: |
-            venv-${{ runner.os }}-${{ matrix.python-version }}-
+            poetry-${{ runner.os }}-py${{ matrix.python-version }}-
 
       - name: 📚 Install Dependencies
-        shell: bash
-        run: |
-          echo "🔧 Installing project dependencies with all extras..."
-          poetry install --extras "all" --no-interaction
+        run: poetry install --extras "all" --no-interaction --no-root
 
       - name: 🧪 Run Tests
-        shell: bash
-        run: |
-          echo "🚀 Running test suite..."
-          poetry run pytest tests/all.py -v
+        run: poetry run pytest tests/all.py -v --color=yes

@@ -4,37 +4,42 @@ on:
   push:
     tags: ["v*"]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   publish:
     name: 📦 Build and Publish Package
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      id-token: write
 
     steps:
       - name: 📥 Checkout Repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - name: 🐍 Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-          cache: "pip"
+          cache: pip
+          check-latest: true
 
       - name: 🔧 Install Build Tools
-        run: |
-          echo "📚 Installing build and twine..."
-          python -m pip install --upgrade build twine
+        run: python -m pip install --upgrade pip build twine
 
       - name: 🏗️ Build Package
-        run: |
-          echo "🔨 Building distribution package..."
-          python -m build
+        run: python -m build --sdist --wheel
 
       - name: ✅ Validate Metadata
-        run: |
-          echo "🔍 Checking package metadata..."
-          twine check dist/*
+        run: twine check dist/*
 
       - name: 🚀 Upload to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{ secrets.PYPI_API_TOKEN }}
+          verbose: true
