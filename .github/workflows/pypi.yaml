@@ -2,35 +2,39 @@ name: Release - Publish to PyPI
 
 on:
   push:
-    tags:
-      - "v*"
+    tags: ["v*"]
 
 jobs:
   publish:
-    name: Build and Publish Package
+    name: 📦 Build and Publish Package
     runs-on: ubuntu-latest
 
     steps:
-      - name: Repository Checkout
+      - name: 📥 Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup Python Environment
+      - name: 🐍 Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.13"
           cache: "pip"
 
-      - name: Install Build Tools
+      - name: 🔧 Install Build Tools
         run: |
+          echo "📚 Installing build and twine..."
           python -m pip install --upgrade build twine
 
-      - name: Build Distribution Package
-        run: python -m build
+      - name: 🏗️ Build Package
+        run: |
+          echo "🔨 Building distribution package..."
+          python -m build
 
-      - name: Validate Package Metadata
-        run: twine check dist/*
+      - name: ✅ Validate Metadata
+        run: |
+          echo "🔍 Checking package metadata..."
+          twine check dist/*
 
-      - name: Upload to PyPI
+      - name: 🚀 Upload to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{ secrets.PYPI_API_TOKEN }}

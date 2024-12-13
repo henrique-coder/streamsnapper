@@ -1,52 +1,66 @@
-name: Auto Release
+name: Auto Release Creation
 
 on:
   push:
-    branches:
-      - main
+    branches: ["main"]
 
 permissions:
   contents: write
 
 jobs:
   create-release:
+    name: 🏷️ Create New Release
     runs-on: ubuntu-latest
     if: startsWith(github.event.head_commit.message, 'Bump version to')
 
     steps:
-      - name: Checkout code
+      - name: 📥 Checkout Repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Extract version
+      - name: 📝 Extract Version
         id: version
         run: |
+          echo "🔍 Extracting version from commit message..."
           MESSAGE="${{ github.event.head_commit.message }}"
           VERSION=$(echo $MESSAGE | grep -oP 'Bump version to \K[^ ]+')
+          echo "Version detected: $VERSION"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-      - name: Get previous tag
+      - name: 🏷️ Get Previous Tag
         id: previoustag
         run: |
+          echo "📋 Finding previous release tag..."
           PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "Previous tag: $PREV_TAG"
           echo "tag=$PREV_TAG" >> $GITHUB_OUTPUT
 
-      - name: Create Release
+      - name: 🚀 Create Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ steps.version.outputs.version }}
-          name: StreamSnapper ${{ steps.version.outputs.version }} - Release notes
+          name: "🎉 StreamSnapper ${{ steps.version.outputs.version }} - Summary"
           body: |
-            To use this library (available on [GitHub](https://github.com/henrique-coder/streamsnapper) and [PyPI](https://pypi.org/project/streamsnapper)), there are a few options. You can only use the tools from the YouTube (`streamsnapper[youtube]`) media service, and you can also use the Downloader (`streamsnapper[downloader]`) and Merger (`streamsnapper[merger]`). Or install the version with everything built in using `streamsnapper[all]`.
+            ## 📦 Installation Options
 
-            **Note:** _when installing the library use `pip install -U streamsnapper[EXTRA]`, as installing the library without extra dependencies will not provide any tools. All are optional so that you can efficiently choose what you want to use._
+            StreamSnapper is available on [GitHub](https://github.com/henrique-coder/streamsnapper) and [PyPI](https://pypi.org/project/streamsnapper).
 
-            #### Changelog:
+            ### Available Extras:
+            - 🎬 YouTube Tools: `streamsnapper[youtube]`
+            - 📥 Downloader: `streamsnapper[downloader]`
+            - 🔄 Merger: `streamsnapper[merger]`
+            - ✨ All Features: `streamsnapper[all]`
 
-            - _Gererating release notes..._
+            > **Important:** Install using `pip install -U streamsnapper[EXTRA]`. Installing without extras won't provide any tools. Choose the components you need!
 
-            #### All changes: https://github.com/Henrique-Coder/streamsnapper/compare/${{ steps.previoustag.outputs.tag }}...v${{ steps.version.outputs.version }}
+            ### 📋 Changelog:
+
+            - _Generating release notes..._
+
+            ### 📊 Compare Changes
+
+            [View all changes](https://github.com/Henrique-Coder/streamsnapper/compare/${{ steps.previoustag.outputs.tag }}...v${{ steps.version.outputs.version }})
           draft: false
           prerelease: false
         env:
