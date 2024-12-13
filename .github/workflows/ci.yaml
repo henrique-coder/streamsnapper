@@ -32,7 +32,7 @@ jobs:
       fail-fast: false
       matrix:
         os: ["ubuntu-latest"]
-        python-version: ["3.13"] # ["3.9", "3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
 
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
@@ -74,8 +74,7 @@ jobs:
             poetry-${{ runner.os }}-py${{ matrix.python-version }}-
 
       - name: 📚 Install Dependencies
-        run: |
-          run: poetry install --extras "all" --no-interaction -e .
+        run: poetry install --extras "all" --no-interaction
 
       - name: 🧪 Run Tests
         run: poetry run pytest tests/all.py -v --color=yes
