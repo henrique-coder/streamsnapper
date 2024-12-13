@@ -14,7 +14,7 @@ concurrency:
 jobs:
   create-release:
     name: 🏷️ Create New Release
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     if: startsWith(github.event.head_commit.message, 'Bump version to')
     timeout-minutes: 5
 
@@ -39,7 +39,7 @@ jobs:
           echo "tag=$PREV_TAG" >> $GITHUB_OUTPUT
 
       - name: 🚀 Create Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.version.outputs.version }}
           name: "🎉 StreamSnapper ${{ steps.version.outputs.version }} - Summary"
