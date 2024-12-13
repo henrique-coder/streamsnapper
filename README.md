@@ -6,7 +6,6 @@ StreamSnapper is an intuitive library designed to simplify, enhance, and organiz
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/streamsnapper?style=flat&logo=pypi&logoColor=blue&color=blue&link=https://pypi.org/project/streamsnapper)
 ![PyPI - Code Style](https://img.shields.io/badge/code%20style-ruff-blue?style=flat&logo=ruff&logoColor=blue&color=blue&link=https://github.com/astral-sh/ruff)
 ![PyPI - Format](https://img.shields.io/pypi/format/streamsnapper?style=flat&logo=pypi&logoColor=blue&color=blue&link=https://pypi.org/project/streamsnapper)
-![PyPI - License](https://img.shields.io/pypi/l/streamsnapper?style=flat&logo=github&logoColor=blue&color=blue&link=https://github.com/henrique-coder/streamsnapper/blob/main/LICENSE)
 ![PyPI - Python Compatible Versions](https://img.shields.io/pypi/pyversions/streamsnapper?style=flat&logo=python&logoColor=blue&color=blue&link=https://pypi.org/project/streamsnapper)
 
 #### Installation (from [PyPI](https://pypi.org/project/streamsnapper))
