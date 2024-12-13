@@ -1,0 +1,50 @@
+name: Auto Release
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    if: startsWith(github.event.head_commit.message, '[debug] Bump version to')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract version
+        id: version
+        run: |
+          MESSAGE="${{ github.event.head_commit.message }}"
+          VERSION=$(echo $MESSAGE | grep -oP 'Bump version to \K[^ ]+')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Get previous tag
+        id: previoustag
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "tag=$PREV_TAG" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: StreamSnapper ${{ steps.version.outputs.version }} - Release notes
+          body: |
+            To use this library (available on [GitHub](https://github.com/henrique-coder/streamsnapper) and [PyPI](https://pypi.org/project/streamsnapper)), there are a few options. You can only use the tools from the YouTube (`streamsnapper[youtube]`) media service, and you can also use the Downloader (`streamsnapper[downloader]`) and Merger (`streamsnapper[merger]`). Or install the version with everything built in using `streamsnapper[all]`.
+
+            **Note:** _when installing the library use `pip install -U streamsnapper[EXTRA]`, as installing the library without extra dependencies will not provide any tools. All are optional so that you can efficiently choose what you want to use._
+
+            #### Changelog:
+
+            - _Gererating release notes..._
+
+            #### All changes: https://github.com/Henrique-Coder/streamsnapper/compare/${{ steps.previoustag.outputs.tag }}...v${{ steps.version.outputs.version }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
