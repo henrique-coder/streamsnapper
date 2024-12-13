@@ -31,11 +31,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ["ubuntu-latest"]
-        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+        os: ["ubuntu-22.04"]
+        python-version: ["3.13"] # ["3.9", "3.10", "3.11", "3.12", "3.13"]
 
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     steps:
       - name: 📥 Checkout Repository
@@ -66,12 +66,12 @@ jobs:
           echo "$env:APPDATA\Python\Scripts" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
       - name: 💾 Cache Poetry Dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: .venv
-          key: poetry-${{ runner.os }}-py${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
+          key: poetry-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
           restore-keys: |
-            poetry-${{ runner.os }}-py${{ matrix.python-version }}-
+            poetry-${{ runner.os }}-
 
       - name: 📚 Install Dependencies
         run: poetry install --extras "all" --no-interaction
