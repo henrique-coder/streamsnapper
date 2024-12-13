@@ -11,7 +11,7 @@ permissions:
 jobs:
   create-release:
     runs-on: ubuntu-latest
-    if: startsWith(github.event.head_commit.message, '[debug] Bump version to')
+    if: startsWith(github.event.head_commit.message, 'Bump version to')
 
     steps:
       - name: Checkout code
