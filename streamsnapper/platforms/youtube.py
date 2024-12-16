@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Literal, Optional, Type, Union
 from urllib.parse import unquote
 
 # Third-party imports
-from requests import get, head
+from httpx import get, head
 from scrapetube import (
     get_search as scrape_youtube_search,
     get_playlist as scrape_youtube_playlist,
@@ -157,7 +157,7 @@ class YouTube:
                 },
             )
 
-            if r.status_code == 200:
+            if r.is_success:
                 try:
                     dislike_count = get_value(r.json(), 'dislikes', convert_to=int)
                 except JSONDecodeError:
@@ -201,16 +201,13 @@ class YouTube:
 
         if check_thumbnails:
             while general_info['thumbnails']:
-                if (
-                    head(
-                        general_info['thumbnails'][0],
-                        headers={
-                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36'
-                        },
-                        allow_redirects=False,
-                    ).status_code
-                    == 200
-                ):
+                if head(
+                    general_info['thumbnails'][0],
+                    headers={
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36'
+                    },
+                    follow_redirects=False,
+                ).is_success:
                     break
                 else:
                     general_info['thumbnails'].pop(0)

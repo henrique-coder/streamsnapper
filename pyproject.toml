@@ -30,7 +30,7 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = "^3.9"
-requests = { version = "2.32.3", optional = true }
+httpx = { version = "0.28.1", optional = true }
 rich = { version = "13.9.4", optional = true }
 scrapetube = { version = "2.5.1", optional = true }
 yt-dlp = { version = "2024.12.13", optional = true }
@@ -40,10 +40,10 @@ orjson = "*"
 pytest = "*"
 
 [tool.poetry.extras]
-downloader = ["requests", "rich"]
+downloader = ["httpx", "rich"]
 merger = []
-youtube = ["requests", "rich", "scrapetube", "yt-dlp"]
-all = ["requests", "rich", "scrapetube", "yt-dlp"]
+youtube = ["httpx", "rich", "scrapetube", "yt-dlp"]
+all = ["httpx", "rich", "scrapetube", "yt-dlp"]
 
 [tool.ruff]
 include = ["streamsnapper/*.py", "streamsnapper/platforms/*.py", "tests/*.py"]

@@ -8,7 +8,7 @@ from typing import Dict, List, Literal, Optional, Tuple, Union
 from urllib.parse import unquote, urlparse
 
 # Third-party imports
-from requests import get, head, exceptions as requests_exceptions
+from httpx import get, head, HTTPError
 from rich.progress import BarColumn, DownloadColumn, Progress, TextColumn, TimeRemainingColumn, TransferSpeedColumn
 
 # Local imports
@@ -114,8 +114,8 @@ class Downloader:
         """
 
         try:
-            r = head(url, headers=self.headers, timeout=self._timeout, allow_redirects=True)
-        except requests_exceptions.RequestException as e:
+            r = head(url, headers=self.headers, timeout=self._timeout, follow_redirects=True)
+        except HTTPError as e:
             raise RequestError(f'An error occurred while getting file info: {str(e)}') from e
 
         content_length = int(r.headers.get('content-length', 0))
@@ -198,7 +198,7 @@ class Downloader:
             progress.update(task_id, advance=len(chunk))
 
             return chunk
-        except requests_exceptions.RequestException as e:
+        except HTTPError as e:
             raise DownloadError(f'An error occurred while downloading chunk: {str(e)}') from e
 
     def download(self, url: str, output_path: Union[str, PathLike] = Path.cwd()) -> None:
