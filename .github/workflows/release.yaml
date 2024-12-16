@@ -1,4 +1,4 @@
-name: Auto Release Creation
+name: Auto Release Creation and PyPI Publishing
 
 on:
   push:
@@ -6,17 +6,18 @@ on:
 
 permissions:
   contents: write
+  id-token: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  create-release:
-    name: 🏷️ Create New Release
+  create-release-and-publish:
+    name: 🏷️ Create Release and Publish to PyPI
     runs-on: ubuntu-22.04
     if: startsWith(github.event.head_commit.message, 'Bump version to')
-    timeout-minutes: 5
+    timeout-minutes: 15
 
     steps:
       - name: 📥 Checkout Repository
@@ -67,3 +68,25 @@ jobs:
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          check-latest: true
+
+      - name: 🔧 Install Build Tools
+        run: python -m pip install --upgrade pip build twine
+
+      - name: 🏗️ Build Package
+        run: python -m build --sdist --wheel
+
+      - name: ✅ Validate Metadata
+        run: twine check dist/*
+
+      - name: 🚀 Upload to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          verbose: true
