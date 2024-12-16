@@ -21,6 +21,7 @@ class Downloader:
     def __init__(
         self,
         max_connections: Union[int, Literal['auto']] = 'auto',
+        connection_speed: Union[float, Literal['auto']] = 'auto',
         overwrite: bool = True,
         show_progress_bar: bool = True,
         headers: Optional[Dict[str, str]] = None,
@@ -31,6 +32,7 @@ class Downloader:
 
         Args:
             max_connections: The maximum number of connections to use for downloading the file. (default: 'auto')
+            connection_speed: The connection speed in Mbps. If 'auto', the connection speed will be set to 80 Mbps. (default: 'auto')
             overwrite: Overwrite the file if it already exists. Otherwise, a "_1", "_2", etc. suffix will be added. (default: True)
             show_progress_bar: Show or hide the download progress bar. (default: True)
             headers: Custom headers to include in the request. If None, default headers will be used. (default: None)
@@ -38,6 +40,7 @@ class Downloader:
         """
 
         self._max_connections: Union[int, Literal['auto']] = max_connections
+        self._connection_speed: int = connection_speed
         self._overwrite: bool = overwrite
         self._show_progress_bar: bool = show_progress_bar
         self._timeout: Optional[int] = timeout
@@ -55,22 +58,33 @@ class Downloader:
                 if key.title() not in imutable_headers:
                     self.headers[key.title()] = value
 
-        self.output_file_path: str = None
+        self.output_path: str = None
 
     def _calculate_connections(self, file_size: int) -> int:
         """
-        Calculates the number of connections to use for downloading the file.
+        Calculates optimal number of connections based on file size and connection speed.
 
-        - The following table is used to determine the number of connections based on the file size:
+        - The connection speed ranges and recommended connections:
 
-        | File size       | Connections |
-        |-----------------|-------------|
-        | < 1 MB          | 1           |
-        | 1 MB - 5 MB     | 4           |
-        | 5 MB - 50 MB    | 8           |
-        | 50 MB - 200 MB  | 16          |
-        | 200 MB - 400 MB | 24          |
-        | > 400 MB        | 32          |
+        | Connection Speed | Base Multiplier |
+        | ---------------- | --------------- |
+        | < 10 Mbps        | 0.2x            |
+        | 10-50 Mbps       | 0.4x            |
+        | 50-100 Mbps      | 0.6x            |
+        | 100-300 Mbps     | 0.8x            |
+        | 300-500 Mbps     | 1.0x            |
+        | > 500 Mbps       | 1.2x            |
+
+        - Example outputs for different connection speeds and file sizes:
+
+        | Connection Speed | 1MB file  | 10MB file  | 100MB file  | 500MB file  |
+        | ---------------- | --------- | ---------- | ----------- | ----------- |
+        | 10 Mbps          | 1         | 3          | 6           | 13          |
+        | 50 Mbps          | 2         | 3          | 6           | 13          |
+        | 100 Mbps         | 2         | 5          | 10          | 19          |
+        | 300 Mbps         | 3         | 6          | 13          | 26          |
+        | 500 Mbps         | 4         | 8          | 16          | 32          |
+        | 1000 Mbps        | 4         | 9          | 19          | 32          |
 
         Args:
             file_size: The size of the file to download. (required)
@@ -82,18 +96,37 @@ class Downloader:
         if self._max_connections != 'auto':
             return self._max_connections
 
-        if file_size < 1024 * 1024:
-            return 1
-        elif file_size <= 5 * 1024 * 1024:
-            return 4
-        elif file_size <= 50 * 1024 * 1024:
-            return 8
-        elif file_size <= 200 * 1024 * 1024:
-            return 16
-        elif file_size <= 400 * 1024 * 1024:
-            return 24
+        file_size_mb = file_size / (1024 * 1024)
+
+        if file_size_mb < 1:
+            base_connections = 1
+        elif file_size_mb <= 5:
+            base_connections = 4
+        elif file_size_mb <= 50:
+            base_connections = 8
+        elif file_size_mb <= 200:
+            base_connections = 16
+        elif file_size_mb <= 400:
+            base_connections = 24
         else:
-            return 32
+            base_connections = 32
+
+        speed = 80.0 if self._connection_speed == 'auto' else float(self._connection_speed)
+
+        if speed < 10:
+            multiplier = 0.2
+        elif speed <= 50:
+            multiplier = 0.4
+        elif speed <= 100:
+            multiplier = 0.6
+        elif speed <= 300:
+            multiplier = 0.8
+        elif speed <= 500:
+            multiplier = 1.0
+        else:
+            multiplier = 1.2
+
+        return max(1, min(int(base_connections * multiplier), 32))
 
     def _get_file_info(self, url: str) -> Tuple[int, str, str]:
         """
@@ -234,7 +267,7 @@ class Downloader:
                     output_path = Path(output_path.parent, f'{base_name}_{counter}{extension}')
                     counter += 1
 
-            self.output_file_path = output_path.as_posix()
+            self.output_path = output_path.as_posix()
 
             progress_columns = [
                 TextColumn(f'Downloading a {mime_type.split("/")[0] if mime_type else "unknown"} file ({mime_type})'),

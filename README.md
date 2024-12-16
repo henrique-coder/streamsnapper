@@ -31,6 +31,7 @@ from pathlib import Path  # Optional
 downloader = Downloader(
     # Initialize the Downloader class with the required settings for downloading a file.
     max_connections='auto',  # The maximum number of connections to use for downloading the file. (default: 'auto')
+    connection_speed='auto',  # The connection speed in Mbps. If 'auto', the connection speed will be set to 80 Mbps. (default: 'auto')
     overwrite=True,  # Overwrite the file if it already exists. Otherwise, a "_1", "_2", etc. suffix will be added. (default: True)
     show_progress_bar=True,  # Show or hide the download progress bar. (default: True)
     headers=None,  # Custom headers to include in the request. If None, default headers will be used. (default: None)
