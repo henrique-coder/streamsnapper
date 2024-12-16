@@ -53,12 +53,18 @@ class YouTube:
         self._raw_youtube_streams: List[Dict[Any, Any]] = []
         self._raw_youtube_subtitles: Dict[str, List[Dict[str, str]]] = {}
 
-        found_system_language = getlocale()
+        found_system_language = getlocale()[0]
 
         if found_system_language:
-            self.system_language: str = found_system_language[0].split('_')[0].lower()
+            try:
+                self.base_system_language: str = found_system_language.split('_')[0].lower()
+                self.system_language_suffix: str = found_system_language.split('_')[1].upper()
+            except IndexError:
+                self.base_system_language: str = 'en'
+                self.system_language_suffix: str = 'US'
         else:
-            self.system_language: str = 'en'
+            self.base_system_language: str = 'en'
+            self.system_language_suffix: str = 'US'
 
         self.general_info: Dict[str, Any] = {}
 
@@ -491,9 +497,9 @@ class YouTube:
             preferred_language = preferred_language.strip().lower()
 
             if preferred_language == 'local':
-                if self.system_language in self.available_audio_languages:
+                if self.base_system_language in self.available_audio_languages:
                     self.best_audio_streams = [
-                        stream for stream in self.best_audio_streams if stream['language'] == self.system_language
+                        stream for stream in self.best_audio_streams if stream['language'] == self.base_system_language
                     ]
                 else:
                     preferred_language = 'source'
