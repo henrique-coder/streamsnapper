@@ -33,6 +33,7 @@ python = "^3.9"
 httpx = { version = "0.28.1", optional = true }
 rich = { version = "13.9.4", optional = true }
 scrapetube = { version = "2.5.1", optional = true }
+tenacity = { version = "9.0.0", optional = true }
 yt-dlp = { version = "2024.12.13", optional = true }
 
 [tool.poetry.dev-dependencies]
@@ -40,7 +41,7 @@ orjson = "*"
 pytest = "*"
 
 [tool.poetry.extras]
-downloader = ["httpx", "rich"]
+downloader = ["httpx", "rich", "tenacity"]
 merger = []
-youtube = ["httpx", "rich", "scrapetube", "yt-dlp"]
-all = ["httpx", "rich", "scrapetube", "yt-dlp"]
+youtube = ["httpx", "rich", "scrapetube", "tenacity", "yt-dlp"]
+all = ["httpx", "rich", "scrapetube", "tenacity", "yt-dlp"]

@@ -500,6 +500,21 @@ files = [
 ]
 
 [[package]]
+name = "tenacity"
+version = "9.0.0"
+description = "Retry code until it succeeds"
+optional = true
+python-versions = ">=3.8"
+files = [
+    {file = "tenacity-9.0.0-py3-none-any.whl", hash = "sha256:93de0c98785b27fcf659856aa9f54bfbd399e29969b0621bc7f762bd441b4539"},
+    {file = "tenacity-9.0.0.tar.gz", hash = "sha256:807f37ca97d62aa361264d497b0e31e92b8027044942bfa756160d908320d73b"},
+]
+
+[package.extras]
+doc = ["reno", "sphinx"]
+test = ["pytest", "tornado (>=4.5)", "typeguard"]
+
+[[package]]
 name = "tomli"
 version = "2.2.1"
 description = "A lil' TOML parser"
@@ -590,12 +605,12 @@ static-analysis = ["autopep8 (>=2.0,<3.0)", "ruff (>=0.8.0,<0.9.0)"]
 test = ["pytest (>=8.1,<9.0)", "pytest-rerunfailures (>=14.0,<15.0)"]
 
 [extras]
-all = ["httpx", "rich", "scrapetube", "yt-dlp"]
-downloader = ["httpx", "rich"]
+all = ["httpx", "rich", "scrapetube", "tenacity", "yt-dlp"]
+downloader = ["httpx", "rich", "tenacity"]
 merger = []
-youtube = ["httpx", "rich", "scrapetube", "yt-dlp"]
+youtube = ["httpx", "rich", "scrapetube", "tenacity", "yt-dlp"]
 
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "4bd87ef278e5bafd2426f9aefdb62f531ab802279c81ccccb389558539f81201"
+content-hash = "e7e80e78a46727a95fef9703e71b5a2bb1b058cfc2cbbd3070e0b70098eca86e"

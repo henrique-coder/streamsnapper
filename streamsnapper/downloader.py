@@ -1,5 +1,6 @@
 # Built-in imports
 from concurrent.futures import ThreadPoolExecutor
+from functools import lru_cache
 from math import ceil
 from mimetypes import guess_extension as guess_mimetype_extension
 from os import PathLike
@@ -8,8 +9,9 @@ from typing import Dict, List, Literal, Optional, Tuple, Union
 from urllib.parse import unquote, urlparse
 
 # Third-party imports
-from httpx import get, head, HTTPError
+from httpx import Client, HTTPStatusError
 from rich.progress import BarColumn, DownloadColumn, Progress, TextColumn, TimeRemainingColumn, TransferSpeedColumn
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 # Local imports
 from .exceptions import DownloadError, RequestError
@@ -21,7 +23,7 @@ class Downloader:
     def __init__(
         self,
         max_connections: Union[int, Literal['auto']] = 'auto',
-        connection_speed: Union[float, Literal['auto']] = 'auto',
+        connection_speed: float = 80,
         overwrite: bool = True,
         show_progress_bar: bool = True,
         headers: Optional[Dict[str, str]] = None,
@@ -32,7 +34,7 @@ class Downloader:
 
         Args:
             max_connections: The maximum number of connections to use for downloading the file. (default: 'auto')
-            connection_speed: The connection speed in Mbps. If 'auto', the connection speed will be set to 80 Mbps. (default: 'auto')
+            connection_speed: The connection speed in Mbps. (default: 80)
             overwrite: Overwrite the file if it already exists. Otherwise, a "_1", "_2", etc. suffix will be added. (default: True)
             show_progress_bar: Show or hide the download progress bar. (default: True)
             headers: Custom headers to include in the request. If None, default headers will be used. (default: None)
@@ -58,9 +60,12 @@ class Downloader:
                 if key.title() not in imutable_headers:
                     self.headers[key.title()] = value
 
+        self._client: Client = Client(headers=self.headers, follow_redirects=True, timeout=self._timeout)
+
         self.output_path: str = None
 
-    def _calculate_connections(self, file_size: int) -> int:
+    @lru_cache()
+    def _calculate_connections(self, file_size: int, connection_speed: Union[float, Literal['auto']]) -> int:
         """
         Calculates optimal number of connections based on file size and connection speed.
 
@@ -88,6 +93,7 @@ class Downloader:
 
         Args:
             file_size: The size of the file to download. (required)
+            connection_speed: The connection speed in Mbps. (default: 80)
 
         Returns:
             The number of connections to use.
@@ -111,7 +117,7 @@ class Downloader:
         else:
             base_connections = 32
 
-        speed = 80.0 if self._connection_speed == 'auto' else float(self._connection_speed)
+        speed = 80.0 if connection_speed == 'auto' else float(connection_speed)
 
         if speed < 10:
             multiplier = 0.2
@@ -128,6 +134,7 @@ class Downloader:
 
         return max(1, min(int(base_connections * multiplier), 32))
 
+    @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=5), reraise=True)
     def _get_file_info(self, url: str) -> Tuple[int, str, str]:
         """
         Retrieve file information from a given URL.
@@ -147,8 +154,9 @@ class Downloader:
         """
 
         try:
-            r = head(url, headers=self.headers, follow_redirects=True, timeout=self._timeout)
-        except HTTPError as e:
+            r = self._client.head(url)
+            r.raise_for_status()
+        except HTTPStatusError as e:
             raise RequestError(f'An error occurred while getting file info: {str(e)}') from e
 
         content_length = int(r.headers.get('content-length', 0))
@@ -187,16 +195,22 @@ class Downloader:
         if total_size == 0:
             return [(0, 0)]
 
-        connections = self._calculate_connections(total_size)
-        chunk_size = ceil(total_size / connections)
-        ranges = []
+        connections = self._calculate_connections(total_size, self._connection_speed)
 
-        for i in range(0, total_size, chunk_size):
-            end = min(i + chunk_size - 1, total_size - 1)
-            ranges.append((i, end))
+        optimal_chunk = max(1024 * 1024, total_size // (connections * 2))
+        chunk_size = min(ceil(total_size / connections), optimal_chunk)
+
+        ranges = []
+        start = 0
+
+        while start < total_size:
+            end = min(start + chunk_size - 1, total_size - 1)
+            ranges.append((start, end))
+            start = end + 1
 
         return ranges
 
+    @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10), reraise=True)
     def _download_chunk(self, url: str, start: int, end: int, progress: Progress, task_id: int) -> bytes:
         """
         Downloads a chunk of a file from the given URL.
@@ -220,18 +234,22 @@ class Downloader:
 
         headers = {**self.headers}
 
+        chunk_size = min(8192, end - start + 1)
+        buffer = bytearray()
+
         if end > 0:
             headers['Range'] = f'bytes={start}-{end}'
 
         try:
-            response = get(url, headers=headers, follow_redirects=True, timeout=self._timeout)
-            response.raise_for_status()
+            with self._client.stream('GET', url, headers=headers) as r:
+                r.raise_for_status()
 
-            chunk = response.content
-            progress.update(task_id, advance=len(chunk))
+                for chunk in r.iter_bytes(chunk_size=chunk_size):
+                    buffer.extend(chunk)
+                    progress.update(task_id, advance=len(chunk))
 
-            return chunk
-        except HTTPError as e:
+            return bytes(buffer)
+        except HTTPStatusError as e:
             raise DownloadError(f'An error occurred while downloading chunk: {str(e)}') from e
 
     def download(self, url: str, output_path: Union[str, PathLike] = Path.cwd()) -> None:
