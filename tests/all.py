@@ -36,7 +36,7 @@ class TestDownloader:
 
     def test_file_download(self, download_urls: List[str]) -> None:
         downloader: Downloader = Downloader(
-            max_connections='auto', overwrite=True, show_progress_bar=True, headers=None, timeout=10
+            max_connections='auto', overwrite=True, show_progress_bar=True, custom_headers=None, timeout=10
         )
 
         try:
