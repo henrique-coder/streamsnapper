@@ -147,7 +147,7 @@ class Downloader:
         """
 
         try:
-            r = head(url, headers=self.headers, timeout=self._timeout, follow_redirects=True)
+            r = head(url, headers=self.headers, follow_redirects=True, timeout=self._timeout)
         except HTTPError as e:
             raise RequestError(f'An error occurred while getting file info: {str(e)}') from e
 
@@ -224,7 +224,7 @@ class Downloader:
             headers['Range'] = f'bytes={start}-{end}'
 
         try:
-            response = get(url, headers=headers, timeout=self._timeout)
+            response = get(url, headers=headers, follow_redirects=True, timeout=self._timeout)
             response.raise_for_status()
 
             chunk = response.content
