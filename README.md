@@ -34,7 +34,7 @@ downloader = Downloader(
     connection_speed=80,  # The connection speed in Mbps. (default: 80)
     overwrite=True,  # Overwrite the file if it already exists. Otherwise, a "_1", "_2", etc. suffix will be added. (default: True)
     show_progress_bar=True,  # Show or hide the download progress bar. (default: True)
-    headers=None,  # Custom headers to include in the request. If None, default headers will be used. (default: None)
+    custom_headers=None,  # Custom headers to include in the request. If None, default headers will be used. Imutable headers are 'Accept-Encoding' and 'Range'. (default: None)
     timeout=None  # Timeout in seconds for the download process. Or None for no timeout. (default: None)
 )
 

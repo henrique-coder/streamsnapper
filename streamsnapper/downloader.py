@@ -26,7 +26,7 @@ class Downloader:
         connection_speed: float = 80,
         overwrite: bool = True,
         show_progress_bar: bool = True,
-        headers: Optional[Dict[str, str]] = None,
+        custom_headers: Optional[Dict[str, str]] = None,
         timeout: Optional[int] = None,
     ) -> None:
         """
@@ -37,7 +37,7 @@ class Downloader:
             connection_speed: The connection speed in Mbps. (default: 80)
             overwrite: Overwrite the file if it already exists. Otherwise, a "_1", "_2", etc. suffix will be added. (default: True)
             show_progress_bar: Show or hide the download progress bar. (default: True)
-            headers: Custom headers to include in the request. If None, default headers will be used. (default: None)
+            custom_headers: Custom headers to include in the request. If None, default headers will be used. Imutable headers are 'Accept-Encoding' and 'Range'. (default: None)
             timeout: Timeout in seconds for the download process. Or None for no timeout. (default: None)
         """
 
@@ -49,18 +49,18 @@ class Downloader:
 
         imutable_headers = ['Accept-Encoding', 'Range']
 
-        self.headers: Dict[str, str] = {
+        self._custom_headers: Dict[str, str] = {
             'Accept': '*/*',
             'Accept-Encoding': 'identity',
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
         }
 
-        if headers:
-            for key, value in headers.items():
+        if custom_headers:
+            for key, value in custom_headers.items():
                 if key.title() not in imutable_headers:
-                    self.headers[key.title()] = value
+                    self._custom_headers[key.title()] = value
 
-        self._client: Client = Client(headers=self.headers, follow_redirects=True, timeout=self._timeout)
+        self._client: Client = Client(headers=self._custom_headers, follow_redirects=True, timeout=self._timeout)
 
         self.output_path: str = None
 
@@ -232,7 +232,7 @@ class Downloader:
             DownloadError: If an error occurs while downloading the chunk.
         """
 
-        headers = {**self.headers}
+        headers = {**self._custom_headers}
 
         chunk_size = min(8192, end - start + 1)
         buffer = bytearray()
