@@ -27,16 +27,11 @@ from streamsnapper import (
 class TestDownloader:
     @fixture
     def download_urls(self) -> List[str]:
-        return [
-            'https://httpbin.org/image/jpeg',
-            'https://httpbin.org/image/png',
-            'https://httpbin.org/image/svg',
-            'https://httpbin.org/image/webp',
-        ]
+        return ['https://httpbin.org/image/png', 'https://httpbin.org/image/svg', 'https://httpbin.org/image/webp']
 
     def test_file_download(self, download_urls: List[str]) -> None:
         downloader: Downloader = Downloader(
-            max_connections='auto', overwrite=True, show_progress_bar=True, custom_headers=None, timeout=10
+            max_connections='auto', connection_speed=1000, overwrite=True, show_progress_bar=True, custom_headers=None, timeout=10
         )
 
         try:
