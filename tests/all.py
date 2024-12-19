@@ -1,6 +1,5 @@
 # Built-in imports
 from pathlib import Path
-from random import choice
 from typing import List, Optional, Tuple
 
 # Third-party imports
@@ -9,42 +8,23 @@ from pytest import fail, fixture, mark
 
 # Local imports
 from streamsnapper import (
-    Downloader,
-    DownloadError,
     EmptyDataError,
     FFmpegNotFoundError,
     InvalidDataError,
     MergeError,
     Merger,
-    RequestError,
     ScrapingError,
-    StreamBaseError,
+    StreamSnapperError,
     YouTube,
     YouTubeExtractor,
 )
-
-
-class TestDownloader:
-    @fixture
-    def download_urls(self) -> List[str]:
-        return ['https://httpbin.org/image/png', 'https://httpbin.org/image/svg', 'https://httpbin.org/image/webp']
-
-    def test_file_download(self, download_urls: List[str]) -> None:
-        downloader: Downloader = Downloader(
-            max_connections='auto', connection_speed=1000, overwrite=True, show_progress_bar=True, custom_headers=None, timeout=10
-        )
-
-        try:
-            downloader.download(url=choice(download_urls), output_path=Path.cwd())
-        except (DownloadError, RequestError, StreamBaseError) as e:
-            fail(f'Something went wrong while downloading a file. Error: {e}')
 
 
 class TestMerger:
     def test_merger_initialization(self) -> None:
         try:
             Merger()
-        except (FFmpegNotFoundError, MergeError, StreamBaseError) as e:
+        except (FFmpegNotFoundError, MergeError, StreamSnapperError) as e:
             fail(f'Something went wrong while initializing the Merger class. Error: {e}')
 
 
@@ -58,7 +38,7 @@ class TestYouTube:
             youtube.analyze_video_streams(preferred_quality='all')
             youtube.analyze_audio_streams(preferred_language='local')
             youtube.analyze_subtitle_streams()
-        except (ValueError, InvalidDataError, ScrapingError, InvalidDataError, EmptyDataError, StreamBaseError) as e:
+        except (ValueError, InvalidDataError, ScrapingError, InvalidDataError, EmptyDataError, StreamSnapperError) as e:
             fail(f'Something went wrong while extracting a YouTube video data. Error: {e}')
 
         assert youtube.general_info is not None, 'General information is not available.'

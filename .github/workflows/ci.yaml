@@ -28,7 +28,6 @@ concurrency:
 jobs:
   test:
     name: 🐍 Python ${{ matrix.python-version }} on ${{ matrix.os }}
-    if: startsWith(github.event.head_commit.message, 'Bump version to') || startsWith(github.event.head_commit.message, '[CI]')
     strategy:
       fail-fast: false
       matrix:

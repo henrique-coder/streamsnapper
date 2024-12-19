@@ -12,44 +12,12 @@ StreamSnapper is an intuitive library designed to simplify, enhance, and organiz
 
 ```bash
 pip install -U streamsnapper  # It does not have any features by default, but it can be extended with optional features
-pip install -U streamsnapper[downloader]  # It has the feature of downloading online content with support for multiple simultaneous connections
 pip install -U streamsnapper[merger]  # It has the feature of merging video files with audio files using FFmpeg (currently it does not need any dependencies)
 pip install -U streamsnapper[youtube]  # It has advanced features to extract data from YouTube, with support for several other features
 pip install -U streamsnapper[all]  # It has all features available at once
 ```
 
 ### Example Usage
-
-#### `streamsnapper[downloader]`
-
-```python
-from streamsnapper import Downloader
-from pathlib import Path  # Optional
-
-
-# A class for downloading direct download URLs.
-downloader = Downloader(
-    # Initialize the Downloader class with the required settings for downloading a file.
-    max_connections='auto',  # The maximum number of connections to use for downloading the file. (default: 'auto')
-    connection_speed=80,  # The connection speed in Mbps. (default: 80)
-    overwrite=True,  # Overwrite the file if it already exists. Otherwise, a "_1", "_2", etc. suffix will be added. (default: True)
-    show_progress_bar=True,  # Show or hide the download progress bar. (default: True)
-    custom_headers=None,  # Custom headers to include in the request. If None, default headers will be used. Imutable headers are 'Accept-Encoding' and 'Range'. (default: None)
-    timeout=None  # Timeout in seconds for the download process. Or None for no timeout. (default: None)
-)
-
-# Downloads a file from the provided URL to the output file path.
-# - If the output_path is a directory, the file name will be generated from the server response.
-# - If the output_path is a file, the file will be saved with the provided name.
-# - If not provided, the file will be saved to the current working directory.
-downloader.download(
-    url='https://example.com/file',  # The download URL to download the file from. (required)
-    output_path=Path.cwd()  # The path to save the downloaded file to. If the path is a directory, the file name will be generated from the server response. If the path is a file, the file will be saved with the provided name. If not provided, the file will be saved to the current working directory. (default: Path.cwd())
-)
-
-# All functions are documented and have detailed typings, use your development IDE to learn more.
-
-```
 
 #### `streamsnapper[merger]`
 

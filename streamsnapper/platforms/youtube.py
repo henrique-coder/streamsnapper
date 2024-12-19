@@ -16,11 +16,11 @@ from scrapetube import (
     get_playlist as scrape_youtube_playlist,
     get_channel as scrape_youtube_channel,
 )
+from turbodl import TurboDL
 from yt_dlp import YoutubeDL
 from yt_dlp import utils as yt_dlp_utils
 
 # Local imports
-from ..downloader import Downloader
 from ..exceptions import EmptyDataError, InvalidDataError, ScrapingError
 from ..functions import format_string, get_value
 from ..merger import Merger
@@ -596,7 +596,7 @@ class YouTube:
             tmp_path.mkdir(exist_ok=True)
 
             output_video_path = Path(tmp_path, f'.tmp-video-{self.general_info["id"]}.{video_stream["extension"]}')
-            video_downloader = Downloader(
+            video_downloader = TurboDL(
                 max_connections=max_connections,
                 connection_speed=connection_speed,
                 overwrite=overwrite,
@@ -606,7 +606,7 @@ class YouTube:
             video_downloader.download(video_stream['url'], output_video_path)
 
             output_audio_path = Path(tmp_path, f'.tmp-audio-{self.general_info["id"]}.{audio_stream["extension"]}')
-            audio_downloader = Downloader(
+            audio_downloader = TurboDL(
                 max_connections=max_connections,
                 connection_speed=connection_speed,
                 overwrite=overwrite,
@@ -629,7 +629,7 @@ class YouTube:
                     output_path, f'{self.general_info["cleanTitle"]} [{self.general_info["id"]}].{video_stream["extension"]}'
                 )
 
-            downloader = Downloader(
+            downloader = TurboDL(
                 max_connections=max_connections,
                 connection_speed=connection_speed,
                 overwrite=overwrite,
@@ -645,7 +645,7 @@ class YouTube:
                     output_path, f'{self.general_info["cleanTitle"]} [{self.general_info["id"]}].{audio_stream["extension"]}'
                 )
 
-            downloader = Downloader(
+            downloader = TurboDL(
                 max_connections=max_connections,
                 connection_speed=connection_speed,
                 overwrite=overwrite,

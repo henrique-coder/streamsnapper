@@ -556,6 +556,22 @@ files = [
 ]
 
 [[package]]
+name = "turbodl"
+version = "0.0.1"
+description = "An extremely smart and efficient download manager for various cases."
+optional = true
+python-versions = "<4.0,>=3.9"
+files = [
+    {file = "turbodl-0.0.1-py3-none-any.whl", hash = "sha256:b26a84f5f91de669ce96ab083b1fa0d6d0c976114e38d38b9f43c65fa7ae0d31"},
+    {file = "turbodl-0.0.1.tar.gz", hash = "sha256:d358adf9d224b57d44c73f48cbc5251cec6c2c4904aa41e43e68b62203910e8f"},
+]
+
+[package.dependencies]
+httpx = "0.28.1"
+rich = "13.9.4"
+tenacity = "9.0.0"
+
+[[package]]
 name = "typing-extensions"
 version = "4.12.2"
 description = "Backported and Experimental Type Hints for Python 3.8+"
@@ -605,12 +621,11 @@ static-analysis = ["autopep8 (>=2.0,<3.0)", "ruff (>=0.8.0,<0.9.0)"]
 test = ["pytest (>=8.1,<9.0)", "pytest-rerunfailures (>=14.0,<15.0)"]
 
 [extras]
-all = ["httpx", "rich", "scrapetube", "tenacity", "yt-dlp"]
-downloader = ["httpx", "rich", "tenacity"]
+all = ["httpx", "scrapetube", "turbodl", "yt-dlp"]
 merger = []
-youtube = ["httpx", "rich", "scrapetube", "tenacity", "yt-dlp"]
+youtube = ["httpx", "scrapetube", "turbodl", "yt-dlp"]
 
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "e7e80e78a46727a95fef9703e71b5a2bb1b058cfc2cbbd3070e0b70098eca86e"
+content-hash = "f3a3563ebb5bdcbe0ade9c87c5dc68581d918e8ec79b2d9584926c62d85ac5b5"

@@ -1,46 +1,34 @@
-class StreamBaseError(Exception):
-    """Base exception for StreamSnapper errors."""
+class StreamSnapperError(Exception):
+    """Base class for all StreamSnapper exceptions."""
 
     pass
 
 
-class DownloadError(StreamBaseError):
-    """Exception raised when an error occurs while downloading a file."""
-
-    pass
-
-
-class EmptyDataError(StreamBaseError):
+class EmptyDataError(StreamSnapperError):
     """Exception raised when no data is available."""
 
     pass
 
 
-class FFmpegNotFoundError(StreamBaseError):
+class FFmpegNotFoundError(StreamSnapperError):
     """Exception raised when the FFmpeg executable is not found."""
 
     pass
 
 
-class InvalidDataError(StreamBaseError):
+class InvalidDataError(StreamSnapperError):
     """Exception raised when invalid data is provided."""
 
     pass
 
 
-class MergeError(StreamBaseError):
+class MergeError(StreamSnapperError):
     """Exception raised when an error occurs while merging files."""
 
     pass
 
 
-class RequestError(StreamBaseError):
-    """Exception raised when an error occurs while making a request."""
-
-    pass
-
-
-class ScrapingError(StreamBaseError):
+class ScrapingError(StreamSnapperError):
     """Exception raised when an error occurs while scraping data."""
 
     pass

@@ -51,7 +51,6 @@ jobs:
 
             ### Available Extras:
             - 🎬 YouTube Tools: `streamsnapper[youtube]`
-            - 📥 Downloader: `streamsnapper[downloader]`
             - 🔄 Merger: `streamsnapper[merger]`
             - ✨ All Features: `streamsnapper[all]`
 
@@ -63,7 +62,7 @@ jobs:
 
             ### 📊 Compare Changes
 
-            [View all changes](https://github.com/Henrique-Coder/streamsnapper/compare/${{ steps.previoustag.outputs.tag }}...v${{ steps.version.outputs.version }})
+            [View all changes](https://github.com/henrique-coder/streamsnapper/compare/${{ steps.previoustag.outputs.tag }}...v${{ steps.version.outputs.version }})
           draft: false
           prerelease: false
         env:
