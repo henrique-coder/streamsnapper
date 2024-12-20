@@ -32,7 +32,7 @@ classifiers = [
 python = "^3.9"
 httpx = { version = "0.28.1", optional = true }
 scrapetube = { version = "2.5.1", optional = true }
-turbodl = { version = "0.0.1", optional = true }
+turbodl = { version = "*", optional = true }
 yt-dlp = { version = "2024.12.13", optional = true }
 
 [tool.poetry.dev-dependencies]

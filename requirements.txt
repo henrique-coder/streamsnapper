@@ -1,4 +1,4 @@
 httpx == 0.28.1
 scrapetube == 2.5.1
-turbodl == 0.0.1
+turbodl
 yt-dlp == 2024.12.13
