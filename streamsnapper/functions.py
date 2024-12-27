@@ -1,6 +1,6 @@
 # Built-in imports
 from re import sub as re_sub
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Union
 from unicodedata import normalize
 
 
@@ -8,7 +8,7 @@ def get_value(
     data: Dict[Any, Any],
     key: Any,
     fallback_keys: Optional[List[Any]] = None,
-    convert_to: Optional[Callable] = None,
+    convert_to: Optional[Union[Callable, List[Callable]]] = None,
     default_to: Optional[Any] = None,
 ) -> Any:
     """
@@ -16,17 +16,17 @@ def get_value(
 
     - If the provided key does not exist in the dictionary, the function will return the default value if provided, or None otherwise.
     - If a list of fallback keys is provided, the function will try to get the value from the dictionary with the fallback keys. If the value is not found in the dictionary with any of the fallback keys, the function will return the default value if provided, or None otherwise.
-    - If the value is not None and a conversion function is provided, the function will try to convert the value using the provided conversion function. If the conversion fails with a ValueError or TypeError, the function will return the default value if provided, or None otherwise.
+    - If the value is not None and a conversion function or list of conversion functions is provided, the function will try to convert the value using each conversion function in sequence until one succeeds. If all conversions fail with ValueError or TypeError, the function will return the default value if provided, or None otherwise.
 
     Args:
         data: The dictionary to get the value from. (required)
         key: The key to get the value from. (required)
         fallback_keys: A list of fallback keys to try if the key does not exist in the dictionary. (default: None)
-        convert_to: A conversion function to convert the value. (default: None)
-        default_to: A default value to return if the value is not found in the dictionary or if the conversion fails. (default: None)
+        convert_to: A conversion function or list of conversion functions to convert the value. (default: None)
+        default_to: A default value to return if the value is not found in the dictionary or if all conversions fail. (default: None)
 
     Returns:
-        The value from the dictionary or the default value if the value is not found in the dictionary or if the conversion fails.
+        The value from the dictionary or the default value if the value is not found in the dictionary or if all conversions fail.
     """
 
     try:
@@ -49,10 +49,17 @@ def get_value(
         return default_to
 
     if convert_to is not None:
-        try:
-            value = convert_to(value)
-        except (ValueError, TypeError):
-            return default_to
+        converters = [convert_to] if not isinstance(convert_to, list) else convert_to
+
+        for converter in converters:
+            try:
+                value = converter(value)
+                break
+            except (ValueError, TypeError):
+                if converter == converters[-1]:
+                    return default_to
+
+                continue
 
     return value
 
@@ -80,3 +87,17 @@ def format_string(query: str, max_length: Optional[int] = None) -> Optional[str]
         sanitized_string = sanitized_string[:cutoff] if cutoff != -1 else sanitized_string[:max_length]
 
     return sanitized_string if sanitized_string else None
+
+
+def strip(string: Any) -> str:
+    """
+    Strips leading and trailing whitespace from a given string.
+
+    Args:
+        string: The string to strip. (required)
+
+    Returns:
+        The stripped string.
+    """
+
+    return str(string).strip()
