@@ -1,12 +1,12 @@
 ## StreamSnapper
 
-StreamSnapper is an intuitive library designed to simplify, enhance, and organize media downloads from a variety of audiovisual platforms. It offers efficient, high-speed media extraction with optional tools for extracting data from these platforms.
-
 ![PyPI - Version](https://img.shields.io/pypi/v/streamsnapper?style=flat&logo=pypi&logoColor=blue&color=blue&link=https://pypi.org/project/streamsnapper)
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/streamsnapper?style=flat&logo=pypi&logoColor=blue&color=blue&link=https://pypi.org/project/streamsnapper)
 ![PyPI - Code Style](https://img.shields.io/badge/code%20style-ruff-blue?style=flat&logo=ruff&logoColor=blue&color=blue&link=https://github.com/astral-sh/ruff)
 ![PyPI - Format](https://img.shields.io/pypi/format/streamsnapper?style=flat&logo=pypi&logoColor=blue&color=blue&link=https://pypi.org/project/streamsnapper)
 ![PyPI - Python Compatible Versions](https://img.shields.io/pypi/pyversions/streamsnapper?style=flat&logo=python&logoColor=blue&color=blue&link=https://pypi.org/project/streamsnapper)
+
+StreamSnapper is an intuitive library designed to simplify, enhance, and organize media downloads from a variety of audiovisual platforms. It offers efficient, high-speed media extraction with optional tools for extracting data from these platforms.
 
 #### Installation (from [PyPI](https://pypi.org/project/streamsnapper))
 
