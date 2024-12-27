@@ -17,7 +17,7 @@ jobs:
     name: 🏷️ Create Release and Publish to PyPI
     runs-on: ubuntu-22.04
     if: startsWith(github.event.head_commit.message, 'Bump version to')
-    timeout-minutes: 15
+    timeout-minutes: 10
 
     steps:
       - name: 📥 Checkout Repository
@@ -39,34 +39,13 @@ jobs:
           echo "Previous tag: $PREV_TAG"
           echo "tag=$PREV_TAG" >> $GITHUB_OUTPUT
 
-      - name: 🚀 Create Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v${{ steps.version.outputs.version }}
-          name: "🎉 StreamSnapper ${{ steps.version.outputs.version }} - Summary"
-          body: |
-            ## 📦 Installation Options
-
-            StreamSnapper is available on [GitHub](https://github.com/henrique-coder/streamsnapper) and [PyPI](https://pypi.org/project/streamsnapper).
-
-            ### Available Extras:
-            - 🎬 YouTube Tools: `streamsnapper[youtube]`
-            - 🔄 Merger: `streamsnapper[merger]`
-            - ✨ All Features: `streamsnapper[all]`
-
-            > **Important:** Install using `pip install -U streamsnapper[EXTRA]`. Installing without extras won't provide any tools. Choose the components you need!
-
-            ### 📋 Changelog:
-
-            - _Generating release notes..._
-
-            ### 📊 Compare Changes
-
-            [View all changes](https://github.com/henrique-coder/streamsnapper/compare/${{ steps.previoustag.outputs.tag }}...v${{ steps.version.outputs.version }})
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: 📝 Generate Commit List
+        id: commit_list
+        run: |
+          COMMITS=$(git log --pretty=format:"- [%s](https://github.com/${{ github.repository }}/commit/%H)" ${{ steps.previoustag.outputs.tag }}..HEAD | grep -v "^- \[Bump version to" || echo "- No significant changes in this release")
+          echo "commits<<EOF" >> $GITHUB_OUTPUT
+          echo "$COMMITS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
       - name: 🐍 Setup Python
         uses: actions/setup-python@v5
@@ -83,6 +62,37 @@ jobs:
 
       - name: ✅ Validate Metadata
         run: twine check dist/*
+
+      - name: 🚀 Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: "🎉 StreamSnapper ${{ steps.version.outputs.version }} - Summary"
+          body: |
+            ## 📦 Installation Options
+
+            StreamSnapper is available on [GitHub](https://github.com/henrique-coder/streamsnapper) and [PyPI](https://pypi.org/project/streamsnapper).
+
+            ### Available Extras:
+            - 🎬 YouTube Tools: `streamsnapper[youtube]`
+            - 🔄 Merger: `streamsnapper[merger]`
+            - ✨ All Features: `streamsnapper[all]`
+
+            > **Important:** Install using `pip install -U streamsnapper[EXTRA]`. Installing without extras won't provide any tools (recommended option: `pip install -U streamsnapper[all]`).
+            ### 📋 Changelog:
+
+            ${{ steps.commit_list.outputs.commits }}
+
+            ### 📊 Compare Changes
+
+            [View all changes](https://github.com/henrique-coder/streamsnapper/compare/${{ steps.previoustag.outputs.tag }}...v${{ steps.version.outputs.version }})
+          draft: false
+          prerelease: false
+          files: |
+            dist/*.whl
+            dist/*.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: 🚀 Upload to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
