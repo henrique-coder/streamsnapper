@@ -33,11 +33,7 @@ python = "^3.9"
 httpx = { version = "0.28.1", optional = true }
 scrapetube = { version = "2.5.1", optional = true }
 turbodl = { version = "*", optional = true }
-yt-dlp = { version = "2024.12.13", optional = true }
-
-[tool.poetry.dev-dependencies]
-orjson = "*"
-pytest = "*"
+yt-dlp = { version = "2024.12.23", optional = true }
 
 [tool.poetry.extras]
 merger = []
