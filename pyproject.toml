@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 [tool.poetry]
 name = "streamsnapper"
 version = "0.2.7"
-description = "StreamSnapper is an intuitive library designed to simplify, enhance, and organize media downloads from a variety of audiovisual platforms. It offers efficient, high-speed media extraction with optional tools for extracting data from these platforms."
+description = "StreamSnapper is an intuitive library designed to simplify, improve, and organize YouTube and Youtube Music media streams. It offers scraping functions with higher speed extraction and efficiency with the latest tools to perform such processes."
 authors = ["henrique-coder <hjyz6rqyb@mozmail.com>"]
 license = "MIT"
 readme = "README.md"
@@ -30,12 +30,7 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = "^3.9"
-httpx = { version = "0.28.1", optional = true }
-scrapetube = { version = "2.5.1", optional = true }
-turbodl = { version = "*", optional = true }
-yt-dlp = { version = "2024.12.23", optional = true }
-
-[tool.poetry.extras]
-merger = []
-youtube = ["httpx", "scrapetube", "turbodl", "yt-dlp"]
-all = ["httpx", "scrapetube", "turbodl", "yt-dlp"]
+httpx = { version = "0.28.1", optional = false }
+scrapetube = { version = "2.5.1", optional = false }
+turbodl = { version = "0.1.5", optional = false }
+yt-dlp = { version = "2024.12.23", optional = false }

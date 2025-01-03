@@ -21,9 +21,9 @@ from yt_dlp import YoutubeDL
 from yt_dlp import utils as yt_dlp_utils
 
 # Local imports
-from ..exceptions import EmptyDataError, InvalidDataError, ScrapingError
-from ..functions import format_string, get_value, strip
-from ..merger import Merger
+from .exceptions import EmptyDataError, InvalidDataError, ScrapingError
+from .functions import format_string, get_value, strip
+from .merger import Merger
 
 
 class YouTube:

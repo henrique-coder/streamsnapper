@@ -80,16 +80,12 @@ jobs:
           tag_name: v${{ steps.version_info.outputs.version }}
           name: ${{ steps.version_info.outputs.extra_text != '' && format('🎉 StreamSnapper {0} - {1}', steps.version_info.outputs.version, steps.version_info.outputs.extra_text) || format('🎉 StreamSnapper {0}', steps.version_info.outputs.version) }}
           body: |
-            ## 📦 Installation Options
+            ## 📦 Summary
 
-            StreamSnapper is available on [GitHub](https://github.com/henrique-coder/streamsnapper) and [PyPI](https://pypi.org/project/streamsnapper).
+            > _StreamSnapper is an intuitive library designed to simplify, improve, and organize YouTube and Youtube Music media streams. It offers scraping functions with higher speed extraction and efficiency with the latest tools to perform such processes._
 
-            ### Available Extras:
-            - 🎬 YouTube Tools: `streamsnapper[youtube]`
-            - 🔄 Merger: `streamsnapper[merger]`
-            - ✨ All Features: `streamsnapper[all]`
+            ❇️ Available for automatic installation at [PyPI](https://pypi.org/project/streamsnapper) and manual installation at [GitHub](https://github.com/henrique-coder/streamsnapper).
 
-            > **Important:** Install using `pip install -U streamsnapper[EXTRA]`. Installing without extras won't provide any additional features.
             ### 📋 Changelog:
 
             ${{ steps.commit_list.outputs.commits }}
