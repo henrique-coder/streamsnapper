@@ -27,7 +27,9 @@ from .merger import Merger
 
 
 class YouTube:
-    """A class for extracting and formatting data from YouTube videos, facilitating access to general video information, video streams, audio streams and subtitles."""
+    """
+    A class for extracting and formatting data from YouTube videos, facilitating access to general video information, video streams, audio streams and subtitles.
+    """
 
     def __init__(self, logging: bool = False) -> None:
         """
@@ -66,7 +68,7 @@ class YouTube:
             self.base_system_language: str = "en"
             self.system_language_suffix: str = "US"
 
-        self.general_info: Dict[str, Any] = {}
+        self.information: Dict[str, Any] = {}
 
         self.best_video_streams: List[Dict[str, Any]] = []
         self.best_video_stream: Dict[str, Any] = {}
@@ -169,7 +171,7 @@ class YouTube:
                 except JSONDecodeError:
                     pass
 
-        general_info = {
+        information = {
             "sourceUrl": self._source_url,
             "shortUrl": f"https://youtu.be/{id_}",
             "embedUrl": f"https://www.youtube.com/embed/{id_}",
@@ -208,9 +210,9 @@ class YouTube:
         }
 
         if check_thumbnails:
-            while general_info["thumbnails"]:
+            while information["thumbnails"]:
                 if head(
-                    general_info["thumbnails"][0],
+                    information["thumbnails"][0],
                     headers={
                         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
                     },
@@ -218,9 +220,9 @@ class YouTube:
                 ).is_success:
                     break
                 else:
-                    general_info["thumbnails"].pop(0)
+                    information["thumbnails"].pop(0)
 
-        self.general_info = dict(sorted(general_info.items()))
+        self.information = dict(sorted(information.items()))
 
     def analyze_video_streams(
         self,
@@ -516,7 +518,9 @@ class YouTube:
             self.best_audio_download_url = self.best_audio_stream["url"] if self.best_audio_stream else None
 
     def analyze_subtitle_streams(self) -> None:
-        """Analyze the subtitle streams of the YouTube video."""
+        """
+        Analyze the subtitle streams of the YouTube video.
+        """
 
         data = self._raw_youtube_subtitles
 
@@ -581,7 +585,7 @@ class YouTube:
         if not self._raw_youtube_data:
             raise EmptyDataError("No YouTube data available. Please call .extract() first.")
 
-        if not self.general_info:
+        if not self.information:
             self.analyze_info()
 
         if not video_stream and not audio_stream:
@@ -596,13 +600,13 @@ class YouTube:
         if video_stream and audio_stream:
             if output_path.is_dir():
                 output_path = Path(
-                    output_path, f'{self.general_info["cleanTitle"]} [{self.general_info["id"]}].{video_stream["extension"]}'
+                    output_path, f'{self.information["cleanTitle"]} [{self.information["id"]}].{video_stream["extension"]}'
                 )
 
             tmp_path = Path(gettempdir(), ".tmp-streamsnapper-downloader")
             tmp_path.mkdir(exist_ok=True)
 
-            output_video_path = Path(tmp_path, f'.tmp-video-{self.general_info["id"]}.{video_stream["extension"]}')
+            output_video_path = Path(tmp_path, f'.tmp-video-{self.information["id"]}.{video_stream["extension"]}')
             video_downloader = TurboDL(
                 max_connections=max_connections,
                 connection_speed=connection_speed,
@@ -614,7 +618,7 @@ class YouTube:
                 video_stream["url"], output_video_path, pre_allocate_space=pre_allocate_space, use_ram_buffer=use_ram_buffer
             )
 
-            output_audio_path = Path(tmp_path, f'.tmp-audio-{self.general_info["id"]}.{audio_stream["extension"]}')
+            output_audio_path = Path(tmp_path, f'.tmp-audio-{self.information["id"]}.{audio_stream["extension"]}')
             audio_downloader = TurboDL(
                 max_connections=max_connections,
                 connection_speed=connection_speed,
@@ -637,7 +641,7 @@ class YouTube:
         elif video_stream:
             if output_path.is_dir():
                 output_path = Path(
-                    output_path, f'{self.general_info["cleanTitle"]} [{self.general_info["id"]}].{video_stream["extension"]}'
+                    output_path, f'{self.information["cleanTitle"]} [{self.information["id"]}].{video_stream["extension"]}'
                 )
 
             downloader = TurboDL(
@@ -655,7 +659,7 @@ class YouTube:
         elif audio_stream:
             if output_path.is_dir():
                 output_path = Path(
-                    output_path, f'{self.general_info["cleanTitle"]} [{self.general_info["id"]}].{audio_stream["extension"]}'
+                    output_path, f'{self.information["cleanTitle"]} [{self.information["id"]}].{audio_stream["extension"]}'
                 )
 
             downloader = TurboDL(
@@ -673,10 +677,14 @@ class YouTube:
 
 
 class YouTubeExtractor:
-    """A class for extracting data from YouTube URLs and searching for YouTube videos."""
+    """
+    A class for extracting data from YouTube URLs and searching for YouTube videos.
+    """
 
     def __init__(self) -> None:
-        """Initialize the Extractor class with some regular expressions for analyzing YouTube URLs."""
+        """
+        Initialize the Extractor class with some regular expressions for analyzing YouTube URLs.
+        """
 
         self._platform_regex = re_compile(r"(?:https?://)?(?:www\.)?(music\.)?youtube\.com|youtu\.be|youtube\.com/shorts")
         self._video_id_regex = re_compile(
