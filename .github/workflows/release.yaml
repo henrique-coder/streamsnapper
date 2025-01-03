@@ -83,7 +83,7 @@ jobs:
             - 🔄 Merger: `streamsnapper[merger]`
             - ✨ All Features: `streamsnapper[all]`
 
-            > **Important:** Install using `pip install -U streamsnapper[EXTRA]`. Installing without extras won't provide any tools (recommended option: `pip install -U streamsnapper[all]`).
+            > **Important:** Install using `pip install -U streamsnapper[EXTRA]`.`. Installing without extras won't provide any additional features.
             ### 📋 Changelog:
 
             ${{ steps.commit_list.outputs.commits }}

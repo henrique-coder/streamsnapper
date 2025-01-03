@@ -79,11 +79,11 @@ def format_string(query: str, max_length: Optional[int] = None) -> Optional[str]
     if not query:
         return None
 
-    normalized_string = normalize('NFKD', query).encode('ASCII', 'ignore').decode('utf-8')
-    sanitized_string = re_sub(r'\s+', ' ', re_sub(r'[^a-zA-Z0-9\-_()[\]{}!$#+;,. ]', '', normalized_string)).strip()
+    normalized_string = normalize("NFKD", query).encode("ASCII", "ignore").decode("utf-8")
+    sanitized_string = re_sub(r"\s+", " ", re_sub(r"[^a-zA-Z0-9\-_()[\]{}!$#+;,. ]", "", normalized_string)).strip()
 
     if max_length is not None and len(sanitized_string) > max_length:
-        cutoff = sanitized_string[:max_length].rfind(' ')
+        cutoff = sanitized_string[:max_length].rfind(" ")
         sanitized_string = sanitized_string[:cutoff] if cutoff != -1 else sanitized_string[:max_length]
 
     return sanitized_string if sanitized_string else None

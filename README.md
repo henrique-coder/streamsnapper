@@ -12,7 +12,7 @@ StreamSnapper is an intuitive library designed to simplify, enhance, and organiz
 
 ```bash
 pip install -U streamsnapper  # It does not have any features by default, but it can be extended with optional features
-pip install -U streamsnapper[merger]  # It has the feature of merging video files with audio files using FFmpeg (currently it does not need any dependencies)
+pip install -U streamsnapper[merger]  # It has the feature of merging video files with audio files using FFmpeg (currently it does not need any external dependencies)
 pip install -U streamsnapper[youtube]  # It has advanced features to extract data from YouTube, with support for several other features
 pip install -U streamsnapper[all]  # It has all features available at once
 ```

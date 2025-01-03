@@ -8,13 +8,13 @@ from .platforms.youtube import YouTube, YouTubeExtractor
 
 
 __all__: List[str] = [
-    'EmptyDataError',
-    'FFmpegNotFoundError',
-    'InvalidDataError',
-    'MergeError',
-    'ScrapingError',
-    'StreamSnapperError',
-    'Merger',
-    'YouTube',
-    'YouTubeExtractor',
+    "EmptyDataError",
+    "FFmpegNotFoundError",
+    "InvalidDataError",
+    "MergeError",
+    "ScrapingError",
+    "StreamSnapperError",
+    "Merger",
+    "YouTube",
+    "YouTubeExtractor",
 ]

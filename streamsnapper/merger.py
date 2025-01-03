@@ -27,7 +27,7 @@ class Merger:
         video_path: Union[str, PathLike],
         audio_path: Union[str, PathLike],
         output_path: Union[str, PathLike],
-        ffmpeg_path: Union[str, PathLike, Literal['local']] = 'local',
+        ffmpeg_path: Union[str, PathLike, Literal["local"]] = "local",
     ) -> None:
         """
         Merge the video and audio streams into a single file.
@@ -47,14 +47,14 @@ class Merger:
         audio_path = Path(audio_path).resolve()
         output_path = Path(output_path).resolve()
 
-        if ffmpeg_path == 'local':
-            found_ffmpeg_binary = which('ffmpeg')
+        if ffmpeg_path == "local":
+            found_ffmpeg_binary = which("ffmpeg")
 
             if found_ffmpeg_binary:
                 ffmpeg_path = Path(found_ffmpeg_binary)
             else:
                 raise FFmpegNotFoundError(
-                    'The FFmpeg executable was not found. Please provide the path to the FFmpeg executable.'
+                    "The FFmpeg executable was not found. Please provide the path to the FFmpeg executable."
                 )
         else:
             ffmpeg_path = Path(ffmpeg_path).resolve()
@@ -66,18 +66,18 @@ class Merger:
             run(
                 [
                     ffmpeg_path.as_posix(),
-                    '-y',
-                    '-hide_banner',
-                    '-i',
+                    "-y",
+                    "-hide_banner",
+                    "-i",
                     video_path.as_posix(),
-                    '-i',
+                    "-i",
                     audio_path.as_posix(),
-                    '-c',
-                    'copy',
-                    '-map',
-                    '0:v',
-                    '-map',
-                    '1:a',
+                    "-c",
+                    "copy",
+                    "-map",
+                    "0:v",
+                    "-map",
+                    "1:a",
                     output_path.as_posix(),
                 ],
                 check=True,
