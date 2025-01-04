@@ -36,33 +36,33 @@ class InformationStructure:
         Initialize the Information class.
         """
 
-        self._sourcUrl: Optional[str] = None
-        self._short_url: Optional[str] = None
-        self._embed_url: Optional[str] = None
-        self._youtube_music_url: Optional[str] = None
-        self._full_url: Optional[str] = None
+        self._sourceUrl: Optional[str] = None
+        self._shortUrl: Optional[str] = None
+        self._embedUrl: Optional[str] = None
+        self._youtubeMusicUrl: Optional[str] = None
+        self._fullUrl: Optional[str] = None
         self._id: Optional[str] = None
         self._title: Optional[str] = None
-        self._clean_title: Optional[str] = None
+        self._cleanTitle: Optional[str] = None
         self._description: Optional[str] = None
-        self._channel_id: Optional[str] = None
-        self._channel_url: Optional[str] = None
-        self._channel_name: Optional[str] = None
-        self._clean_channel_name: Optional[str] = None
-        self._is_verified_channel: Optional[bool] = None
+        self._channelId: Optional[str] = None
+        self._channelUrl: Optional[str] = None
+        self._channelName: Optional[str] = None
+        self._cleanChannelName: Optional[str] = None
+        self._isVerifiedChannel: Optional[bool] = None
         self._duration: Optional[int] = None
-        self._view_count: Optional[int] = None
-        self._is_age_restricted: Optional[bool] = None
+        self._viewCount: Optional[int] = None
+        self._isAgeRestricted: Optional[bool] = None
         self._categories: Optional[List[str]] = None
         self._tags: Optional[List[str]] = None
-        self._is_streaming: Optional[bool] = None
-        self._upload_timestamp: Optional[int] = None
+        self._isStreaming: Optional[bool] = None
+        self._uploadTimestamp: Optional[int] = None
         self._availability: Optional[str] = None
         self._chapters: Optional[List[Dict[str, Union[str, float]]]] = None
-        self._comment_count: Optional[int] = None
-        self._like_count: Optional[int] = None
-        self._dislike_count: Optional[int] = None
-        self._follow_count: Optional[int] = None
+        self._commentCount: Optional[int] = None
+        self._likeCount: Optional[int] = None
+        self._dislikeCount: Optional[int] = None
+        self._followCount: Optional[int] = None
         self._language: Optional[str] = None
         self._thumbnails: Optional[List[str]] = None
 
@@ -99,7 +99,7 @@ class InformationStructure:
         return self._short_url
 
     @property
-    def embed_url(self) -> Optional[str]:
+    def embedUrl(self) -> Optional[str]:
         """
         Get the embed URL of the video.
 
@@ -107,10 +107,10 @@ class InformationStructure:
             The embed URL of the video.
         """
 
-        return self._embed_url
+        return self._embedUrl
 
     @property
-    def youtube_music_url(self) -> Optional[str]:
+    def youtubeMusicUrl(self) -> Optional[str]:
         """
         Get the YouTube Music URL of the video.
 
@@ -118,10 +118,10 @@ class InformationStructure:
             The YouTube Music URL of the video.
         """
 
-        return self._youtube_music_url
+        return self._youtubeMusicUrl
 
     @property
-    def full_url(self) -> Optional[str]:
+    def fullUrl(self) -> Optional[str]:
         """
         Get the full URL of the video.
 
@@ -129,7 +129,7 @@ class InformationStructure:
             The full URL of the video.
         """
 
-        return self._full_url
+        return self._fullUrl
 
     @property
     def id(self) -> Optional[str]:
@@ -154,7 +154,7 @@ class InformationStructure:
         return self._title
 
     @property
-    def clean_title(self) -> Optional[str]:
+    def cleanTitle(self) -> Optional[str]:
         """
         Get the clean title of the video.
 
@@ -162,7 +162,7 @@ class InformationStructure:
             The clean title of the video.
         """
 
-        return self._clean_title
+        return self._cleanTitle
 
     @property
     def description(self) -> Optional[str]:
@@ -176,7 +176,7 @@ class InformationStructure:
         return self._description
 
     @property
-    def channel_id(self) -> Optional[str]:
+    def channelId(self) -> Optional[str]:
         """
         Get the ID of the channel that uploaded the video.
 
@@ -184,10 +184,10 @@ class InformationStructure:
             The ID of the channel that uploaded the video.
         """
 
-        return self._channel_id
+        return self._channelId
 
     @property
-    def channel_url(self) -> Optional[str]:
+    def channelUrl(self) -> Optional[str]:
         """
         Get the URL of the channel that uploaded the video.
 
@@ -195,10 +195,10 @@ class InformationStructure:
             The URL of the channel that uploaded the video.
         """
 
-        return self._channel_url
+        return self._channelUrl
 
     @property
-    def channel_name(self) -> Optional[str]:
+    def channelName(self) -> Optional[str]:
         """
         Get the name of the channel that uploaded the video.
 
@@ -206,10 +206,10 @@ class InformationStructure:
             The name of the channel that uploaded the video.
         """
 
-        return self._channel_name
+        return self._channelName
 
     @property
-    def clean_channel_name(self) -> Optional[str]:
+    def cleanChannelName(self) -> Optional[str]:
         """
         Get the clean name of the channel that uploaded the video.
 
@@ -217,10 +217,10 @@ class InformationStructure:
             The clean name of the channel that uploaded the video.
         """
 
-        return self._clean_channel_name
+        return self._cleanChannelName
 
     @property
-    def is_verified_channel(self) -> Optional[bool]:
+    def isVerifiedChannel(self) -> Optional[bool]:
         """
         Get whether the channel that uploaded the video is verified.
 
@@ -228,7 +228,7 @@ class InformationStructure:
             Whether the channel that uploaded the video is verified.
         """
 
-        return self._is_verified_channel
+        return self._isVerifiedChannel
 
     @property
     def duration(self) -> Optional[int]:
@@ -242,7 +242,7 @@ class InformationStructure:
         return self._duration
 
     @property
-    def view_count(self) -> Optional[int]:
+    def viewCount(self) -> Optional[int]:
         """
         Get the view count of the video.
 
@@ -250,10 +250,10 @@ class InformationStructure:
             The view count of the video.
         """
 
-        return self._view_count
+        return self._viewCount
 
     @property
-    def is_age_restricted(self) -> Optional[bool]:
+    def isAgeRestricted(self) -> Optional[bool]:
         """
         Get whether the video is age restricted.
 
@@ -261,7 +261,7 @@ class InformationStructure:
             Whether the video is age restricted.
         """
 
-        return self._is_age_restricted
+        return self._isAgeRestricted
 
     @property
     def categories(self) -> Optional[List[str]]:
@@ -286,7 +286,7 @@ class InformationStructure:
         return self._tags
 
     @property
-    def is_streaming(self) -> Optional[bool]:
+    def isStreaming(self) -> Optional[bool]:
         """
         Get whether the video is streaming.
 
@@ -294,10 +294,10 @@ class InformationStructure:
             Whether the video is streaming.
         """
 
-        return self._is_streaming
+        return self._isStreaming
 
     @property
-    def upload_timestamp(self) -> Optional[int]:
+    def uploadTimestamp(self) -> Optional[int]:
         """
         Get the upload timestamp of the video.
 
@@ -305,7 +305,7 @@ class InformationStructure:
             The upload timestamp of the video.
         """
 
-        return self._upload_timestamp
+        return self._uploadTimestamp
 
     @property
     def availability(self) -> Optional[str]:
@@ -330,7 +330,7 @@ class InformationStructure:
         return self._chapters
 
     @property
-    def comment_count(self) -> Optional[int]:
+    def commentCount(self) -> Optional[int]:
         """
         Get the comment count of the video.
 
@@ -338,10 +338,10 @@ class InformationStructure:
             The comment count of the video.
         """
 
-        return self._comment_count
+        return self._commentCount
 
     @property
-    def like_count(self) -> Optional[int]:
+    def likeCount(self) -> Optional[int]:
         """
         Get the like count of the video.
 
@@ -349,10 +349,10 @@ class InformationStructure:
             The like count of the video.
         """
 
-        return self._like_count
+        return self._likeCount
 
     @property
-    def dislike_count(self) -> Optional[int]:
+    def dislikeCount(self) -> Optional[int]:
         """
         Get the dislike count of the video.
 
@@ -360,10 +360,10 @@ class InformationStructure:
             The dislike count of the video.
         """
 
-        return self._dislike_count
+        return self._dislikeCount
 
     @property
-    def follow_count(self) -> Optional[int]:
+    def followCount(self) -> Optional[int]:
         """
         Get the follow count of the video.
 
@@ -371,7 +371,7 @@ class InformationStructure:
             The follow count of the video.
         """
 
-        return self._follow_count
+        return self._followCount
 
     @property
     def language(self) -> Optional[str]:
@@ -541,33 +541,33 @@ class YouTube:
                 except JSONDecodeError:
                     pass
 
-        self.information._source_url = self._source_url
-        self.information._short_url = f"https://youtu.be/{id_}"
-        self.information._embed_url = f"https://www.youtube.com/embed/{id_}"
-        self.information._youtube_music_url = f"https://music.youtube.com/watch?v={id_}"
-        self.information._full_url = f"https://www.youtube.com/watch?v={id_}"
+        self.information._sourceUrl = self._source_url
+        self.information._shortUrl = f"https://youtu.be/{id_}"
+        self.information._embedUrl = f"https://www.youtube.com/embed/{id_}"
+        self.information._youtubeMusicUrl = f"https://music.youtube.com/watch?v={id_}"
+        self.information._fullUrl = f"https://www.youtube.com/watch?v={id_}"
         self.information._id = id_
         self.information._title = title
-        self.information._clean_title = clean_title
+        self.information._cleanTitle = clean_title
         self.information._description = description if description else None
-        self.information._channel_id = get_value(data, "channel_id")
-        self.information._channel_url = get_value(data, "channel_url", ["uploader_url"])
-        self.information._channel_name = channel_name
-        self.information._clean_channel_name = clean_channel_name
-        self.information._is_verified_channel = get_value(data, "channel_is_verified", default_to=False)
+        self.information._channelId = get_value(data, "channel_id")
+        self.information._channelUrl = get_value(data, "channel_url", ["uploader_url"])
+        self.information._channelName = channel_name
+        self.information._cleanChannelName = clean_channel_name
+        self.information._isVerifiedChannel = get_value(data, "channel_is_verified", default_to=False)
         self.information._duration = get_value(data, "duration")
-        self.information._view_count = get_value(data, "view_count")
-        self.information._is_age_restricted = get_value(data, "age_limit", convert_to=bool)
+        self.information._viewCount = get_value(data, "view_count")
+        self.information._isAgeRestricted = get_value(data, "age_limit", convert_to=bool)
         self.information._categories = get_value(data, "categories", default_to=[])
         self.information._tags = get_value(data, "tags", default_to=[])
-        self.information._is_streaming = get_value(data, "is_live")
-        self.information._upload_timestamp = get_value(data, "timestamp", ["release_timestamp"])
+        self.information._isStreaming = get_value(data, "is_live")
+        self.information._uploadTimestamp = get_value(data, "timestamp", ["release_timestamp"])
         self.information._availability = get_value(data, "availability")
         self.information._chapters = chapters
-        self.information._comment_count = get_value(data, "comment_count", convert_to=int, default_to=0)
-        self.information._like_count = get_value(data, "like_count", convert_to=int)
-        self.information._dislike_count = dislike_count
-        self.information._follow_count = get_value(data, "channel_follower_count", convert_to=int)
+        self.information._commentCount = get_value(data, "comment_count", convert_to=int, default_to=0)
+        self.information._likeCount = get_value(data, "like_count", convert_to=int)
+        self.information._dislikeCount = dislike_count
+        self.information._followCount = get_value(data, "channel_follower_count", convert_to=int)
         self.information._language = get_value(data, "language")
         self.information._thumbnails = [
             f"https://img.youtube.com/vi/{id_}/maxresdefault.jpg",
