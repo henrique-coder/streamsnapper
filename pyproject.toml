@@ -32,5 +32,5 @@ classifiers = [
 python = "^3.9"
 httpx = { version = "0.28.1", optional = false }
 scrapetube = { version = "2.5.1", optional = false }
-turbodl = { version = "0.1.5", optional = false }
+turbodl = { version = "0.1.7", optional = false }
 yt-dlp = { version = "2024.12.23", optional = false }

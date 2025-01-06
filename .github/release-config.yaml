@@ -1,0 +1,4 @@
+package:
+  name: "streamsnapper"
+  title: "StreamSnapper"
+  description: "StreamSnapper is an intuitive library designed to simplify, improve, and organize YouTube and Youtube Music media streams. It offers scraping functions with higher speed extraction and efficiency with the latest tools to perform such processes."
