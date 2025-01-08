@@ -4,7 +4,7 @@ from typing import List
 # Local imports
 from .exceptions import EmptyDataError, FFmpegNotFoundError, InvalidDataError, MergeError, ScrapingError, StreamSnapperError
 from .merger import Merger
-from .youtube import YouTube, YouTubeExtractor
+from .scraper import YouTube, YouTubeExtractor
 
 
 __all__: List[str] = [
