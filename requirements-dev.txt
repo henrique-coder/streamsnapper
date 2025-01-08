@@ -1,5 +1,0 @@
-orjson
-platformdirs
-poetry
-rich
-ruff

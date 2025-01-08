@@ -30,7 +30,16 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = "^3.9"
-httpx = { version = "0.28.1", optional = false }
-scrapetube = { version = "2.5.1", optional = false }
-turbodl = { version = "0.1.7", optional = false }
-yt-dlp = { version = "2024.12.23", optional = false }
+httpx = "0.28.1"
+scrapetube = "2.5.1"
+turbodl = "0.1.7"
+yt-dlp = "2024.12.23"
+
+[tool.poetry.group.test.dependencies]
+pytest = "8.3.4"
+
+[tool.poetry.group.dev.dependencies]
+orjson = "3.10.14"
+platformdirs = "4.3.6"
+rich = "13.9.4"
+ruff = "0.8.6"
