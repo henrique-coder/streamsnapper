@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "streamsnapper"
-version = "0.2.8"
+version = "0.2.9"
 description = "StreamSnapper is an intuitive library designed to simplify, improve, and organize YouTube and Youtube Music media streams. It offers scraping functions with higher speed extraction and efficiency with the latest tools to perform such processes."
 authors = ["henrique-coder <hjyz6rqyb@mozmail.com>"]
 license = "MIT"
