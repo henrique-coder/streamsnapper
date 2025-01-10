@@ -740,7 +740,7 @@ class YouTube:
         self.best_video_download_url = self.best_video_stream["url"] if self.best_video_stream else None
 
         self.available_video_qualities = list(
-            dict.fromkeys([f'{stream["quality"]}p' for stream in self.best_video_streams if stream["quality"]])
+            dict.fromkeys([f"{stream['quality']}p" for stream in self.best_video_streams if stream["quality"]])
         )
 
         if preferred_quality != "all":
@@ -966,13 +966,13 @@ class YouTube:
         if video_stream and audio_stream:
             if output_path.is_dir():
                 output_path = Path(
-                    output_path, f'{self.information["cleanTitle"]} [{self.information["id"]}].{video_stream["extension"]}'
+                    output_path, f"{self.information['cleanTitle']} [{self.information['id']}].{video_stream['extension']}"
                 )
 
             tmp_path = Path(gettempdir(), ".tmp-streamsnapper-downloader")
             tmp_path.mkdir(exist_ok=True)
 
-            output_video_path = Path(tmp_path, f'.tmp-video-{self.information["id"]}.{video_stream["extension"]}')
+            output_video_path = Path(tmp_path, f".tmp-video-{self.information['id']}.{video_stream['extension']}")
             video_downloader = TurboDL(
                 max_connections=max_connections,
                 connection_speed=connection_speed,
@@ -984,7 +984,7 @@ class YouTube:
                 video_stream["url"], output_video_path, pre_allocate_space=pre_allocate_space, use_ram_buffer=use_ram_buffer
             )
 
-            output_audio_path = Path(tmp_path, f'.tmp-audio-{self.information["id"]}.{audio_stream["extension"]}')
+            output_audio_path = Path(tmp_path, f".tmp-audio-{self.information['id']}.{audio_stream['extension']}")
             audio_downloader = TurboDL(
                 max_connections=max_connections,
                 connection_speed=connection_speed,
@@ -1007,7 +1007,7 @@ class YouTube:
         elif video_stream:
             if output_path.is_dir():
                 output_path = Path(
-                    output_path, f'{self.information["cleanTitle"]} [{self.information["id"]}].{video_stream["extension"]}'
+                    output_path, f"{self.information['cleanTitle']} [{self.information['id']}].{video_stream['extension']}"
                 )
 
             downloader = TurboDL(
@@ -1025,7 +1025,7 @@ class YouTube:
         elif audio_stream:
             if output_path.is_dir():
                 output_path = Path(
-                    output_path, f'{self.information["cleanTitle"]} [{self.information["id"]}].{audio_stream["extension"]}'
+                    output_path, f"{self.information['cleanTitle']} [{self.information['id']}].{audio_stream['extension']}"
                 )
 
             downloader = TurboDL(
@@ -1144,7 +1144,7 @@ class YouTubeExtractor:
 
         if extracted_data:
             found_urls = [
-                f'https://www.youtube.com/watch?v={item.get("videoId")}' for item in extracted_data if item.get("videoId")
+                f"https://www.youtube.com/watch?v={item.get('videoId')}" for item in extracted_data if item.get("videoId")
             ]
 
             return found_urls if found_urls else None
@@ -1173,7 +1173,7 @@ class YouTubeExtractor:
 
         if extracted_data:
             found_urls = [
-                f'https://www.youtube.com/watch?v={item.get("videoId")}' for item in extracted_data if item.get("videoId")
+                f"https://www.youtube.com/watch?v={item.get('videoId')}" for item in extracted_data if item.get("videoId")
             ]
 
             return found_urls if found_urls else None
@@ -1225,7 +1225,7 @@ class YouTubeExtractor:
 
         if extracted_data:
             found_urls = [
-                f'https://www.youtube.com/watch?v={item.get("videoId")}' for item in extracted_data if item.get("videoId")
+                f"https://www.youtube.com/watch?v={item.get('videoId')}" for item in extracted_data if item.get("videoId")
             ]
 
             return found_urls if found_urls else None
