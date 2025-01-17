@@ -770,28 +770,29 @@ class YouTube:
         data = self._raw_youtube_streams
 
         format_id_extension_map = {
-            338: "webm",  # Opus - (VBR) ~480 KBPS - Quadraphonic (4)
-            380: "mp4",  # AC3 - 384 KBPS - Surround (5.1)
-            328: "mp4",  # EAC3 - 384 KBPS - Surround (5.1)
-            325: "mp4",  # DTSE (DTS Express) - 384 KBPS - Surround (5.1)
-            258: "mp4",  # AAC (LC) - 384 KBPS - Surround (5.1)
-            327: "mp4",  # AAC (LC) - 256 KBPS - Surround (5.1)
-            141: "mp4",  # AAC (LC) - 256 KBPS - Stereo (2)
-            774: "webm",  # Opus - (VBR) ~256 KBPS - Stereo (2)
-            256: "mp4",  # AAC (HE v1) - 192 KBPS - Surround (5.1)
-            251: "webm",  # Opus - (VBR) <=160 KBPS - Stereo (2)
-            140: "mp4",  # AAC (LC) - 128 KBPS - Stereo (2)
-            250: "webm",  # Opus - (VBR) ~70 KBPS - Stereo (2)
-            249: "webm",  # Opus - (VBR) ~50 KBPS - Stereo (2)
-            139: "mp4",  # AAC (HE v1) - 48 KBPS - Stereo (2)
-            600: "webm",  # Opus - (VBR) ~35 KBPS - Stereo (2)
-            599: "mp4",  # AAC (HE v1) - 30 KBPS - Stereo (2)
+            "338": "webm",  # Opus - (VBR) ~480 KBPS - Quadraphonic (4)
+            "380": "mp4",  # AC3 - 384 KBPS - Surround (5.1)
+            "328": "mp4",  # EAC3 - 384 KBPS - Surround (5.1)
+            "325": "mp4",  # DTSE (DTS Express) - 384 KBPS - Surround (5.1)
+            "258": "mp4",  # AAC (LC) - 384 KBPS - Surround (5.1)
+            "327": "mp4",  # AAC (LC) - 256 KBPS - Surround (5.1)
+            "141": "mp4",  # AAC (LC) - 256 KBPS - Stereo (2)
+            "774": "webm",  # Opus - (VBR) ~256 KBPS - Stereo (2)
+            "256": "mp4",  # AAC (HE v1) - 192 KBPS - Surround (5.1)
+            "251": "webm",  # Opus - (VBR) <=160 KBPS - Stereo (2)
+            "140": "mp4",  # AAC (LC) - 128 KBPS - Stereo (2)
+            "250": "webm",  # Opus - (VBR) ~70 KBPS - Stereo (2)
+            "249": "webm",  # Opus - (VBR) ~50 KBPS - Stereo (2)
+            "139": "mp4",  # AAC (HE v1) - 48 KBPS - Stereo (2)
+            "600": "webm",  # Opus - (VBR) ~35 KBPS - Stereo (2)
+            "599": "mp4",  # AAC (HE v1) - 30 KBPS - Stereo (2)
         }
 
         audio_streams = [
             stream
             for stream in data
-            if get_value(stream, "acodec") != "none" and get_value(stream, "format_id", convert_to=int) in format_id_extension_map
+            if get_value(stream, "acodec") != "none"
+            and get_value(stream, "format_id", "").split("-")[0] in format_id_extension_map
         ]
 
         def calculate_score(stream: Dict[Any, Any]) -> float:
@@ -830,7 +831,7 @@ class YouTube:
 
             codec = get_value(stream, "acodec")
             codec_parts = codec.split(".", 1) if codec else []
-            youtube_format_id = get_value(stream, "format_id", convert_to=int)
+            youtube_format_id = int(get_value(stream, "format_id", convert_to=str).split("-")[0])
             youtube_format_note = get_value(stream, "format_note")
 
             data = {
@@ -838,7 +839,7 @@ class YouTube:
                 "codec": codec_parts[0] if codec_parts else None,
                 "codecVariant": codec_parts[1] if len(codec_parts) > 1 else None,
                 "rawCodec": codec,
-                "extension": get_value(format_id_extension_map, youtube_format_id, "mp3"),
+                "extension": get_value(format_id_extension_map, str(youtube_format_id), "mp3"),
                 "bitrate": get_value(stream, "abr", convert_to=float),
                 "qualityNote": youtube_format_note,
                 "isOriginalAudio": "(default)" in youtube_format_note or youtube_format_note.islower()
