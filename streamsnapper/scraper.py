@@ -416,9 +416,9 @@ class YouTube:
             "geo_bypass": True,
             "noplaylist": True,
             "age_limit": None,
+            "ignoreerrors": True,
             "quiet": logging,
             "no_warnings": logging,
-            "ignoreerrors": logging,
         }
         self._extractor: Type[YouTubeExtractor] = YouTubeExtractor()
         self._raw_youtube_data: Dict[Any, Any] = {}
