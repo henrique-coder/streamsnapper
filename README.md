@@ -11,8 +11,14 @@ StreamSnapper is an intuitive library designed to simplify, improve, and organiz
 #### Installation (from [PyPI](https://pypi.org/project/streamsnapper))
 
 ```bash
-pip install -U streamsnapper
+# Install the stable version of StreamSnapper from PyPI (recommended)
+pip install --upgrade streamsnapper
+
+# Install the development version of StreamSnapper from GitHub
+pip install --upgrade git+https://github.com/henrique-coder/streamsnapper.git@main
 ```
+
+⚠️ **Warning**: if you already have a version installed and want to switch to a different branch (for example, to test new features or fix bugs), you will need to use the `--force-reinstall` parameter to ensure the upgrade occurs correctly.
 
 ### Example Usage
 
@@ -25,23 +31,8 @@ youtube = YouTube(logging=False)
 youtube.extract(url="https://www.youtube.com/watch?v=***********", ytdlp_data=None)
 youtube.analyze(check_thumbnails=False, retrieve_dislike_count=False)
 youtube.analyze_video_streams(preferred_quality="all")
-youtube.analyze_audio_streams(preferred_language="local")
+youtube.analyze_audio_streams(preferred_language="source")
 youtube.analyze_subtitle_streams()
-
-youtube.download(
-    video_stream=None,
-    audio_stream=None,
-    output_path="path/to/file",
-    ffmpeg_path="local",
-    pre_allocate_space=False,
-    use_ram_buffer=True,
-    max_connections="auto",
-    connection_speed=80,
-    overwrite=True,
-    show_progress_bar=True,
-    timeout=None,
-    logging=False,
-)
 
 
 from streamsnapper import YouTubeExtractor
