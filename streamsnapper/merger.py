@@ -3,7 +3,7 @@ from os import PathLike
 from pathlib import Path
 from shutil import which
 from subprocess import DEVNULL, CalledProcessError, run
-from typing import Literal, Union
+from typing import Literal
 
 # Local imports
 from .exceptions import FFmpegNotFoundError, MergeError
@@ -17,26 +17,26 @@ class Merger:
         Initialize the Merger class with the required settings for merging audio and video streams.
 
         Args:
-            logging: Enable or disable FFmpeg logging. (default: False)
+            logging: Enable or disable FFmpeg logging. Defaults to False.
         """
 
         self._logging = logging
 
     def merge(
         self,
-        video_path: Union[str, PathLike],
-        audio_path: Union[str, PathLike],
-        output_path: Union[str, PathLike],
-        ffmpeg_path: Union[str, PathLike, Literal["local"]] = "local",
+        video_path: str | PathLike,
+        audio_path: str | PathLike,
+        output_path: str | PathLike,
+        ffmpeg_path: str | PathLike | Literal["local"] = "local",
     ) -> None:
         """
         Merge the video and audio streams into a single file.
 
         Args:
-            video_path: The path to the video file to merge. (required)
-            audio_path: The path to the audio file to merge. (required)
-            output_path: The path to save the output file to. (required)
-            ffmpeg_path: The path to the FFmpeg executable. If 'local', the FFmpeg executable will be searched in the PATH environment variable. (default: 'local')
+            video_path: The path to the video file to merge.
+            audio_path: The path to the audio file to merge.
+            output_path: The path to save the output file to.
+            ffmpeg_path: The path to the FFmpeg executable. If 'local', the FFmpeg executable will be searched in the PATH environment variable. Defaults to 'local'.
 
         Raises:
             FFmpegNotFoundError: If the FFmpeg executable was not found.
