@@ -1,13 +1,10 @@
-# Built-in imports
-from typing import List
-
 # Local imports
 from .exceptions import EmptyDataError, FFmpegNotFoundError, InvalidDataError, MergeError, ScrapingError, StreamSnapperError
 from .merger import Merger
 from .scraper import YouTube, YouTubeExtractor
 
 
-__all__: List[str] = [
+__all__: list[str] = [
     "EmptyDataError",
     "FFmpegNotFoundError",
     "InvalidDataError",
