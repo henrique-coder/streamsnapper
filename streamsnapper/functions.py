@@ -1,15 +1,16 @@
 # Built-in imports
+from collections.abc import Callable
 from re import sub as re_sub
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any
 from unicodedata import normalize
 
 
 def get_value(
-    data: Dict[Any, Any],
+    data: dict[Any, Any],
     key: Any,
-    fallback_keys: Optional[List[Any]] = None,
-    convert_to: Optional[Union[Callable, List[Callable]]] = None,
-    default_to: Optional[Any] = None,
+    fallback_keys: list[Any] | None = None,
+    convert_to: Callable | list[Callable] | None = None,
+    default_to: Any | None = None,
 ) -> Any:
     """
     Get a value from a dictionary or a list of fallback keys.
@@ -19,11 +20,11 @@ def get_value(
     - If the value is not None and a conversion function or list of conversion functions is provided, the function will try to convert the value using each conversion function in sequence until one succeeds. If all conversions fail with ValueError or TypeError, the function will return the default value if provided, or None otherwise.
 
     Args:
-        data: The dictionary to get the value from. (required)
-        key: The key to get the value from. (required)
-        fallback_keys: A list of fallback keys to try if the key does not exist in the dictionary. (default: None)
-        convert_to: A conversion function or list of conversion functions to convert the value. (default: None)
-        default_to: A default value to return if the value is not found in the dictionary or if all conversions fail. (default: None)
+        data: The dictionary to get the value from.
+        key: The key to get the value from.
+        fallback_keys: A list of fallback keys to try if the key does not exist in the dictionary. Defaults to None.
+        convert_to: A conversion function or list of conversion functions to convert the value. Defaults to None.
+        default_to: A default value to return if the value is not found in the dictionary or if all conversions fail. Defaults to None.
 
     Returns:
         The value from the dictionary or the default value if the value is not found in the dictionary or if all conversions fail.
@@ -64,13 +65,13 @@ def get_value(
     return value
 
 
-def format_string(query: str, max_length: Optional[int] = None) -> Optional[str]:
+def format_string(query: str, max_length: int | None = None) -> str | None:
     """
     Sanitizes a given string by removing all non-ASCII characters and non-alphanumeric characters, and trims it to a given maximum length.
 
     Args:
-        query: The string to sanitize. (required)
-        max_length: The maximum length to trim the sanitized string to. (default: None)
+        query: The string to sanitize.
+        max_length: The maximum length to trim the sanitized string to. Defaults to None.
 
     Returns:
         The sanitized string, or None if the sanitized string is empty.
@@ -94,7 +95,7 @@ def strip(string: Any) -> str:
     Strips leading and trailing whitespace from a given string.
 
     Args:
-        string: The string to strip. (required)
+        string: The string to strip.
 
     Returns:
         The stripped string.
