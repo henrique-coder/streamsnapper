@@ -1,72 +1,61 @@
 # Built-in imports
+from contextlib import suppress
 from json import JSONDecodeError
 from locale import getlocale
-from os import PathLike
-from pathlib import Path
 from re import compile as re_compile
-from shutil import rmtree
-from tempfile import gettempdir
-from typing import Any, Dict, List, Literal, Optional, Type, Union
+from typing import Any, Literal
 from urllib.parse import unquote
 
 # Third-party imports
 from httpx import get, head
-from scrapetube import (
-    get_search as scrape_youtube_search,
-    get_playlist as scrape_youtube_playlist,
-    get_channel as scrape_youtube_channel,
-)
-from turbodl import TurboDL
+from scrapetube import get_channel as scrape_youtube_channel
+from scrapetube import get_playlist as scrape_youtube_playlist
+from scrapetube import get_search as scrape_youtube_search
 from yt_dlp import YoutubeDL
 from yt_dlp import utils as yt_dlp_utils
 
 # Local imports
 from .exceptions import EmptyDataError, InvalidDataError, ScrapingError
 from .functions import format_string, get_value, strip
-from .merger import Merger
 
 
 class InformationStructure:
-    """
-    A class for storing information about a YouTube video.
-    """
+    """A class for storing information about a YouTube video."""
 
     def __init__(self) -> None:
-        """
-        Initialize the Information class.
-        """
+        """Initialize the Information class."""
 
-        self._sourceUrl: Optional[str] = None
-        self._shortUrl: Optional[str] = None
-        self._embedUrl: Optional[str] = None
-        self._youtubeMusicUrl: Optional[str] = None
-        self._fullUrl: Optional[str] = None
-        self._id: Optional[str] = None
-        self._title: Optional[str] = None
-        self._cleanTitle: Optional[str] = None
-        self._description: Optional[str] = None
-        self._channelId: Optional[str] = None
-        self._channelUrl: Optional[str] = None
-        self._channelName: Optional[str] = None
-        self._cleanChannelName: Optional[str] = None
-        self._isVerifiedChannel: Optional[bool] = None
-        self._duration: Optional[int] = None
-        self._viewCount: Optional[int] = None
-        self._isAgeRestricted: Optional[bool] = None
-        self._categories: Optional[List[str]] = None
-        self._tags: Optional[List[str]] = None
-        self._isStreaming: Optional[bool] = None
-        self._uploadTimestamp: Optional[int] = None
-        self._availability: Optional[str] = None
-        self._chapters: Optional[List[Dict[str, Union[str, float]]]] = None
-        self._commentCount: Optional[int] = None
-        self._likeCount: Optional[int] = None
-        self._dislikeCount: Optional[int] = None
-        self._followCount: Optional[int] = None
-        self._language: Optional[str] = None
-        self._thumbnails: Optional[List[str]] = None
+        self._sourceUrl: str | None = None
+        self._shortUrl: str | None = None
+        self._embedUrl: str | None = None
+        self._youtubeMusicUrl: str | None = None
+        self._fullUrl: str | None = None
+        self._id: str | None = None
+        self._title: str | None = None
+        self._cleanTitle: str | None = None
+        self._description: str | None = None
+        self._channelId: str | None = None
+        self._channelUrl: str | None = None
+        self._channelName: str | None = None
+        self._cleanChannelName: str | None = None
+        self._isVerifiedChannel: bool | None = None
+        self._duration: int | None = None
+        self._viewCount: int | None = None
+        self._isAgeRestricted: bool | None = None
+        self._categories: list[str] | None = None
+        self._tags: list[str] | None = None
+        self._isStreaming: bool | None = None
+        self._uploadTimestamp: int | None = None
+        self._availability: str | None = None
+        self._chapters: list[dict[str, str | float]] | None = None
+        self._commentCount: int | None = None
+        self._likeCount: int | None = None
+        self._dislikeCount: int | None = None
+        self._followCount: int | None = None
+        self._language: str | None = None
+        self._thumbnails: list[str] | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """
         Convert the information to a dictionary, sorted by keys.
 
@@ -77,7 +66,7 @@ class InformationStructure:
         return dict(sorted({key[1:]: value for key, value in self.__dict__.items()}.items()))
 
     @property
-    def sourceUrl(self) -> Optional[str]:
+    def sourceUrl(self) -> str | None:
         """
         Get the source URL of the video.
 
@@ -88,7 +77,7 @@ class InformationStructure:
         return self._source_url
 
     @property
-    def shortUrl(self) -> Optional[str]:
+    def shortUrl(self) -> str | None:
         """
         Get the short URL of the video.
 
@@ -99,7 +88,7 @@ class InformationStructure:
         return self._short_url
 
     @property
-    def embedUrl(self) -> Optional[str]:
+    def embedUrl(self) -> str | None:
         """
         Get the embed URL of the video.
 
@@ -110,7 +99,7 @@ class InformationStructure:
         return self._embedUrl
 
     @property
-    def youtubeMusicUrl(self) -> Optional[str]:
+    def youtubeMusicUrl(self) -> str | None:
         """
         Get the YouTube Music URL of the video.
 
@@ -121,7 +110,7 @@ class InformationStructure:
         return self._youtubeMusicUrl
 
     @property
-    def fullUrl(self) -> Optional[str]:
+    def fullUrl(self) -> str | None:
         """
         Get the full URL of the video.
 
@@ -132,7 +121,7 @@ class InformationStructure:
         return self._fullUrl
 
     @property
-    def id(self) -> Optional[str]:
+    def id(self) -> str | None:
         """
         Get the ID of the video.
 
@@ -143,7 +132,7 @@ class InformationStructure:
         return self._id
 
     @property
-    def title(self) -> Optional[str]:
+    def title(self) -> str | None:
         """
         Get the title of the video.
 
@@ -154,7 +143,7 @@ class InformationStructure:
         return self._title
 
     @property
-    def cleanTitle(self) -> Optional[str]:
+    def cleanTitle(self) -> str | None:
         """
         Get the clean title of the video.
 
@@ -165,7 +154,7 @@ class InformationStructure:
         return self._cleanTitle
 
     @property
-    def description(self) -> Optional[str]:
+    def description(self) -> str | None:
         """
         Get the description of the video.
 
@@ -176,7 +165,7 @@ class InformationStructure:
         return self._description
 
     @property
-    def channelId(self) -> Optional[str]:
+    def channelId(self) -> str | None:
         """
         Get the ID of the channel that uploaded the video.
 
@@ -187,7 +176,7 @@ class InformationStructure:
         return self._channelId
 
     @property
-    def channelUrl(self) -> Optional[str]:
+    def channelUrl(self) -> str | None:
         """
         Get the URL of the channel that uploaded the video.
 
@@ -198,7 +187,7 @@ class InformationStructure:
         return self._channelUrl
 
     @property
-    def channelName(self) -> Optional[str]:
+    def channelName(self) -> str | None:
         """
         Get the name of the channel that uploaded the video.
 
@@ -209,7 +198,7 @@ class InformationStructure:
         return self._channelName
 
     @property
-    def cleanChannelName(self) -> Optional[str]:
+    def cleanChannelName(self) -> str | None:
         """
         Get the clean name of the channel that uploaded the video.
 
@@ -220,7 +209,7 @@ class InformationStructure:
         return self._cleanChannelName
 
     @property
-    def isVerifiedChannel(self) -> Optional[bool]:
+    def isVerifiedChannel(self) -> bool | None:
         """
         Get whether the channel that uploaded the video is verified.
 
@@ -231,7 +220,7 @@ class InformationStructure:
         return self._isVerifiedChannel
 
     @property
-    def duration(self) -> Optional[int]:
+    def duration(self) -> int | None:
         """
         Get the duration of the video in seconds.
 
@@ -242,7 +231,7 @@ class InformationStructure:
         return self._duration
 
     @property
-    def viewCount(self) -> Optional[int]:
+    def viewCount(self) -> int | None:
         """
         Get the view count of the video.
 
@@ -253,7 +242,7 @@ class InformationStructure:
         return self._viewCount
 
     @property
-    def isAgeRestricted(self) -> Optional[bool]:
+    def isAgeRestricted(self) -> bool | None:
         """
         Get whether the video is age restricted.
 
@@ -264,7 +253,7 @@ class InformationStructure:
         return self._isAgeRestricted
 
     @property
-    def categories(self) -> Optional[List[str]]:
+    def categories(self) -> list[str] | None:
         """
         Get the categories of the video.
 
@@ -275,7 +264,7 @@ class InformationStructure:
         return self._categories
 
     @property
-    def tags(self) -> Optional[List[str]]:
+    def tags(self) -> list[str] | None:
         """
         Get the tags of the video.
 
@@ -286,7 +275,7 @@ class InformationStructure:
         return self._tags
 
     @property
-    def isStreaming(self) -> Optional[bool]:
+    def isStreaming(self) -> bool | None:
         """
         Get whether the video is streaming.
 
@@ -297,7 +286,7 @@ class InformationStructure:
         return self._isStreaming
 
     @property
-    def uploadTimestamp(self) -> Optional[int]:
+    def uploadTimestamp(self) -> int | None:
         """
         Get the upload timestamp of the video.
 
@@ -308,7 +297,7 @@ class InformationStructure:
         return self._uploadTimestamp
 
     @property
-    def availability(self) -> Optional[str]:
+    def availability(self) -> str | None:
         """
         Get the availability of the video.
 
@@ -319,7 +308,7 @@ class InformationStructure:
         return self._availability
 
     @property
-    def chapters(self) -> Optional[List[Dict[str, Union[str, float]]]]:
+    def chapters(self) -> list[dict[str, str | float]] | None:
         """
         Get the chapters of the video.
 
@@ -330,7 +319,7 @@ class InformationStructure:
         return self._chapters
 
     @property
-    def commentCount(self) -> Optional[int]:
+    def commentCount(self) -> int | None:
         """
         Get the comment count of the video.
 
@@ -341,7 +330,7 @@ class InformationStructure:
         return self._commentCount
 
     @property
-    def likeCount(self) -> Optional[int]:
+    def likeCount(self) -> int | None:
         """
         Get the like count of the video.
 
@@ -352,7 +341,7 @@ class InformationStructure:
         return self._likeCount
 
     @property
-    def dislikeCount(self) -> Optional[int]:
+    def dislikeCount(self) -> int | None:
         """
         Get the dislike count of the video.
 
@@ -363,7 +352,7 @@ class InformationStructure:
         return self._dislikeCount
 
     @property
-    def followCount(self) -> Optional[int]:
+    def followCount(self) -> int | None:
         """
         Get the follow count of the video.
 
@@ -374,7 +363,7 @@ class InformationStructure:
         return self._followCount
 
     @property
-    def language(self) -> Optional[str]:
+    def language(self) -> str | None:
         """
         Get the language of the video.
 
@@ -385,7 +374,7 @@ class InformationStructure:
         return self._language
 
     @property
-    def thumbnails(self) -> Optional[List[str]]:
+    def thumbnails(self) -> list[str] | None:
         """
         Get the thumbnails of the video.
 
@@ -397,21 +386,19 @@ class InformationStructure:
 
 
 class YouTube:
-    """
-    A class for extracting and formatting data from YouTube videos, facilitating access to general video information, video streams, audio streams and subtitles.
-    """
+    """A class for extracting and formatting data from YouTube videos, facilitating access to general video information, video streams, audio streams and subtitles."""
 
     def __init__(self, logging: bool = False) -> None:
         """
         Initialize the YouTube class with the required settings for extracting and formatting data from YouTube videos (raw data provided by yt-dlp library).
 
         Args:
-            logging: Enable or disable logging for the YouTube class. Defaults to False. (default: False)
+            logging: Enable or disable logging for the YouTube class. Defaults to False.
         """
 
         logging = not logging
 
-        self._ydl_opts: Dict[str, bool] = {
+        self._ydl_opts: dict[str, bool] = {
             "extract_flat": True,
             "geo_bypass": True,
             "noplaylist": True,
@@ -420,40 +407,40 @@ class YouTube:
             "quiet": logging,
             "no_warnings": logging,
         }
-        self._extractor: Type[YouTubeExtractor] = YouTubeExtractor()
-        self._raw_youtube_data: Dict[Any, Any] = {}
-        self._raw_youtube_streams: List[Dict[Any, Any]] = []
-        self._raw_youtube_subtitles: Dict[str, List[Dict[str, str]]] = {}
+        self._extractor: YouTubeExtractor = YouTubeExtractor()
+        self._raw_youtube_data: dict[Any, Any] = {}
+        self._raw_youtube_streams: list[dict[Any, Any]] = []
+        self._raw_youtube_subtitles: dict[str, list[dict[str, str]]] = {}
 
         found_system_language = getlocale()[0]
 
         if found_system_language:
             try:
-                self.base_system_language: str = found_system_language.split("_")[0].lower()
+                self.system_language_prefix: str = found_system_language.split("_")[0].lower()
                 self.system_language_suffix: str = found_system_language.split("_")[1].upper()
             except IndexError:
-                self.base_system_language: str = "en"
+                self.system_language_prefix: str = "en"
                 self.system_language_suffix: str = "US"
         else:
-            self.base_system_language: str = "en"
+            self.system_language_prefix: str = "en"
             self.system_language_suffix: str = "US"
 
-        self.information: Type[InformationStructure] = InformationStructure()
+        self.information: InformationStructure = InformationStructure()
 
-        self.best_video_streams: List[Dict[str, Any]] = []
-        self.best_video_stream: Dict[str, Any] = {}
-        self.best_video_download_url: Optional[str] = None
+        self.best_video_streams: list[dict[str, Any]] = []
+        self.best_video_stream: dict[str, Any] = {}
+        self.best_video_download_url: str | None = None
 
-        self.best_audio_streams: List[Dict[str, Any]] = []
-        self.best_audio_stream: Dict[str, Any] = {}
-        self.best_audio_download_url: Optional[str] = None
+        self.best_audio_streams: list[dict[str, Any]] = []
+        self.best_audio_stream: dict[str, Any] = {}
+        self.best_audio_download_url: str | None = None
 
-        self.subtitle_streams: Dict[str, List[Dict[str, str]]] = {}
+        self.subtitle_streams: dict[str, list[dict[str, str]]] = {}
 
-        self.available_video_qualities: List[str] = []
-        self.available_audio_languages: List[str] = []
+        self.available_video_qualities: list[str] = []
+        self.available_audio_languages: list[str] = []
 
-    def extract(self, url: Optional[str] = None, ytdlp_data: Optional[Dict[Any, Any]] = None) -> None:
+    def extract(self, url: str | None = None, ytdlp_data: dict[Any, Any] | None = None) -> None:
         """
         Extract the YouTube video data from a URL or provided previously extracted yt-dlp data.
 
@@ -462,8 +449,8 @@ class YouTube:
         - If both URL and yt-dlp data are provided, the yt-dlp data will be used.
 
         Args:
-            url: The YouTube video URL to extract data from. (default: None)
-            ytdlp_data: The previously extracted yt-dlp data. (default: None)
+            url: The YouTube video URL to extract data from. Defaults to None.
+            ytdlp_data: The previously extracted yt-dlp data. Defaults to None.
 
         Raises:
             ValueError: If no URL or yt-dlp data is provided.
@@ -500,8 +487,8 @@ class YouTube:
         Analyze the information of the YouTube video.
 
         Args:
-            check_thumbnails: Check if all video thumbnails are available. (default: False)
-            retrieve_dislike_count: Retrieve the dislike count from the returnyoutubedislike.com API. (default: False)
+            check_thumbnails: Check if all video thumbnails are available. Defaults to False.
+            retrieve_dislike_count: Retrieve the dislike count from the returnyoutubedislike.com API. Defaults to False.
 
         Raises:
             InvalidDataError: If the provided yt-dlp data is invalid.
@@ -527,19 +514,20 @@ class YouTube:
         dislike_count = None
 
         if retrieve_dislike_count:
-            r = get(
-                "https://returnyoutubedislikeapi.com/votes",
-                params={"videoId": id_},
-                headers={
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
-                },
-            )
+            try:
+                r = get(
+                    "https://returnyoutubedislikeapi.com/votes",
+                    params={"videoId": id_},
+                    headers={
+                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36"
+                    },
+                )
 
-            if r.is_success:
-                try:
-                    dislike_count = get_value(r.json(), "dislikes", convert_to=int)
-                except JSONDecodeError:
-                    pass
+                if r.is_success:
+                    with suppress(JSONDecodeError):
+                        dislike_count = get_value(r.json(), "dislikes", convert_to=int)
+            except Exception:
+                pass
 
         self.information._sourceUrl = self._source_url
         self.information._shortUrl = f"https://youtu.be/{id_}"
@@ -598,7 +586,7 @@ class YouTube:
         Analyze the video streams of the YouTube video and select the best stream based on the preferred quality.
 
         Args:
-            preferred_quality: The preferred quality of the video stream. If a specific quality is provided, the stream will be selected according to the chosen quality, however if the quality is not available, the best quality will be selected. If 'all', all streams will be considered and sorted by quality. (default: 'all')
+            preferred_quality: The preferred quality of the video stream. If a specific quality is provided, the stream will be selected according to the chosen quality, however if the quality is not available, the best quality will be selected. If 'all', all streams will be considered and sorted by quality. Defaults to 'all'.
         """
 
         data = self._raw_youtube_streams
@@ -673,7 +661,7 @@ class YouTube:
             if get_value(stream, "vcodec") != "none" and get_value(stream, "format_id", convert_to=int) in format_id_extension_map
         ]
 
-        def calculate_score(stream: Dict[Any, Any]) -> float:
+        def calculate_score(stream: dict[Any, Any]) -> float:
             """
             Calculate a score for a given video stream.
 
@@ -696,12 +684,12 @@ class YouTube:
 
         sorted_video_streams = sorted(video_streams, key=calculate_score, reverse=True)
 
-        def extract_stream_info(stream: Dict[Any, Any]) -> Dict[str, Optional[Union[str, int, float, bool]]]:
+        def extract_stream_info(stream: dict[Any, Any]) -> dict[str, str | int | float | bool | None]:
             """
             Extract the information of a given video stream.
 
             Args:
-                stream: The video stream to extract the information from. (required)
+                stream: The video stream to extract the information from.
 
             Returns:
                 A dictionary containing the extracted information of the stream.
@@ -759,12 +747,12 @@ class YouTube:
             self.best_video_stream = self.best_video_streams[0] if self.best_video_streams else {}
             self.best_video_download_url = self.best_video_stream["url"] if self.best_video_stream else None
 
-    def analyze_audio_streams(self, preferred_language: Union[str, Literal["source", "local", "all"]] = "local") -> None:
+    def analyze_audio_streams(self, preferred_language: str | Literal["source", "local", "all"] = "source") -> None:
         """
         Analyze the audio streams of the YouTube video and select the best stream based on the preferred quality.
 
         Args:
-            preferred_language: The preferred language for the audio stream. If 'source', use the original audio language. If 'local', use the system language. If 'all', return all available audio streams. (default: 'local')
+            preferred_language: The preferred language for the audio stream. If 'source', use the original audio language. If 'local', use the system language. If 'all', return all available audio streams. Defaults to 'source'.
         """
 
         data = self._raw_youtube_streams
@@ -795,7 +783,7 @@ class YouTube:
             and get_value(stream, "format_id", "").split("-")[0] in format_id_extension_map
         ]
 
-        def calculate_score(stream: Dict[Any, Any]) -> float:
+        def calculate_score(stream: dict[Any, Any]) -> float:
             """
             Calculate a score for a given audio stream.
 
@@ -818,12 +806,12 @@ class YouTube:
 
         sorted_audio_streams = sorted(audio_streams, key=calculate_score, reverse=True)
 
-        def extract_stream_info(stream: Dict[Any, Any]) -> Dict[str, Optional[Union[str, int, float, bool]]]:
+        def extract_stream_info(stream: dict[Any, Any]) -> dict[str, str | int | float | bool | None]:
             """
             Extract the information of a given audio stream.
 
             Args:
-                stream: The audio stream to extract the information from. (required)
+                stream: The audio stream to extract the information from.
 
             Returns:
                 A dictionary containing the extracted information of the stream.
@@ -868,9 +856,9 @@ class YouTube:
             preferred_language = preferred_language.strip().lower()
 
             if preferred_language == "local":
-                if self.base_system_language in self.available_audio_languages:
+                if self.system_language_prefix in self.available_audio_languages:
                     self.best_audio_streams = [
-                        stream for stream in self.best_audio_streams if stream["language"] == self.base_system_language
+                        stream for stream in self.best_audio_streams if stream["language"] == self.system_language_prefix
                     ]
                 else:
                     preferred_language = "source"
@@ -885,9 +873,7 @@ class YouTube:
             self.best_audio_download_url = self.best_audio_stream["url"] if self.best_audio_stream else None
 
     def analyze_subtitle_streams(self) -> None:
-        """
-        Analyze the subtitle streams of the YouTube video.
-        """
+        """Analyze the subtitle streams of the YouTube video."""
 
         data = self._raw_youtube_subtitles
 
@@ -905,153 +891,12 @@ class YouTube:
 
         self.subtitle_streams = dict(sorted(subtitle_streams.items()))
 
-    def download(
-        self,
-        video_stream: Optional[Dict[str, Any]] = None,
-        audio_stream: Optional[Dict[str, Any]] = None,
-        output_path: Union[str, PathLike] = Path.cwd(),
-        ffmpeg_path: Union[str, PathLike, Literal["local"]] = "local",
-        pre_allocate_space: bool = False,
-        use_ram_buffer: bool = True,
-        max_connections: Union[int, Literal["auto"]] = "auto",
-        connection_speed: float = 80,
-        overwrite: bool = True,
-        show_progress_bar: bool = True,
-        timeout: Optional[int] = None,
-        logging: bool = False,
-    ) -> Path:
-        """
-        Download the YouTube video and/or audio using the provided streams.
-
-        - If no streams are provided, the best video and/or audio streams will be used.
-        - If one stream is provided, it will be used to download the video or audio, without merging.
-        - If both streams are provided, they will be merged into a single file.
-
-        Args:
-            video_stream: The video stream generated by .analyze_video_streams(). (default: None)
-            audio_stream: The audio stream generated by .analyze_audio_streams(). (default: None)
-            output_path: The output path to save the downloaded video and/or audio to. If a directory is provided, the file name will be generated based on the video title and ID, like 'title - [id].extension'. If a file is provided, the file will be saved with the provided name. (default: Path.cwd())
-            ffmpeg_path: The path to the ffmpeg executable. If 'local', the ffmpeg executable will be searched in the PATH environment variable. (default: 'local')
-            pre_allocate_space: Whether to pre-allocate space for the file, useful to avoid disk fragmentation. (default: False)
-            use_ram_buffer: Whether to use a RAM buffer to download the file. (default: True)
-            max_connections: The maximum number of connections to use for downloading the file. (default: 'auto')
-            connection_speed: The connection speed in Mbps. (default: 80)
-            overwrite: Overwrite the file if it already exists. Otherwise, a "_1", "_2", etc. suffix will be added. (default: True)
-            show_progress_bar: Show or hide the download progress bar. (default: True)
-            timeout: Timeout in seconds for the download process. Or None for no timeout. (default: None)
-            logging: Enable or disable ffmpeg logging. (default: False)
-
-        Returns:
-            The Path object of the finished file.
-
-        Raises:
-            EmptyDataError: If no YouTube data is available. Please call .extract() first.
-            InsufficientSpaceError: If there is not enough space to download the file.
-        """
-
-        if not self._raw_youtube_data:
-            raise EmptyDataError("No YouTube data available. Please call .extract() first.")
-
-        if not self.information:
-            self.analyze_information(check_thumbnails=False, retrieve_dislike_count=False)
-
-        if not video_stream and not audio_stream:
-            self.analyze_video_streams(preferred_quality="all")
-            self.analyze_audio_streams(preferred_language="local")
-
-            video_stream = self.best_video_stream
-            audio_stream = self.best_audio_stream
-
-        output_path = Path(output_path)
-
-        if video_stream and audio_stream:
-            if output_path.is_dir():
-                output_path = Path(
-                    output_path, f"{self.information['cleanTitle']} [{self.information['id']}].{video_stream['extension']}"
-                )
-
-            tmp_path = Path(gettempdir(), ".tmp-streamsnapper-downloader")
-            tmp_path.mkdir(exist_ok=True)
-
-            output_video_path = Path(tmp_path, f".tmp-video-{self.information['id']}.{video_stream['extension']}")
-            video_downloader = TurboDL(
-                max_connections=max_connections,
-                connection_speed=connection_speed,
-                overwrite=overwrite,
-                show_progress_bars=show_progress_bar,
-                timeout=timeout,
-            )
-            video_downloader.download(
-                video_stream["url"], output_video_path, pre_allocate_space=pre_allocate_space, use_ram_buffer=use_ram_buffer
-            )
-
-            output_audio_path = Path(tmp_path, f".tmp-audio-{self.information['id']}.{audio_stream['extension']}")
-            audio_downloader = TurboDL(
-                max_connections=max_connections,
-                connection_speed=connection_speed,
-                overwrite=overwrite,
-                show_progress_bars=show_progress_bar,
-                timeout=timeout,
-            )
-            audio_downloader.download(
-                audio_stream["url"], output_audio_path, pre_allocate_space=pre_allocate_space, use_ram_buffer=use_ram_buffer
-            )
-
-            merger = Merger(logging=logging)
-            merger.merge(
-                video_path=output_video_path, audio_path=output_audio_path, output_path=output_path, ffmpeg_path=ffmpeg_path
-            )
-
-            rmtree(tmp_path)
-
-            return output_path.resolve()
-        elif video_stream:
-            if output_path.is_dir():
-                output_path = Path(
-                    output_path, f"{self.information['cleanTitle']} [{self.information['id']}].{video_stream['extension']}"
-                )
-
-            downloader = TurboDL(
-                max_connections=max_connections,
-                connection_speed=connection_speed,
-                overwrite=overwrite,
-                show_progress_bars=show_progress_bar,
-                timeout=timeout,
-            )
-            downloader.download(
-                video_stream["url"], output_path, pre_allocate_space=pre_allocate_space, use_ram_buffer=use_ram_buffer
-            )
-
-            return Path(downloader.output_path)
-        elif audio_stream:
-            if output_path.is_dir():
-                output_path = Path(
-                    output_path, f"{self.information['cleanTitle']} [{self.information['id']}].{audio_stream['extension']}"
-                )
-
-            downloader = TurboDL(
-                max_connections=max_connections,
-                connection_speed=connection_speed,
-                overwrite=overwrite,
-                show_progress_bars=show_progress_bar,
-                timeout=timeout,
-            )
-            downloader.download(
-                audio_stream["url"], output_path, pre_allocate_space=pre_allocate_space, use_ram_buffer=use_ram_buffer
-            )
-
-            return Path(downloader.output_path)
-
 
 class YouTubeExtractor:
-    """
-    A class for extracting data from YouTube URLs and searching for YouTube videos.
-    """
+    """A class for extracting data from YouTube URLs and searching for YouTube videos."""
 
     def __init__(self) -> None:
-        """
-        Initialize the Extractor class with some regular expressions for analyzing YouTube URLs.
-        """
+        """Initialize the Extractor class with some regular expressions for analyzing YouTube URLs."""
 
         self._platform_regex = re_compile(r"(?:https?://)?(?:www\.)?(music\.)?youtube\.com|youtu\.be|youtube\.com/shorts")
         self._video_id_regex = re_compile(
@@ -1061,12 +906,12 @@ class YouTubeExtractor:
             r"(?:youtube\.com/(?:playlist\?list=|watch\?.*?&list=|music/playlist\?list=|music\.youtube\.com/watch\?.*?&list=))([a-zA-Z0-9_-]+)"
         )
 
-    def identify_platform(self, url: str) -> Optional[Literal["youtube", "youtubeMusic"]]:
+    def identify_platform(self, url: str) -> Literal["youtube", "youtubeMusic"] | None:
         """
         Identify the platform of a given URL as either YouTube or YouTube Music.
 
         Args:
-            url: The URL to identify the platform from. (required)
+            url: The URL to identify the platform from.
 
         Returns:
             'youtube' if the URL corresponds to YouTube, 'youtubeMusic' if it corresponds to YouTube Music. Returns None if the platform is not recognized.
@@ -1077,12 +922,12 @@ class YouTubeExtractor:
         if found_match:
             return "youtubeMusic" if found_match.group(1) else "youtube"
 
-    def extract_video_id(self, url: str) -> Optional[str]:
+    def extract_video_id(self, url: str) -> str | None:
         """
         Extract the YouTube video ID from a URL.
 
         Args:
-            url: The URL to extract the video ID from. (required)
+            url: The URL to extract the video ID from.
 
         Returns:
             The extracted video ID. If no video ID is found, return None.
@@ -1092,13 +937,13 @@ class YouTubeExtractor:
 
         return found_match.group(1) if found_match else None
 
-    def extract_playlist_id(self, url: str, include_private: bool = False) -> Optional[str]:
+    def extract_playlist_id(self, url: str, include_private: bool = False) -> str | None:
         """
         Extract the YouTube playlist ID from a URL.
 
         Args:
-            url: The URL to extract the playlist ID from. (required)
-            include_private: Whether to include private playlists, like the mixes YouTube makes for you. (default: False)
+            url: The URL to extract the playlist ID from.
+            include_private: Whether to include private playlists, like the mixes YouTube makes for you. Defaults to False.
 
         Returns:
             The extracted playlist ID. If no playlist ID is found or the playlist is private and include_private is False, return None.
@@ -1122,15 +967,15 @@ class YouTubeExtractor:
         sort_by: Literal["relevance", "upload_date", "view_count", "rating"] = "relevance",
         results_type: Literal["video", "channel", "playlist", "movie"] = "video",
         limit: int = 1,
-    ) -> Optional[List[str]]:
+    ) -> list[str] | None:
         """
         Search for YouTube content based on a query and return a list of URLs (raw data provided by scrapetube library).
 
         Args:
-            query: The search query string. (required)
-            sort_by: The sorting method to use for the search results. Options are 'relevance', 'upload_date', 'view_count', and 'rating'. (default: 'relevance')
-            results_type: The type of content to search for. Options are 'video', 'channel', 'playlist', and 'movie'. (default: 'video')
-            limit: The maximum number of video URLs to return. (default: 1)
+            query: The search query string.
+            sort_by: The sorting method to use for the search results. Options are 'relevance', 'upload_date', 'view_count', and 'rating'. Defaults to 'relevance'.
+            results_type: The type of content to search for. Options are 'video', 'channel', 'playlist', and 'movie'. Defaults to 'video'.
+            limit: The maximum number of video URLs to return. Defaults to 1.
 
         Returns:
             A list of video URLs from the search results. If no videos are found, returns None.
@@ -1150,13 +995,13 @@ class YouTubeExtractor:
 
             return found_urls if found_urls else None
 
-    def get_playlist_videos(self, url: str, limit: Optional[int] = None) -> Optional[List[str]]:
+    def get_playlist_videos(self, url: str, limit: int | None = None) -> list[str] | None:
         """
         Get the video URLs from a YouTube playlist (raw data provided by scrapetube library).
 
         Args:
-            url: The URL of the YouTube playlist. (required)
-            limit: The maximum number of video URLs to return. If None, return all video URLs. (default: None)
+            url: The URL of the YouTube playlist.
+            limit: The maximum number of video URLs to return. If None, return all video URLs. Defaults to None.
 
         Returns:
             A list of video URLs from the playlist. If no videos are found or the playlist is private, return None.
@@ -1181,13 +1026,13 @@ class YouTubeExtractor:
 
     def get_channel_videos(
         self,
-        channel_id: Optional[str] = None,
-        channel_url: Optional[str] = None,
-        channel_username: Optional[str] = None,
+        channel_id: str | None = None,
+        channel_url: str | None = None,
+        channel_username: str | None = None,
         sort_by: Literal["newest", "oldest", "popular"] = "newest",
         content_type: Literal["videos", "shorts", "streams"] = "videos",
-        limit: Optional[int] = None,
-    ) -> Optional[List[str]]:
+        limit: int | None = None,
+    ) -> list[str] | None:
         """
         Get the video URLs from a YouTube channel (raw data provided by scrapetube library).
 
@@ -1195,12 +1040,12 @@ class YouTubeExtractor:
         - If more than one of channel_id, channel_url, and channel_username is provided, raise ValueError.
 
         Args:
-            channel_id: The ID of the YouTube channel. (default: None)
-            channel_url: The URL of the YouTube channel. (default: None)
-            channel_username: The username of the YouTube channel. (default: None)
-            sort_by: The sorting method to use for the channel videos. Options are 'newest', 'oldest', and 'popular' (default: 'newest').
-            content_type: The type of content to search for. Options are 'videos', 'shorts', and 'streams' (default: 'videos').
-            limit: The maximum number of video URLs to return. If None, return all video URLs. (default: None)
+            channel_id: The ID of the YouTube channel. Defaults to None.
+            channel_url: The URL of the YouTube channel. Defaults to None.
+            channel_username: The username of the YouTube channel. Defaults to None.
+            sort_by: The sorting method to use for the channel videos. Options are 'newest', 'oldest', and 'popular'. Defaults to 'newest'.
+            content_type: The type of content to search for. Options are 'videos', 'shorts', and 'streams'. Defaults to 'videos'.
+            limit: The maximum number of video URLs to return. If None, return all video URLs. Defaults to None.
 
         Returns:
             A list of video URLs from the channel. If no videos are found or the channel is non-existent, return None.
