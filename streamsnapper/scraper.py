@@ -967,7 +967,7 @@ class YouTubeExtractor:
         sort_by: Literal["relevance", "upload_date", "view_count", "rating"] = "relevance",
         results_type: Literal["video", "channel", "playlist", "movie"] = "video",
         limit: int = 1,
-    ) -> list[str] | None:
+    ) -> list[dict[str, str]] | None:
         """
         Search for YouTube content based on a query and return a list of URLs (raw data provided by scrapetube library).
 
@@ -978,7 +978,7 @@ class YouTubeExtractor:
             limit: The maximum number of video URLs to return. Defaults to 1.
 
         Returns:
-            A list of video URLs from the search results. If no videos are found, returns None.
+            A list of dictionaries containing information about the found videos. If no videos are found, return None.
         """
 
         try:
@@ -989,11 +989,9 @@ class YouTubeExtractor:
             return None
 
         if extracted_data:
-            found_urls = [
-                f"https://www.youtube.com/watch?v={item.get('videoId')}" for item in extracted_data if item.get("videoId")
-            ]
+            return extracted_data
 
-            return found_urls if found_urls else None
+        return None
 
     def get_playlist_videos(self, url: str, limit: int | None = None) -> list[str] | None:
         """
