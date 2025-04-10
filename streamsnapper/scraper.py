@@ -1,4 +1,4 @@
-# Built-in imports
+# Built-in modules
 from contextlib import suppress
 from json import JSONDecodeError
 from locale import getlocale
@@ -6,7 +6,7 @@ from re import compile as re_compile
 from typing import Any, Literal
 from urllib.parse import unquote
 
-# Third-party imports
+# Third-party modules
 from httpx import get, head
 from scrapetube import get_channel as scrape_youtube_channel
 from scrapetube import get_playlist as scrape_youtube_playlist
@@ -15,7 +15,7 @@ from yt_dlp import YoutubeDL
 from yt_dlp import utils as yt_dlp_utils
 
 # Local imports
-from .exceptions import EmptyDataError, InvalidDataError, ScrapingError
+from .exceptions import InvalidDataError, ScrapingError
 from .functions import format_string, get_value, strip
 
 
