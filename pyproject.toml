@@ -54,7 +54,7 @@ scrapetube = "^2.5.1"
 yt-dlp = "^2025.3.31"
 
 [tool.poetry.group.lint.dependencies]
-ruff = "^0.11.4"
+ruff = "^0.11.6"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^8.3.5"
