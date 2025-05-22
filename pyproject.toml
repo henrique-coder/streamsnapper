@@ -49,19 +49,19 @@ repository = "https://github.com/henrique-coder/streamsnapper"
 
 [tool.poetry.dependencies]
 python = "^3.10"
-httpx = "^0.28.1"
-scrapetube = "^2.5.1"
-yt-dlp = "^2025.4.30"
+httpx = "*"
+scrapetube = "*"
+yt-dlp = "*"
 
 [tool.poetry.group.lint.dependencies]
-ruff = "^0.11.9"
+ruff = "*"
 
 [tool.poetry.group.test.dependencies]
-pytest = "^8.3.5"
-pytest-randomly = "^3.16.0"
+pytest = "*"
+pytest-randomly = "*"
 
 [tool.poetry.group.dev.dependencies]
-rich = "^14.0.0"
+rich = "*"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
