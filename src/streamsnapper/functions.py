@@ -1,4 +1,4 @@
-# Built-in modules
+# Standard modules
 from collections.abc import Callable
 from re import sub as re_sub
 from typing import Any

@@ -1,4 +1,4 @@
-# Built-in modules
+# Standard modules
 from contextlib import suppress
 from json import JSONDecodeError
 from locale import getlocale
@@ -14,7 +14,7 @@ from scrapetube import get_search as scrape_youtube_search
 from yt_dlp import YoutubeDL
 from yt_dlp import utils as yt_dlp_utils
 
-# Local imports
+# Local modules
 from .exceptions import InvalidDataError, ScrapingError
 from .functions import format_string, get_value, strip
 
