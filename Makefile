@@ -29,6 +29,7 @@ help:
 	@echo "  install    - Install dependencies with 'uv'"
 	@echo "  tests      - Run tests with 'pytest'"
 	@echo "  help       - Show this help message"
+
 %:
 	@if [ "$(FIRST_TARGET)" = "install" ]; then \
 		:; \
