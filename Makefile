@@ -1,26 +1,38 @@
-PYTHON ?= python3
+PYTHON ?= python
 VENV := .venv
 
-.PHONY: install lint format tests help
+FIRST_TARGET := $(firstword $(MAKECMDGOALS))
+ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+
+.PHONY: lint format install tests help %
 .DEFAULT_GOAL := help
 
-install:
-	poetry update
-	poetry install
-
 lint:
-	poetry run ruff check
+	uv run npx prettier --check "**/*.{html,css,js,md,json,yaml}"
+	uv run ruff check .
 
 format:
-	poetry run ruff format
+	uv run npx prettier --write "**/*.{html,css,js,md,json,yaml}"
+	uv run ruff check --fix .
+	uv run ruff format .
+
+install:
+	uv sync --all-extras --all-groups
 
 tests:
-	poetry run pytest -v --xfail-tb
+	uv run pytest -v --xfail-tb
 
 help:
 	@echo "Available commands:"
-	@echo "  install     - Update dependencies, poetry.lock file, and install project"
-	@echo "  lint        - Check code with ruff"
-	@echo "  format      - Format code with ruff"
-	@echo "  tests       - Run tests with pytest"
-	@echo "  help        - Show this help message"
+	@echo "  lint       - Check code with 'prettier' and 'ruff'"
+	@echo "  format     - Format code with 'prettier' and 'ruff'"
+	@echo "  install    - Install dependencies with 'uv'"
+	@echo "  tests      - Run tests with 'pytest'"
+	@echo "  help       - Show this help message"
+%:
+	@if [ "$(FIRST_TARGET)" = "install" ]; then \
+		:; \
+	else \
+		@echo "make: *** Unknown target '$@'. Use 'make help' for available targets." >&2; \
+		exit 1; \
+	fi

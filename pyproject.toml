@@ -1,15 +1,19 @@
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
-[tool.poetry]
+[project]
 name = "streamsnapper"
 version = "0.3.0"
 description = "StreamSnapper is an intuitive library designed to simplify, improve, and organize YouTube and Youtube Music media streams. It offers scraping functions with higher speed extraction and efficiency with the latest tools to perform such processes."
 license = "MIT"
 readme = "README.md"
-authors = ["henrique-coder <hjyz6rqyb@mozmail.com>"]
-maintainers = ["henrique-coder <hjyz6rqyb@mozmail.com>"]
+authors = [
+    { name = "henrique-coder", email = "henriquemoreira10fk@gmail.com" }
+]
+maintainers = [
+    { name = "henrique-coder", email = "henriquemoreira10fk@gmail.com" }
+]
 keywords = [
     "stream",
     "snapper",
@@ -34,34 +38,31 @@ classifiers = [
     "Topic :: Software Development :: Libraries",
     "Typing :: Typed"
 ]
-packages = [{ include = "streamsnapper" }]
-include = [
-    "LICENSE",
-    "streamsnapper/py.typed"
+requires-python = ">=3.10"
+dependencies = [
+    "httpx>=0.28.1",
+    "scrapetube>=2.5.1",
+    "yt-dlp>=2025.5.22",
 ]
 
-[tool.poetry.urls]
+[dependency-groups]
+lint = [
+    "ruff>=0.11.11",
+]
+test = [
+    "pytest-randomly>=3.16.0",
+    "pytest>=8.3.5",
+]
+dev = [
+    "rich>=14.0.0",
+]
+
+[project.urls]
 homepage = "https://github.com/henrique-coder/streamsnapper"
 documentation = "https://github.com/henrique-coder/streamsnapper/blob/main/README.md"
 repository = "https://github.com/henrique-coder/streamsnapper"
 "Bug Tracker" = "https://github.com/henrique-coder/streamsnapper/issues"
 "Changelog" = "https://github.com/henrique-coder/streamsnapper/releases/latest"
-
-[tool.poetry.dependencies]
-python = "^3.10"
-httpx = "*"
-scrapetube = "*"
-yt-dlp = "*"
-
-[tool.poetry.group.lint.dependencies]
-ruff = "*"
-
-[tool.poetry.group.test.dependencies]
-pytest = "*"
-pytest-randomly = "*"
-
-[tool.poetry.group.dev.dependencies]
-rich = "*"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
