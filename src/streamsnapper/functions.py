@@ -1,6 +1,6 @@
 # Standard modules
 from collections.abc import Callable
-from re import sub as re_sub
+from re import sub
 from typing import Any
 from unicodedata import normalize
 
@@ -81,7 +81,7 @@ def format_string(query: str, max_length: int | None = None) -> str | None:
         return None
 
     normalized_string = normalize("NFKD", query).encode("ASCII", "ignore").decode("utf-8")
-    sanitized_string = re_sub(r"\s+", " ", re_sub(r"[^a-zA-Z0-9\-_()[\]{}!$#+;,. ]", "", normalized_string)).strip()
+    sanitized_string = sub(r"\s+", " ", sub(r"[^a-zA-Z0-9\-_()[\]{}!$#+;,. ]", "", normalized_string)).strip()
 
     if max_length is not None and len(sanitized_string) > max_length:
         cutoff = sanitized_string[:max_length].rfind(" ")

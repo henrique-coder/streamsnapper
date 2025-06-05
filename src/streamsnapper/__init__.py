@@ -1,4 +1,4 @@
-# Local imports
+# Local modules
 from .exceptions import InvalidDataError, ScrapingError, StreamSnapperError
 from .scraper import YouTube, YouTubeExtractor
 
