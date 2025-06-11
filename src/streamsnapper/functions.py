@@ -1,8 +1,13 @@
+"""Utility functions for StreamSnapper library."""
+
 # Standard modules
-from collections.abc import Callable
 from re import sub
+from collections.abc import Callable
 from typing import Any
 from unicodedata import normalize
+
+# Local modules
+from .logger import logger
 
 
 def get_value(
@@ -10,54 +15,58 @@ def get_value(
     key: Any,
     fallback_keys: list[Any] | None = None,
     convert_to: Callable | list[Callable] | None = None,
-    default_to: Any | None = None,
+    default_to: Any = None,
 ) -> Any:
     """
-    Get a value from a dictionary or a list of fallback keys.
-
-    - If the provided key does not exist in the dictionary, the function will return the default value if provided, or None otherwise.
-    - If a list of fallback keys is provided, the function will try to get the value from the dictionary with the fallback keys. If the value is not found in the dictionary with any of the fallback keys, the function will return the default value if provided, or None otherwise.
-    - If the value is not None and a conversion function or list of conversion functions is provided, the function will try to convert the value using each conversion function in sequence until one succeeds. If all conversions fail with ValueError or TypeError, the function will return the default value if provided, or None otherwise.
+    Extract value from dictionary with fallback keys and type conversion.
 
     Args:
-        data: The dictionary to get the value from.
-        key: The key to get the value from.
-        fallback_keys: A list of fallback keys to try if the key does not exist in the dictionary. Defaults to None.
-        convert_to: A conversion function or list of conversion functions to convert the value. Defaults to None.
-        default_to: A default value to return if the value is not found in the dictionary or if all conversions fail. Defaults to None.
+        data: The dictionary to extract value from
+        key: Primary key to look for
+        fallback_keys: Alternative keys if primary key fails
+        convert_to: Function(s) to convert the value
+        default_to: Default value if extraction/conversion fails
 
     Returns:
-        The value from the dictionary or the default value if the value is not found in the dictionary or if all conversions fail.
+        Extracted and converted value or default
     """
 
-    try:
-        value = data[key]
-    except KeyError:
-        value = None
+    logger.trace(f"Extracting value for key: {key}")
 
+    # Try primary key
+    value = data.get(key)
+
+    # Try fallback keys if primary key failed
     if value is None and fallback_keys:
         for fallback_key in fallback_keys:
             if fallback_key is not None:
-                try:
-                    value = data[fallback_key]
+                value = data.get(fallback_key)
 
-                    if value is not None:
-                        break
-                except KeyError:
-                    continue
+                if value is not None:
+                    logger.trace(f"Found value using fallback key: {fallback_key}")
+                    break
 
     if value is None:
+        logger.trace(f"No value found for key {key}, returning default: {default_to}")
+
         return default_to
 
+    # Apply conversions if specified
     if convert_to is not None:
         converters = [convert_to] if not isinstance(convert_to, list) else convert_to
 
         for converter in converters:
             try:
-                value = converter(value)
-                break
-            except (ValueError, TypeError):
+                converted_value = converter(value)
+                logger.trace(f"Successfully converted value using {converter.__name__}")
+
+                return converted_value
+            except (ValueError, TypeError) as e:
+                logger.trace(f"Conversion failed with {converter.__name__}: {e}")
+
                 if converter == converters[-1]:
+                    logger.warning(f"All conversions failed for key {key}, returning default")
+
                     return default_to
 
                 continue
@@ -65,40 +74,78 @@ def get_value(
     return value
 
 
-def format_string(query: str, max_length: int | None = None) -> str | None:
+def sanitize_filename(text: str, max_length: int | None = 255, replacement_char: str = "_") -> str | None:
     """
-    Sanitizes a given string by removing all non-ASCII characters and non-alphanumeric characters, and trims it to a given maximum length.
+    Sanitize text for use as filename.
 
     Args:
-        query: The string to sanitize.
-        max_length: The maximum length to trim the sanitized string to. Defaults to None.
+        text: Text to sanitize
+        max_length: Maximum allowed length
+        replacement_char: Character to replace invalid chars with
 
     Returns:
-        The sanitized string, or None if the sanitized string is empty.
+        Sanitized filename or None if empty after sanitization
     """
 
-    if not query:
+    if not text:
+        logger.warning("Empty text provided for filename sanitization")
+
         return None
 
-    normalized_string = normalize("NFKD", query).encode("ASCII", "ignore").decode("utf-8")
-    sanitized_string = sub(r"\s+", " ", sub(r"[^a-zA-Z0-9\-_()[\]{}!$#+;,. ]", "", normalized_string)).strip()
+    logger.trace(f"Sanitizing filename: {text[:100]}...")
 
-    if max_length is not None and len(sanitized_string) > max_length:
-        cutoff = sanitized_string[:max_length].rfind(" ")
-        sanitized_string = sanitized_string[:cutoff] if cutoff != -1 else sanitized_string[:max_length]
+    # Normalize unicode characters
+    normalized = normalize("NFKD", text).encode("ASCII", "ignore").decode("utf-8")
 
-    return sanitized_string if sanitized_string else None
+    # Remove invalid filename characters
+    invalid_chars = r'[<>:"/\\|?*\x00-\x1f]'
+    sanitized = sub(invalid_chars, replacement_char, normalized)
+
+    # Clean up multiple spaces/underscores
+    sanitized = sub(r"[\s_]+", replacement_char, sanitized).strip("_. ")
+
+    # Truncate if necessary
+    if max_length and len(sanitized) > max_length:
+        # Try to cut at word boundary
+        cutoff = sanitized[:max_length].rfind(" ")
+        sanitized = sanitized[:cutoff] if cutoff != -1 else sanitized[:max_length]
+
+    result = sanitized if sanitized else None
+    logger.trace(f"Sanitized filename result: {result}")
+
+    return result
 
 
-def strip(string: Any) -> str:
+def format_duration(seconds: int | None) -> str:
     """
-    Strips leading and trailing whitespace from a given string.
+    Format duration in seconds to human readable format (HH:MM:SS).
 
     Args:
-        string: The string to strip.
+        seconds: Duration in seconds
 
     Returns:
-        The stripped string.
+        Formatted duration string (HH:MM:SS) or "Unknown" if None
     """
 
-    return str(string).strip()
+    if seconds is None:
+        return "Unknown"
+
+    hours = seconds // 3600
+    minutes = (seconds % 3600) // 60
+    secs = seconds % 60
+
+    return f"{hours:02d}:{minutes:02d}:{secs:02d}"
+
+
+def strip_whitespace(value: Any) -> str:
+    """
+    Strip whitespace from any value converted to string.
+
+    Args:
+        value: Value to strip
+
+    Returns:
+        Stripped string
+    """
+
+    return str(value).strip()
