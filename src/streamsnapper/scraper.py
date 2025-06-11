@@ -16,7 +16,11 @@ from yt_dlp import utils as yt_dlp_utils
 
 # Local modules
 from .exceptions import InvalidDataError, ScrapingError
-from .functions import format_string, get_value, strip
+from .functions import sanitize_filename, get_value, strip_whitespace
+from .logger import logger
+
+
+logger.info("StreamSnapper library initialized")
 
 
 class InformationStructure:
@@ -498,10 +502,10 @@ class YouTube:
 
         id_ = get_value(data, "id")
         title = get_value(data, "fulltitle", ["title"])
-        clean_title = format_string(title)
+        clean_title = sanitize_filename(title)
         description = get_value(data, "description")
         channel_name = get_value(data, "channel", ["uploader"])
-        clean_channel_name = format_string(channel_name)
+        clean_channel_name = sanitize_filename(channel_name)
         chapters = [
             {
                 "title": get_value(chapter, "title"),
@@ -701,7 +705,7 @@ class YouTube:
             youtube_format_id = get_value(stream, "format_id", convert_to=int)
 
             data = {
-                "url": get_value(stream, "url", convert_to=[unquote, strip]),
+                "url": get_value(stream, "url", convert_to=[unquote, strip_whitespace]),
                 "codec": codec_parts[0] if codec_parts else None,
                 "codecVariant": codec_parts[1] if len(codec_parts) > 1 else None,
                 "rawCodec": codec,
@@ -823,7 +827,7 @@ class YouTube:
             youtube_format_note = get_value(stream, "format_note")
 
             data = {
-                "url": get_value(stream, "url", convert_to=[unquote, strip]),
+                "url": get_value(stream, "url", convert_to=[unquote, strip_whitespace]),
                 "codec": codec_parts[0] if codec_parts else None,
                 "codecVariant": codec_parts[1] if len(codec_parts) > 1 else None,
                 "rawCodec": codec,
@@ -883,7 +887,7 @@ class YouTube:
             subtitle_streams[stream] = [
                 {
                     "extension": get_value(subtitle, "ext"),
-                    "url": get_value(subtitle, "url", convert_to=[unquote, strip]),
+                    "url": get_value(subtitle, "url", convert_to=[unquote, strip_whitespace]),
                     "language": get_value(subtitle, "name"),
                 }
                 for subtitle in data[stream]
