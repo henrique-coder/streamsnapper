@@ -43,6 +43,7 @@ dependencies = [
     "httpx>=0.28.1",
     "humanfriendly>=10.0",
     "loguru>=0.7.3",
+    "pydantic>=2.11.5",
     "richuru>=0.1.1",
     "scrapetube>=2.5.1",
     "yt-dlp>=2025.6.9",
