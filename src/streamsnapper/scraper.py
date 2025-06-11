@@ -399,7 +399,7 @@ class YouTube:
         logging = not logging
 
         self._ydl_opts: dict[str, bool] = {
-            "extract_flat": True,
+            "extract_flat": False,
             "geo_bypass": True,
             "noplaylist": True,
             "age_limit": None,
