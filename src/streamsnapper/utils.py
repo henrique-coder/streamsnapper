@@ -4,9 +4,60 @@ from re import sub
 from collections.abc import Callable
 from typing import Any
 from unicodedata import normalize
+from json import JSONDecodeError
+from contextlib import suppress
+from enum import Enum
+from pathlib import Path
+from os import PathLike
+
+# Third-party modules
+from httpx import get, head
 
 # Local modules
 from .logger import logger
+
+
+class SupportedCookieBrowser(str, Enum):
+    """Supported browsers for extracting cookies."""
+
+    CHROME = "chrome"
+    FIREFOX = "firefox"
+    EDGE = "edge"
+    SAFARI = "safari"
+    OPERA = "opera"
+    BRAVE = "brave"
+    CHROMIUM = "chromium"
+
+
+class CookieFile:
+    """Represents a cookie file."""
+
+    def __init__(self, file_path: str | PathLike) -> None:
+        """
+        Initialize cookie file.
+
+        Args:
+            file_path: Path to cookie file (Netscape format)
+        """
+
+        self.path = Path(file_path)
+
+        if not self.path.exists():
+            logger.warning(f"Cookie file does not exist: {self.path}")
+        elif not self.path.is_file():
+            raise ValueError(f"Cookie path is not a file: {self.path}")
+        else:
+            logger.debug(f"Cookie file initialized: {self.path}")
+
+    def __str__(self) -> str:
+        """Return file path as string."""
+
+        return self.path.as_posix()
+
+    def __repr__(self) -> str:
+        """Return representation of cookie file."""
+
+        return f"CookieFile('{self.path}')"
 
 
 def get_value(
@@ -61,7 +112,7 @@ def get_value(
 
                 return converted_value
             except (ValueError, TypeError) as e:
-                logger.trace(f"Conversion failed with {converter.__name__}: {e}")
+                logger.trace(f"Conversion failed with {converter.__name__}: {repr(e)}")
 
                 if converter == converters[-1]:
                     logger.warning(f"All conversions failed for key {key}, returning default")
@@ -179,3 +230,78 @@ def detect_system_language(fallback: str = "en-US") -> str:
     logger.info(f"Using fallback language: {fallback}")
 
     return fallback
+
+
+def filter_valid_youtube_thumbnails(thumbnails: list[str]) -> list[str]:
+    """
+    Filter YouTube thumbnail URLs, returning list starting from first valid thumbnail.
+    Stops at first valid thumbnail found.
+
+    Args:
+        thumbnails: List of YouTube thumbnail URLs to validate
+
+    Returns:
+        List starting from first valid thumbnail, or empty list if none valid
+    """
+
+    if not thumbnails:
+        return []
+
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36"
+    }
+
+    for index, url in enumerate(thumbnails):
+        try:
+            response = head(url, headers=headers, follow_redirects=False, timeout=5)
+
+            if response.is_success:
+                logger.trace(f"First valid YouTube thumbnail found: {url}")
+
+                return thumbnails[index:]
+            else:
+                logger.trace(f"Invalid YouTube thumbnail (non-success response): {url}")
+        except Exception as e:
+            logger.trace(f"Invalid YouTube thumbnail (request exception): {url} - {repr(e)}")
+
+    logger.debug("No valid YouTube thumbnails found")
+
+    return []
+
+
+def get_youtube_dislike_count(video_id: str) -> int | None:
+    """
+    Retrieve dislike count for YouTube video from external API.
+
+    Args:
+        video_id: YouTube video ID
+
+    Returns:
+        Dislike count as integer or None if unavailable/failed
+    """
+
+    try:
+        response = get(
+            "https://returnyoutubedislikeapi.com/votes",
+            params={"videoId": video_id},
+            headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36"
+            },
+        )
+
+        if response.is_success:
+            with suppress(JSONDecodeError):
+                dislike_count = get_value(response.json(), "dislikes", convert_to=int)
+
+                if dislike_count is not None:
+                    logger.trace(f"Retrieved dislike count for {video_id}: {dislike_count}")
+
+                    return dislike_count
+                else:
+                    logger.trace(f"No dislike data available for video: {video_id}")
+        else:
+            logger.trace(f"Failed to fetch dislike count (non-success response): {video_id}")
+    except Exception as e:
+        logger.trace(f"Failed to fetch dislike count (request exception): {video_id} - {repr(e)}")
+
+    return None
