@@ -1,6 +1,3 @@
-"""Custom exceptions for StreamSnapper library."""
-
-
 class StreamSnapperError(Exception):
     """Base class for all StreamSnapper exceptions."""
 

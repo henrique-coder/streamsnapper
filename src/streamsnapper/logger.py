@@ -1,5 +1,3 @@
-"""Logger configuration for StreamSnapper library."""
-
 # Standard modules
 from sys import stderr
 

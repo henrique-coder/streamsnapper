@@ -1,5 +1,3 @@
-"""Utility functions for StreamSnapper library."""
-
 # Standard modules
 from re import sub
 from collections.abc import Callable
