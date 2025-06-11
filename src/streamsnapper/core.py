@@ -1,26 +1,19 @@
 # Standard modules
 from contextlib import suppress
 from json import JSONDecodeError
-from locale import getlocale
 from re import compile as re_compile
 from typing import Any, Literal
 from urllib.parse import unquote
 
 # Third-party modules
 from httpx import get, head
-from scrapetube import get_channel as scrape_youtube_channel
-from scrapetube import get_playlist as scrape_youtube_playlist
-from scrapetube import get_search as scrape_youtube_search
-from yt_dlp import YoutubeDL
-from yt_dlp import utils as yt_dlp_utils
+from scrapetube import get_channel, get_playlist, get_search
+from yt_dlp import YoutubeDL, utils as yt_dlp_utils
 
 # Local modules
 from .exceptions import InvalidDataError, ScrapingError
-from .utils import sanitize_filename, get_value, strip_whitespace
+from .utils import sanitize_filename, get_value, strip_whitespace, detect_system_language
 from .logger import logger
-
-
-logger.info("StreamSnapper library initialized")
 
 
 class InformationStructure:
@@ -400,7 +393,12 @@ class YouTube:
             logging: Enable or disable logging for the YouTube class. Defaults to False.
         """
 
-        logging = not logging
+        not_logging = not logging
+
+        if not_logging:
+            logger.remove()
+
+        logger.info("Initializing YouTube class...")
 
         self._ydl_opts: dict[str, bool] = {
             "extract_flat": False,
@@ -408,26 +406,18 @@ class YouTube:
             "noplaylist": True,
             "age_limit": None,
             "ignoreerrors": True,
-            "quiet": logging,
-            "no_warnings": logging,
+            "quiet": not_logging,
+            "no_warnings": not_logging,
         }
         self._extractor: YouTubeExtractor = YouTubeExtractor()
         self._raw_youtube_data: dict[Any, Any] = {}
         self._raw_youtube_streams: list[dict[Any, Any]] = []
         self._raw_youtube_subtitles: dict[str, list[dict[str, str]]] = {}
 
-        found_system_language = getlocale()[0]
+        found_system_language = detect_system_language()
 
-        if found_system_language:
-            try:
-                self.system_language_prefix: str = found_system_language.split("_")[0].lower()
-                self.system_language_suffix: str = found_system_language.split("_")[1].upper()
-            except IndexError:
-                self.system_language_prefix: str = "en"
-                self.system_language_suffix: str = "US"
-        else:
-            self.system_language_prefix: str = "en"
-            self.system_language_suffix: str = "US"
+        self.system_language_prefix: str = found_system_language.split("-")[0]
+        self.system_language_suffix: str = found_system_language.split("-")[1]
 
         self.information: InformationStructure = InformationStructure()
 
@@ -986,9 +976,7 @@ class YouTubeExtractor:
         """
 
         try:
-            extracted_data = list(
-                scrape_youtube_search(query=query, sleep=1, sort_by=sort_by, results_type=results_type, limit=limit)
-            )
+            extracted_data = list(get_search(query=query, sleep=1, sort_by=sort_by, results_type=results_type, limit=limit))
         except Exception:
             return None
 
@@ -1015,7 +1003,7 @@ class YouTubeExtractor:
             return None
 
         try:
-            extracted_data = list(scrape_youtube_playlist(playlist_id, sleep=1, limit=limit))
+            extracted_data = list(get_playlist(playlist_id, sleep=1, limit=limit))
         except Exception:
             return None
 
@@ -1058,7 +1046,7 @@ class YouTubeExtractor:
 
         try:
             extracted_data = list(
-                scrape_youtube_channel(
+                get_channel(
                     channel_id=channel_id,
                     channel_url=channel_url,
                     channel_username=channel_username.replace("@", ""),
