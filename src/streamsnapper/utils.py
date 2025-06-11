@@ -1,4 +1,5 @@
 # Standard modules
+from locale import getlocale, setlocale, LC_ALL
 from re import sub
 from collections.abc import Callable
 from typing import Any
@@ -147,3 +148,34 @@ def strip_whitespace(value: Any) -> str:
     """
 
     return str(value).strip()
+
+
+def detect_system_language(fallback: str = "en-US") -> str:
+    """
+    Detect system language using the most reliable method.
+
+    Args:
+        fallback: Fallback language code if detection fails
+
+    Returns:
+        Language code in format "en-US" (fallback: "en-US")
+    """
+
+    try:
+        # Set locale to system default and get it
+        setlocale(LC_ALL, "")
+        system_locale = getlocale()[0]
+
+        if system_locale and "_" in system_locale:
+            # Convert from "en_US" to "en-US" format
+            language_code = system_locale.split(".")[0].replace("_", "-")
+            logger.debug(f"Detected system language: {language_code}")
+
+            return language_code
+    except Exception as e:
+        logger.warning(f"Language detection failed: {repr(e)}")
+
+    # Fallback
+    logger.info(f"Using fallback language: {fallback}")
+
+    return fallback
