@@ -16,7 +16,7 @@ from yt_dlp import utils as yt_dlp_utils
 
 # Local modules
 from .exceptions import InvalidDataError, ScrapingError
-from .functions import sanitize_filename, get_value, strip_whitespace
+from .utils import sanitize_filename, get_value, strip_whitespace
 from .logger import logger
 
 
