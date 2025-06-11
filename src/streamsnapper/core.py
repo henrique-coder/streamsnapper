@@ -1,396 +1,94 @@
 # Standard modules
-from contextlib import suppress
-from json import JSONDecodeError
 from re import compile as re_compile
 from typing import Any, Literal
 from urllib.parse import unquote
 
 # Third-party modules
-from httpx import get, head
 from scrapetube import get_channel, get_playlist, get_search
 from yt_dlp import YoutubeDL, utils as yt_dlp_utils
+from pydantic import BaseModel
 
 # Local modules
 from .exceptions import InvalidDataError, ScrapingError
-from .utils import sanitize_filename, get_value, strip_whitespace, detect_system_language
+from .utils import (
+    sanitize_filename,
+    get_value,
+    strip_whitespace,
+    detect_system_language,
+    filter_valid_youtube_thumbnails,
+    get_youtube_dislike_count,
+    SupportedCookieBrowser,
+    CookieFile,
+)
 from .logger import logger
 
 
-class InformationStructure:
-    """A class for storing information about a YouTube video."""
+class VideoInformation(BaseModel):
+    """Structured video information with automatic validation and serialization."""
 
-    def __init__(self) -> None:
-        """Initialize the Information class."""
+    # URLs
+    source_url: str | None = None
+    short_url: str | None = None
+    embed_url: str | None = None
+    youtube_music_url: str | None = None
+    full_url: str | None = None
 
-        self._sourceUrl: str | None = None
-        self._shortUrl: str | None = None
-        self._embedUrl: str | None = None
-        self._youtubeMusicUrl: str | None = None
-        self._fullUrl: str | None = None
-        self._id: str | None = None
-        self._title: str | None = None
-        self._cleanTitle: str | None = None
-        self._description: str | None = None
-        self._channelId: str | None = None
-        self._channelUrl: str | None = None
-        self._channelName: str | None = None
-        self._cleanChannelName: str | None = None
-        self._isVerifiedChannel: bool | None = None
-        self._duration: int | None = None
-        self._viewCount: int | None = None
-        self._isAgeRestricted: bool | None = None
-        self._categories: list[str] | None = None
-        self._tags: list[str] | None = None
-        self._isStreaming: bool | None = None
-        self._uploadTimestamp: int | None = None
-        self._availability: str | None = None
-        self._chapters: list[dict[str, str | float]] | None = None
-        self._commentCount: int | None = None
-        self._likeCount: int | None = None
-        self._dislikeCount: int | None = None
-        self._followCount: int | None = None
-        self._language: str | None = None
-        self._thumbnails: list[str] | None = None
+    # Basic info
+    id: str | None = None
+    title: str | None = None
+    clean_title: str | None = None
+    description: str | None = None
+
+    # Channel info
+    channel_id: str | None = None
+    channel_url: str | None = None
+    channel_name: str | None = None
+    clean_channel_name: str | None = None
+    is_verified_channel: bool | None = None
+
+    # Video stats
+    duration: int | None = None
+    view_count: int | None = None
+    like_count: int | None = None
+    dislike_count: int | None = None
+    comment_count: int | None = None
+    follow_count: int | None = None
+
+    # Metadata
+    is_age_restricted: bool | None = None
+    categories: list[str] | None = None
+    tags: list[str] | None = None
+    chapters: list[dict[str, str | float]] | None = None
+    is_streaming: bool | None = None
+    upload_timestamp: int | None = None
+    availability: str | None = None
+    language: str | None = None
+
+    # Media
+    thumbnails: list[str] | None = None
+
+    class Config:
+        """Pydantic configuration."""
+
+        validate_assignment = True
+        extra = "forbid"
 
     def to_dict(self) -> dict[str, Any]:
-        """
-        Convert the information to a dictionary, sorted by keys.
+        """Convert model to dictionary."""
 
-        Returns:
-            A dictionary containing the information, alphabetically ordered.
-        """
-
-        return dict(sorted({key[1:]: value for key, value in self.__dict__.items()}.items()))
-
-    @property
-    def sourceUrl(self) -> str | None:
-        """
-        Get the source URL of the video.
-
-        Returns:
-            The source URL of the video.
-        """
-
-        return self._source_url
-
-    @property
-    def shortUrl(self) -> str | None:
-        """
-        Get the short URL of the video.
-
-        Returns:
-            The short URL of the video.
-        """
-
-        return self._short_url
-
-    @property
-    def embedUrl(self) -> str | None:
-        """
-        Get the embed URL of the video.
-
-        Returns:
-            The embed URL of the video.
-        """
-
-        return self._embedUrl
-
-    @property
-    def youtubeMusicUrl(self) -> str | None:
-        """
-        Get the YouTube Music URL of the video.
-
-        Returns:
-            The YouTube Music URL of the video.
-        """
-
-        return self._youtubeMusicUrl
-
-    @property
-    def fullUrl(self) -> str | None:
-        """
-        Get the full URL of the video.
-
-        Returns:
-            The full URL of the video.
-        """
-
-        return self._fullUrl
-
-    @property
-    def id(self) -> str | None:
-        """
-        Get the ID of the video.
-
-        Returns:
-            The ID of the video.
-        """
-
-        return self._id
-
-    @property
-    def title(self) -> str | None:
-        """
-        Get the title of the video.
-
-        Returns:
-            The title of the video.
-        """
-
-        return self._title
-
-    @property
-    def cleanTitle(self) -> str | None:
-        """
-        Get the clean title of the video.
-
-        Returns:
-            The clean title of the video.
-        """
-
-        return self._cleanTitle
-
-    @property
-    def description(self) -> str | None:
-        """
-        Get the description of the video.
-
-        Returns:
-            The description of the video.
-        """
-
-        return self._description
-
-    @property
-    def channelId(self) -> str | None:
-        """
-        Get the ID of the channel that uploaded the video.
-
-        Returns:
-            The ID of the channel that uploaded the video.
-        """
-
-        return self._channelId
-
-    @property
-    def channelUrl(self) -> str | None:
-        """
-        Get the URL of the channel that uploaded the video.
-
-        Returns:
-            The URL of the channel that uploaded the video.
-        """
-
-        return self._channelUrl
-
-    @property
-    def channelName(self) -> str | None:
-        """
-        Get the name of the channel that uploaded the video.
-
-        Returns:
-            The name of the channel that uploaded the video.
-        """
-
-        return self._channelName
-
-    @property
-    def cleanChannelName(self) -> str | None:
-        """
-        Get the clean name of the channel that uploaded the video.
-
-        Returns:
-            The clean name of the channel that uploaded the video.
-        """
-
-        return self._cleanChannelName
-
-    @property
-    def isVerifiedChannel(self) -> bool | None:
-        """
-        Get whether the channel that uploaded the video is verified.
-
-        Returns:
-            Whether the channel that uploaded the video is verified.
-        """
-
-        return self._isVerifiedChannel
-
-    @property
-    def duration(self) -> int | None:
-        """
-        Get the duration of the video in seconds.
-
-        Returns:
-            The duration of the video in seconds.
-        """
-
-        return self._duration
-
-    @property
-    def viewCount(self) -> int | None:
-        """
-        Get the view count of the video.
-
-        Returns:
-            The view count of the video.
-        """
-
-        return self._viewCount
-
-    @property
-    def isAgeRestricted(self) -> bool | None:
-        """
-        Get whether the video is age restricted.
-
-        Returns:
-            Whether the video is age restricted.
-        """
-
-        return self._isAgeRestricted
-
-    @property
-    def categories(self) -> list[str] | None:
-        """
-        Get the categories of the video.
-
-        Returns:
-            The categories of the video.
-        """
-
-        return self._categories
-
-    @property
-    def tags(self) -> list[str] | None:
-        """
-        Get the tags of the video.
-
-        Returns:
-            The tags of the video.
-        """
-
-        return self._tags
-
-    @property
-    def isStreaming(self) -> bool | None:
-        """
-        Get whether the video is streaming.
-
-        Returns:
-            Whether the video is streaming.
-        """
-
-        return self._isStreaming
-
-    @property
-    def uploadTimestamp(self) -> int | None:
-        """
-        Get the upload timestamp of the video.
-
-        Returns:
-            The upload timestamp of the video.
-        """
-
-        return self._uploadTimestamp
-
-    @property
-    def availability(self) -> str | None:
-        """
-        Get the availability of the video.
-
-        Returns:
-            The availability of the video.
-        """
-
-        return self._availability
-
-    @property
-    def chapters(self) -> list[dict[str, str | float]] | None:
-        """
-        Get the chapters of the video.
-
-        Returns:
-            The chapters of the video.
-        """
-
-        return self._chapters
-
-    @property
-    def commentCount(self) -> int | None:
-        """
-        Get the comment count of the video.
-
-        Returns:
-            The comment count of the video.
-        """
-
-        return self._commentCount
-
-    @property
-    def likeCount(self) -> int | None:
-        """
-        Get the like count of the video.
-
-        Returns:
-            The like count of the video.
-        """
-
-        return self._likeCount
-
-    @property
-    def dislikeCount(self) -> int | None:
-        """
-        Get the dislike count of the video.
-
-        Returns:
-            The dislike count of the video.
-        """
-
-        return self._dislikeCount
-
-    @property
-    def followCount(self) -> int | None:
-        """
-        Get the follow count of the video.
-
-        Returns:
-            The follow count of the video.
-        """
-
-        return self._followCount
-
-    @property
-    def language(self) -> str | None:
-        """
-        Get the language of the video.
-
-        Returns:
-            The language of the video.
-        """
-
-        return self._language
-
-    @property
-    def thumbnails(self) -> list[str] | None:
-        """
-        Get the thumbnails of the video.
-
-        Returns:
-            The thumbnails of the video.
-        """
-
-        return self._thumbnails
+        return self.model_dump()
 
 
 class YouTube:
     """A class for extracting and formatting data from YouTube videos, facilitating access to general video information, video streams, audio streams and subtitles."""
 
-    def __init__(self, logging: bool = False) -> None:
+    def __init__(self, logging: bool = False, cookies: SupportedCookieBrowser | CookieFile | None = None) -> None:
         """
         Initialize the YouTube class with the required settings for extracting and formatting data from YouTube videos (raw data provided by yt-dlp library).
 
         Args:
             logging: Enable or disable logging for the YouTube class. Defaults to False.
+            cookies: Cookie file or browser to extract cookies from. Defaults to None.
         """
 
         not_logging = not logging
@@ -409,6 +107,26 @@ class YouTube:
             "quiet": not_logging,
             "no_warnings": not_logging,
         }
+
+        if isinstance(cookies, SupportedCookieBrowser):
+            self._ydl_opts["cookiesfrombrowser"] = (cookies.value, None, None, None)
+
+            if logging:
+                logger.info(f"Enabled cookie extraction from {cookies.value}")
+        elif isinstance(cookies, CookieFile):
+            self._ydl_opts["cookiefile"] = cookies.path.as_posix()
+
+            if logging:
+                logger.info(f"Enabled cookie file: {cookies.path}")
+        elif cookies is not None:
+            if logging:
+                logger.error(f"Unsupported cookie type: {type(cookies)}")
+
+            raise TypeError(f"Cookies must be SupportedCookieBrowser or CookieFile, got {type(cookies)}")
+        else:
+            if logging:
+                logger.debug("Cookie extraction disabled")
+
         self._extractor: YouTubeExtractor = YouTubeExtractor()
         self._raw_youtube_data: dict[Any, Any] = {}
         self._raw_youtube_streams: list[dict[Any, Any]] = []
@@ -419,7 +137,7 @@ class YouTube:
         self.system_language_prefix: str = found_system_language.split("-")[0]
         self.system_language_suffix: str = found_system_language.split("-")[1]
 
-        self.information: InformationStructure = InformationStructure()
+        self.information: VideoInformation = VideoInformation()
 
         self.best_video_streams: list[dict[str, Any]] = []
         self.best_video_stream: dict[str, Any] = {}
@@ -468,7 +186,7 @@ class YouTube:
                 with YoutubeDL(self._ydl_opts) as ydl:
                     self._raw_youtube_data = ydl.extract_info(url=url, download=False, process=True)
             except (yt_dlp_utils.DownloadError, yt_dlp_utils.ExtractorError, Exception) as e:
-                raise ScrapingError(f'Error occurred while scraping YouTube video: "{url}"') from e
+                raise ScrapingError(f'An error occurred while scraping video: "{url}" - Error: {repr(e)}') from e
 
         self._raw_youtube_streams = get_value(self._raw_youtube_data, "formats", convert_to=list)
         self._raw_youtube_subtitles = get_value(self._raw_youtube_data, "subtitles", convert_to=dict, default_to={})
@@ -505,53 +223,35 @@ class YouTube:
             for chapter in get_value(data, "chapters", convert_to=list, default_to=[])
         ]
 
-        dislike_count = None
-
-        if retrieve_dislike_count:
-            try:
-                r = get(
-                    "https://returnyoutubedislikeapi.com/votes",
-                    params={"videoId": id_},
-                    headers={
-                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36"
-                    },
-                )
-
-                if r.is_success:
-                    with suppress(JSONDecodeError):
-                        dislike_count = get_value(r.json(), "dislikes", convert_to=int)
-            except Exception:
-                pass
-
-        self.information._sourceUrl = self._source_url
-        self.information._shortUrl = f"https://youtu.be/{id_}"
-        self.information._embedUrl = f"https://www.youtube.com/embed/{id_}"
-        self.information._youtubeMusicUrl = f"https://music.youtube.com/watch?v={id_}"
-        self.information._fullUrl = f"https://www.youtube.com/watch?v={id_}"
-        self.information._id = id_
-        self.information._title = title
-        self.information._cleanTitle = clean_title
-        self.information._description = description if description else None
-        self.information._channelId = get_value(data, "channel_id")
-        self.information._channelUrl = get_value(data, "channel_url", ["uploader_url"])
-        self.information._channelName = channel_name
-        self.information._cleanChannelName = clean_channel_name
-        self.information._isVerifiedChannel = get_value(data, "channel_is_verified", default_to=False)
-        self.information._duration = get_value(data, "duration")
-        self.information._viewCount = get_value(data, "view_count")
-        self.information._isAgeRestricted = get_value(data, "age_limit", convert_to=bool)
-        self.information._categories = get_value(data, "categories", default_to=[])
-        self.information._tags = get_value(data, "tags", default_to=[])
-        self.information._isStreaming = get_value(data, "is_live")
-        self.information._uploadTimestamp = get_value(data, "timestamp", ["release_timestamp"])
-        self.information._availability = get_value(data, "availability")
-        self.information._chapters = chapters
-        self.information._commentCount = get_value(data, "comment_count", convert_to=int, default_to=0)
-        self.information._likeCount = get_value(data, "like_count", convert_to=int)
-        self.information._dislikeCount = dislike_count
-        self.information._followCount = get_value(data, "channel_follower_count", convert_to=int)
-        self.information._language = get_value(data, "language")
-        self.information._thumbnails = [
+        self.information.source_url = self._source_url
+        self.information.short_url = f"https://youtu.be/{id_}"
+        self.information.embed_url = f"https://www.youtube.com/embed/{id_}"
+        self.information.youtube_music_url = f"https://music.youtube.com/watch?v={id_}"
+        self.information.full_url = f"https://www.youtube.com/watch?v={id_}"
+        self.information.id = id_
+        self.information.title = title
+        self.information.clean_title = clean_title
+        self.information.description = description if description else None
+        self.information.channel_id = get_value(data, "channel_id")
+        self.information.channel_url = get_value(data, "channel_url", ["uploader_url"])
+        self.information.channel_name = channel_name
+        self.information.clean_channel_name = clean_channel_name
+        self.information.is_verified_channel = get_value(data, "channel_is_verified", default_to=False)
+        self.information.duration = get_value(data, "duration")
+        self.information.view_count = get_value(data, "view_count")
+        self.information.is_age_restricted = get_value(data, "age_limit", convert_to=bool)
+        self.information.categories = get_value(data, "categories", default_to=[])
+        self.information.tags = get_value(data, "tags", default_to=[])
+        self.information.is_streaming = get_value(data, "is_live")
+        self.information.upload_timestamp = get_value(data, "timestamp", ["release_timestamp"])
+        self.information.availability = get_value(data, "availability")
+        self.information.chapters = chapters
+        self.information.comment_count = get_value(data, "comment_count", convert_to=int, default_to=0)
+        self.information.like_count = get_value(data, "like_count", convert_to=int)
+        self.information.dislike_count = None
+        self.information.follow_count = get_value(data, "channel_follower_count", convert_to=int)
+        self.information.language = get_value(data, "language")
+        self.information.thumbnails = [
             f"https://img.youtube.com/vi/{id_}/maxresdefault.jpg",
             f"https://img.youtube.com/vi/{id_}/sddefault.jpg",
             f"https://img.youtube.com/vi/{id_}/hqdefault.jpg",
@@ -559,18 +259,19 @@ class YouTube:
             f"https://img.youtube.com/vi/{id_}/default.jpg",
         ]
 
+        if retrieve_dislike_count:
+            logger.info(f"Retrieving dislike count for video: {id_}")
+            dislike_count = get_youtube_dislike_count(id_)
+
+            if dislike_count is not None:
+                self.information.dislike_count = dislike_count
+                logger.info(f"Retrieved dislike count for video: {id_}: {dislike_count}")
+            else:
+                logger.warning(f"Failed to retrieve dislike count for video: {id_}")
+
         if check_thumbnails:
-            while self.information._thumbnails:
-                if head(
-                    self.information._thumbnails[0],
-                    headers={
-                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
-                    },
-                    follow_redirects=False,
-                ).is_success:
-                    break
-                else:
-                    self.information._thumbnails.pop(0)
+            self.information.thumbnails = filter_valid_youtube_thumbnails(self.information.thumbnails)
+            logger.info(f"Filtered valid thumbnails for video: {id_}: {self.information.thumbnails}")
 
     def analyze_video_streams(
         self,
@@ -697,18 +398,18 @@ class YouTube:
             data = {
                 "url": get_value(stream, "url", convert_to=[unquote, strip_whitespace]),
                 "codec": codec_parts[0] if codec_parts else None,
-                "codecVariant": codec_parts[1] if len(codec_parts) > 1 else None,
-                "rawCodec": codec,
+                "codec_variant": codec_parts[1] if len(codec_parts) > 1 else None,
+                "raw_codec": codec,
                 "extension": get_value(format_id_extension_map, youtube_format_id, default_to="mp4"),
                 "width": get_value(stream, "width", convert_to=int),
                 "height": get_value(stream, "height", convert_to=int),
                 "framerate": get_value(stream, "fps", convert_to=float),
                 "bitrate": get_value(stream, "tbr", convert_to=float),
-                "qualityNote": quality_note,
-                "isHDR": "hdr" in quality_note.lower() if quality_note else False,
+                "quality_note": quality_note,
+                "is_hdr": "hdr" in quality_note.lower() if quality_note else False,
                 "size": get_value(stream, "filesize", convert_to=int),
                 "language": get_value(stream, "language"),
-                "youtubeFormatId": youtube_format_id,
+                "youtube_format_id": youtube_format_id,
             }
 
             data["quality"] = data["height"]
@@ -819,19 +520,19 @@ class YouTube:
             data = {
                 "url": get_value(stream, "url", convert_to=[unquote, strip_whitespace]),
                 "codec": codec_parts[0] if codec_parts else None,
-                "codecVariant": codec_parts[1] if len(codec_parts) > 1 else None,
-                "rawCodec": codec,
+                "codec_variant": codec_parts[1] if len(codec_parts) > 1 else None,
+                "raw_codec": codec,
                 "extension": get_value(format_id_extension_map, str(youtube_format_id), "mp3"),
                 "bitrate": get_value(stream, "abr", convert_to=float),
-                "qualityNote": youtube_format_note,
-                "isOriginalAudio": "(default)" in youtube_format_note or youtube_format_note.islower()
+                "quality_note": youtube_format_note,
+                "is_original_audio": "(default)" in youtube_format_note or youtube_format_note.islower()
                 if youtube_format_note
                 else None,
                 "size": get_value(stream, "filesize", convert_to=int),
                 "samplerate": get_value(stream, "asr", convert_to=int),
                 "channels": get_value(stream, "audio_channels", convert_to=int),
                 "language": get_value(stream, "language"),
-                "youtubeFormatId": youtube_format_id,
+                "youtube_format_id": youtube_format_id,
             }
 
             return dict(sorted(data.items()))
@@ -857,7 +558,7 @@ class YouTube:
                 else:
                     preferred_language = "source"
             if preferred_language == "source":
-                self.best_audio_streams = [stream for stream in self.best_audio_streams if stream["isOriginalAudio"]]
+                self.best_audio_streams = [stream for stream in self.best_audio_streams if stream["is_original_audio"]]
             elif preferred_language != "local":
                 self.best_audio_streams = [
                     stream for stream in self.best_audio_streams if stream["language"] == preferred_language
