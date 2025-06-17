@@ -27,69 +27,19 @@ pip install --upgrade git+https://github.com/henrique-coder/streamsnapper.git@ma
 from streamsnapper import YouTube
 
 
-youtube = YouTube(logging=False)
-
+youtube = YouTube(logging=False, cookies=None)
 youtube.extract(url="https://www.youtube.com/watch?v=***********", ytdlp_data=None)
-youtube.analyze(check_thumbnails=False, retrieve_dislike_count=False)
+youtube.analyze_information(check_thumbnails=False, retrieve_dislike_count=False)
 youtube.analyze_video_streams(preferred_quality="all")
 youtube.analyze_audio_streams(preferred_language="source")
 youtube.analyze_subtitle_streams()
 
+print(youtube.information.to_dict())
+print(youtube.best_video_stream)
+print(youtube.best_audio_stream)
+print(youtube.subtitle_streams)
 
-from streamsnapper import YouTubeExtractor
-
-
-youtube_extractor = YouTubeExtractor()
-
-print(youtube_extractor.identify_platform(url="https://music.youtube.com/watch?v=***********"))
-
-print(youtube_extractor.extract_video_id(url="https://www.youtube.com/watch?v=***********"))
-
-print(
-    youtube_extractor.extract_playlist_id(
-        url="https://www.youtube.com/playlist?list=**********************************", include_private=False
-    )
-)
-
-print(youtube_extractor.search(query="A cool music name", sort_by="relevance", results_type="video", limit=1))
-
-print(
-    youtube_extractor.get_playlist_videos(
-        url="https://www.youtube.com/playlist?list=**********************************", limit=None
-    )
-)
-
-print(
-    youtube_extractor.get_channel_videos(
-        channel_id="************************",
-        channel_url="https://www.youtube.com/@********",
-        channel_username="********",
-        sort_by="newest",
-        content_type="videos",
-        limit=None,
-    )
-)
-
-# All functions are documented and have detailed typings, use your development IDE to learn more.
-
-```
-
-```python
-from streamsnapper import Merger
-
-
-merger = Merger(
-    logging=False
-)
-
-merger.merge(
-    video_path='path/to/video',
-    audio_path='path/to/audio',
-    output_path='path/to/output',
-    ffmpeg_path='local'
-)
-
-# All functions are documented and have detailed typings, use your development IDE to learn more.
+# And much more useful classes and functions
 
 ```
 
