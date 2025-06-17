@@ -40,7 +40,7 @@ class CookieFile:
             file_path: Path to cookie file (Netscape format)
         """
 
-        self.path = Path(file_path)
+        self.path: Path = Path(file_path)
 
         if not self.path.exists():
             logger.warning(f"Cookie file does not exist: {self.path}")
