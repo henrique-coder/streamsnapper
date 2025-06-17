@@ -16,21 +16,3 @@ class ScrapingError(StreamSnapperError):
     """Exception raised when an error occurs while scraping data."""
 
     pass
-
-
-class NetworkError(StreamSnapperError):
-    """Exception raised when network-related errors occur."""
-
-    pass
-
-
-class VideoNotFoundError(StreamSnapperError):
-    """Exception raised when a video is not found or unavailable."""
-
-    pass
-
-
-class UnsupportedPlatformError(StreamSnapperError):
-    """Exception raised when trying to process an unsupported platform."""
-
-    pass
