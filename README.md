@@ -6,7 +6,7 @@
 ![PyPI - Format](https://img.shields.io/pypi/format/streamsnapper?style=flat&logo=pypi&logoColor=blue&color=blue&link=https://pypi.org/project/streamsnapper)
 ![PyPI - Python Compatible Versions](https://img.shields.io/pypi/pyversions/streamsnapper?style=flat&logo=python&logoColor=blue&color=blue&link=https://pypi.org/project/streamsnapper)
 
-StreamSnapper is an intuitive library designed to simplify, improve, and organize YouTube and Youtube Music media streams. It offers scraping functions with higher speed extraction and efficiency with the latest tools to perform such processes.
+*StreamSnapper* is a smart YouTube stream processor - effortless extraction with automatic organization into clean, usable classes.
 
 #### Installation (from [PyPI](https://pypi.org/project/streamsnapper))
 
