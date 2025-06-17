@@ -124,44 +124,56 @@ def get_value(
     return value
 
 
-def sanitize_filename(text: str, max_length: int | None = 255, replacement_char: str = "_") -> str | None:
+def sanitize_filename(text: str, max_length: int | None = 100) -> str | None:
     """
-    Sanitize text for use as filename.
+    Sanitize text for use as filename, limiting to max_length characters.
+    Removes invalid characters, normalizes unicode, and truncates if necessary.
 
     Args:
         text: Text to sanitize
-        max_length: Maximum allowed length
-        replacement_char: Character to replace invalid chars with
+        max_length: Maximum allowed length for the filename or None for no limit. Defaults to 100.
 
     Returns:
         Sanitized filename or None if empty after sanitization
     """
 
     if not text:
-        logger.warning("Empty text provided for filename sanitization")
-
+        logger.warning("No text provided for filename sanitization")
         return None
 
-    logger.trace(f"Sanitizing filename: {text[:100]}...")
+    logger.trace(f"Sanitizing filename from text: '{text}'")
 
-    # Normalize unicode characters
-    normalized = normalize("NFKD", text).encode("ASCII", "ignore").decode("utf-8")
+    # Normalize unicode characters to decompose accents
+    normalized = normalize("NFKD", text)
 
-    # Remove invalid filename characters
-    invalid_chars = r'[<>:"/\\|?*\x00-\x1f]'
-    sanitized = sub(invalid_chars, replacement_char, normalized)
+    # Remove non-ASCII characters (accents, symbols, etc.)
+    ascii_text = normalized.encode("ASCII", "ignore").decode("utf-8")
 
-    # Clean up multiple spaces/underscores
-    sanitized = sub(r"[\s_]+", replacement_char, sanitized).strip("_. ")
+    # Remove invalid filename characters for safety
+    # < > : " / \ | ? * = Windows/Unix forbidden chars
+    # \0 = NULL character
+    # \t = Tab
+    # \n = New line
+    # \r = Carriage return
+    # \v = Vertical tab
+    # \f = Form feed
+    invalid_chars_pattern = r'[<>:"/\\|?*\0\t\n\r\v\f]'
+    cleaned = sub(invalid_chars_pattern, "", ascii_text)
 
-    # Truncate if necessary
-    if max_length and len(sanitized) > max_length:
-        # Try to cut at word boundary
-        cutoff = sanitized[:max_length].rfind(" ")
-        sanitized = sanitized[:cutoff] if cutoff != -1 else sanitized[:max_length]
+    # Replace multiple spaces with a single space
+    cleaned = sub(r"\s+", " ", cleaned).strip()
 
-    result = sanitized if sanitized else None
-    logger.trace(f"Sanitized filename result: {result}")
+    # Truncate to max_length, ensuring we don't cut in the middle of a word
+    if max_length and len(cleaned) > max_length:
+        # Try to cut at word boundary (space)
+        cutoff = cleaned[:max_length].rfind(" ")
+        cleaned = cleaned[:cutoff] if cutoff != -1 else cleaned[:max_length]
+
+        # Clean any trailing spaces after truncation
+        cleaned = cleaned.rstrip()
+
+    result = cleaned if cleaned else None
+    logger.trace(f"Sanitized filename: '{result}' from original text: '{text}'")
 
     return result
 
