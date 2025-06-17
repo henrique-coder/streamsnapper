@@ -106,6 +106,7 @@ class YouTube:
             "ignoreerrors": True,
             "quiet": not_logging,
             "no_warnings": not_logging,
+            "logger": logger,
         }
 
         if isinstance(cookies, SupportedCookieBrowser):
