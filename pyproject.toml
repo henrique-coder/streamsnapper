@@ -60,6 +60,18 @@ dependencies = [
     "yt-dlp>=2025.6.9",
 ]
 
+[dependency-groups]
+dev = [
+    "rich>=14.0.0",
+]
+lint = [
+    "ruff>=0.12.0",
+]
+test = [
+    "pytest>=8.4.1",
+    "pytest-randomly>=3.16.0",
+]
+
 [project.urls]
 Homepage = "https://github.com/henrique-coder/streamsnapper"
 Documentation = "https://github.com/henrique-coder/streamsnapper/blob/main/README.md"
@@ -71,18 +83,6 @@ Issues = "https://github.com/henrique-coder/streamsnapper/issues"
 Changelog = "https://github.com/henrique-coder/streamsnapper/releases"
 Releases = "https://github.com/henrique-coder/streamsnapper/releases/latest"
 Download = "https://pypi.org/project/streamsnapper"
-
-[dependency-groups]
-dev = [
-    "rich>=14.0.0",
-]
-lint = [
-    "ruff>=0.12.0",
-]
-test = [
-    "pytest>=8.4.0",
-    "pytest-randomly>=3.16.0",
-]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
