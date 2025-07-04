@@ -448,7 +448,7 @@ class YouTube:
         Analyze the audio streams of the YouTube video and select the best stream based on the preferred quality.
 
         Args:
-            preferred_language: The preferred language for the audio stream. If 'source', use the original audio language. If 'local', use the system language. If 'all', return all available audio streams. Defaults to 'source'.
+            preferred_language: The preferred language for the audio stream. If 'source', use the original audio language. If 'local', use the system language. If 'all', return all available audio streams. Or a specific language code in format 'en-US'. Defaults to 'source'.
         """
 
         data = self._raw_youtube_streams
