@@ -57,7 +57,7 @@ dependencies = [
     "pydantic>=2.11.7",
     "richuru>=0.1.1",
     "scrapetube>=2.5.1",
-    "yt-dlp>=2025.6.25",
+    "yt-dlp>=2025.6.30",
 ]
 
 [dependency-groups]
@@ -65,7 +65,7 @@ dev = [
     "rich>=14.0.0",
 ]
 lint = [
-    "ruff>=0.12.1",
+    "ruff>=0.12.2",
 ]
 test = [
     "pytest>=8.4.1",
