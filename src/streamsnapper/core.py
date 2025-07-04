@@ -287,6 +287,7 @@ class YouTube:
 
         data = self._raw_youtube_streams
 
+        # Video format ID extension map
         format_id_extension_map = {
             702: "mp4",  # AV1 HFR High - MP4 - 7680x4320
             402: "mp4",  # AV1 HFR - MP4 - 7680x4320
@@ -453,8 +454,10 @@ class YouTube:
 
         data = self._raw_youtube_streams
 
+        # Audio format ID extension map
         format_id_extension_map = {
-            "338": "webm",  # Opus - (VBR) ~480 KBPS - Quadraphonic (4)
+            "773": "mp4",  # IAMF (Opus) - (VBR) ~900 KBPS - Binaural (7.1.4)
+            "338": "webm",  # Opus - (VBR) ~480 KBPS - Ambisonic (4)
             "380": "mp4",  # AC3 - 384 KBPS - Surround (5.1)
             "328": "mp4",  # EAC3 - 384 KBPS - Surround (5.1)
             "325": "mp4",  # DTSE (DTS Express) - 384 KBPS - Surround (5.1)
