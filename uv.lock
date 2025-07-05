@@ -416,19 +416,6 @@ wheels = [
 ]
 
 [[package]]
-name = "richuru"
-version = "0.1.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "loguru" },
-    { name = "rich" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/ce/7c/c9d4c0b541c9c6ba7d1898fb1886aad5a0d5dea43237a3154a9143d511b9/richuru-0.1.1.tar.gz", hash = "sha256:815816f3a0142b67c53bd424fcced0821aa1104b5386301cff47fc7bbb6d90ea", size = 4199, upload-time = "2022-06-05T13:08:08.452Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/97/75/2c59747e6a68e7e1f3df65b1133c03b27fd889c6e975a8539570bf5a9b68/richuru-0.1.1-py3-none-any.whl", hash = "sha256:e73d43913a372d741ff61106001b5e6adfa24c6d0665dd390328a33e34cd210d", size = 4445, upload-time = "2022-06-05T13:08:06.634Z" },
-]
-
-[[package]]
 name = "ruff"
 version = "0.12.2"
 source = { registry = "https://pypi.org/simple" }
@@ -483,7 +470,6 @@ dependencies = [
     { name = "humanfriendly" },
     { name = "loguru" },
     { name = "pydantic" },
-    { name = "richuru" },
     { name = "scrapetube" },
     { name = "yt-dlp" },
 ]
@@ -506,7 +492,6 @@ requires-dist = [
     { name = "humanfriendly", specifier = ">=10.0" },
     { name = "loguru", specifier = ">=0.7.3" },
     { name = "pydantic", specifier = ">=2.11.7" },
-    { name = "richuru", specifier = ">=0.1.1" },
     { name = "scrapetube", specifier = ">=2.5.1" },
     { name = "yt-dlp", specifier = ">=2025.6.30" },
 ]

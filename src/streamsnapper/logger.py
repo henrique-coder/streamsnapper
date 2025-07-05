@@ -3,11 +3,7 @@ from sys import stderr
 
 # Third-party modules
 from loguru import logger
-from richuru import install as richuru_install
 
-
-# Install richuru
-richuru_install()
 
 # Configure logger
 logger.remove()
