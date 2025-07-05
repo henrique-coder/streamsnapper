@@ -292,62 +292,64 @@ class YouTube:
             702: "mp4",  # AV1 HFR High - MP4 - 7680x4320
             402: "mp4",  # AV1 HFR - MP4 - 7680x4320
             571: "mp4",  # AV1 HFR - MP4 - 7680x4320
-            272: "webm",  # VP9 HFR - WEBM - 7680x4320
+            272: "webm",  # VP9 HFR - WebM - 7680x4320
+            138: "mp4",  # H.264 - MP4 - 7680x4320
             701: "mp4",  # AV1 HFR High - MP4 - 3840x2160
             401: "mp4",  # AV1 HFR - MP4 - 3840x2160
-            337: "webm",  # VP9.2 HDR HFR - WEBM - 3840x2160
-            315: "webm",  # VP9 HFR - WEBM - 3840x2160
-            313: "webm",  # VP9 - WEBM - 3840x2160
+            337: "webm",  # VP9.2 HDR HFR - WebM - 3840x2160
+            315: "webm",  # VP9 HFR - WebM - 3840x2160
+            313: "webm",  # VP9 - WebM - 3840x2160
             305: "mp4",  # H.264 HFR - MP4 - 3840x2160
             266: "mp4",  # H.264 - MP4 - 3840x2160
             700: "mp4",  # AV1 HFR High - MP4 - 2560x1440
             400: "mp4",  # AV1 HFR - MP4 - 2560x1440
-            336: "webm",  # VP9.2 HDR HFR - WEBM - 2560x1440
-            308: "webm",  # VP9 HFR - WEBM - 2560x1440
-            271: "webm",  # VP9 - WEBM - 2560x1440
+            336: "webm",  # VP9.2 HDR HFR - WebM - 2560x1440
+            308: "webm",  # VP9 HFR - WebM - 2560x1440
+            271: "webm",  # VP9 - WebM - 2560x1440
             304: "mp4",  # H.264 HFR - MP4 - 2560x1440
             264: "mp4",  # H.264 - MP4 - 2560x1440
             699: "mp4",  # AV1 HFR High - MP4 - 1920x1080
             399: "mp4",  # AV1 HFR - MP4 - 1920x1080
-            335: "webm",  # VP9.2 HDR HFR - WEBM - 1920x1080
-            303: "webm",  # VP9 HFR - WEBM - 1920x1080
-            248: "webm",  # VP9 - WEBM - 1920x1080
-            # 616: 'webm',  # VP9 - WEBM - 1920x1080 - YouTube Premium Format (M3U8)
+            721: "mp4",  # AV1 HFR - MP4 - 1920x1080
+            335: "webm",  # VP9.2 HDR HFR - WebM - 1920x1080
+            303: "webm",  # VP9 HFR - WebM - 1920x1080
+            248: "webm",  # VP9 - WebM - 1920x1080
+            # 616: "webm",  # VP9 - WebM - 1920x1080 - YouTube Premium Format (M3U8)
             299: "mp4",  # H.264 HFR - MP4 - 1920x1080
             137: "mp4",  # H.264 - MP4 - 1920x1080
             216: "mp4",  # H.264 - MP4 - 1920x1080
-            170: "webm",  # VP8 - WEBM - 1920x1080
+            170: "webm",  # VP8 - WebM - 1920x1080
             698: "mp4",  # AV1 HFR High - MP4 - 1280x720
             398: "mp4",  # AV1 HFR - MP4 - 1280x720
-            334: "webm",  # VP9.2 HDR HFR - WEBM - 1280x720
-            302: "webm",  # VP9 HFR - WEBM - 1280x720
-            612: "webm",  # VP9 HFR - WEBM - 1280x720
-            247: "webm",  # VP9 - WEBM - 1280x720
+            334: "webm",  # VP9.2 HDR HFR - WebM - 1280x720
+            302: "webm",  # VP9 HFR - WebM - 1280x720
+            612: "webm",  # VP9 HFR - WebM - 1280x720
+            247: "webm",  # VP9 - WebM - 1280x720
             298: "mp4",  # H.264 HFR - MP4 - 1280x720
             136: "mp4",  # H.264 - MP4 - 1280x720
-            169: "webm",  # VP8 - WEBM - 1280x720
+            169: "webm",  # VP8 - WebM - 1280x720
             697: "mp4",  # AV1 HFR High - MP4 - 854x480
             397: "mp4",  # AV1 - MP4 - 854x480
-            333: "webm",  # VP9.2 HDR HFR - WEBM - 854x480
-            244: "webm",  # VP9 - WEBM - 854x480
+            333: "webm",  # VP9.2 HDR HFR - WebM - 854x480
+            244: "webm",  # VP9 - WebM - 854x480
             135: "mp4",  # H.264 - MP4 - 854x480
-            168: "webm",  # VP8 - WEBM - 854x480
+            168: "webm",  # VP8 - WebM - 854x480
             696: "mp4",  # AV1 HFR High - MP4 - 640x360
             396: "mp4",  # AV1 - MP4 - 640x360
-            332: "webm",  # VP9.2 HDR HFR - WEBM - 640x360
-            243: "webm",  # VP9 - WEBM - 640x360
+            332: "webm",  # VP9.2 HDR HFR - WebM - 640x360
+            243: "webm",  # VP9 - WebM - 640x360
             134: "mp4",  # H.264 - MP4 - 640x360
-            167: "webm",  # VP8 - WEBM - 640x360
+            167: "webm",  # VP8 - WebM - 640x360
             695: "mp4",  # AV1 HFR High - MP4 - 426x240
             395: "mp4",  # AV1 - MP4 - 426x240
-            331: "webm",  # VP9.2 HDR HFR - WEBM - 426x240
-            242: "webm",  # VP9 - WEBM - 426x240
+            331: "webm",  # VP9.2 HDR HFR - WebM - 426x240
+            242: "webm",  # VP9 - WebM - 426x240
             133: "mp4",  # H.264 - MP4 - 426x240
             694: "mp4",  # AV1 HFR High - MP4 - 256x144
             394: "mp4",  # AV1 - MP4 - 256x144
-            330: "webm",  # VP9.2 HDR HFR - WEBM - 256x144
+            330: "webm",  # VP9.2 HDR HFR - WebM - 256x144
             278: "webm",  # VP9 - WEBM - 256x144
-            598: "webm",  # VP9 - WEBM - 256x144
+            598: "webm",  # VP9 - WebM - 256x144
             160: "mp4",  # H.264 - MP4 - 256x144
             597: "mp4",  # H.264 - MP4 - 256x144
         }
