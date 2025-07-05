@@ -501,7 +501,7 @@ class YouTube:
             bitrate = get_value(stream, "abr", 0, convert_to=float)
             sample_rate = get_value(stream, "asr", 0, convert_to=float)
 
-            bitrate_priority = 0.1  # The lower the value, the higher the priority of bitrate over samplerate
+            bitrate_priority = 0.1  # The lower the value, the higher the priority of bitrate over sample rate
 
             return float((bitrate * bitrate_priority) + (sample_rate / 1000))
 
@@ -535,7 +535,7 @@ class YouTube:
                 if youtube_format_note
                 else None,
                 "size": get_value(stream, "filesize", convert_to=int),
-                "samplerate": get_value(stream, "asr", convert_to=int),
+                "sample_rate": get_value(stream, "asr", convert_to=int),
                 "channels": get_value(stream, "audio_channels", convert_to=int),
                 "language": get_value(stream, "language"),
                 "youtube_format_id": youtube_format_id,
