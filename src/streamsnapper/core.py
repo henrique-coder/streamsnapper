@@ -348,7 +348,7 @@ class YouTube:
             694: "mp4",  # AV1 HFR High - MP4 - 256x144
             394: "mp4",  # AV1 - MP4 - 256x144
             330: "webm",  # VP9.2 HDR HFR - WebM - 256x144
-            278: "webm",  # VP9 - WEBM - 256x144
+            278: "webm",  # VP9 - WebM - 256x144
             598: "webm",  # VP9 - WebM - 256x144
             160: "mp4",  # H.264 - MP4 - 256x144
             597: "mp4",  # H.264 - MP4 - 256x144
@@ -459,7 +459,7 @@ class YouTube:
         # Audio format ID extension map
         format_id_extension_map = {
             "773": "mp4",  # IAMF (Opus) - (VBR) ~900 KBPS - Binaural (7.1.4)
-            "338": "webm",  # Opus - (VBR) ~480 KBPS - Ambisonic (4)
+            "338": "webm",  # Opus - (VBR) ~480 KBPS (?) - Ambisonic (4)
             "380": "mp4",  # AC3 - 384 KBPS - Surround (5.1)
             "328": "mp4",  # EAC3 - 384 KBPS - Surround (5.1)
             "325": "mp4",  # DTSE (DTS Express) - 384 KBPS - Surround (5.1)
@@ -468,7 +468,7 @@ class YouTube:
             "141": "mp4",  # AAC (LC) - 256 KBPS - Stereo (2)
             "774": "webm",  # Opus - (VBR) ~256 KBPS - Stereo (2)
             "256": "mp4",  # AAC (HE v1) - 192 KBPS - Surround (5.1)
-            "251": "webm",  # Opus - (VBR) <=160 KBPS - Stereo (2)
+            "251": "webm",  # Opus - (VBR) ~128 KBPS - Stereo (2)
             "140": "mp4",  # AAC (LC) - 128 KBPS - Stereo (2)
             "250": "webm",  # Opus - (VBR) ~70 KBPS - Stereo (2)
             "249": "webm",  # Opus - (VBR) ~50 KBPS - Stereo (2)
