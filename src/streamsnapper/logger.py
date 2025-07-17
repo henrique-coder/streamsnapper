@@ -13,4 +13,3 @@ logger.add(
     format="<green>{time:HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}:{function}</cyan> | <level>{message}</level>",
     colorize=True,
 )
-logger.add("streamsnapper.log", level="DEBUG")
