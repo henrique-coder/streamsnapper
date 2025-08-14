@@ -1,6 +1,6 @@
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["uv_build"]
+build-backend = "uv_build"
 
 [project]
 name = "streamsnapper"
@@ -56,19 +56,19 @@ dependencies = [
     "loguru>=0.7.3",
     "pydantic>=2.11.7",
     "scrapetube>=2.5.1",
-    "yt-dlp>=2025.7.21",
+    "yt-dlp>=2025.8.11",
 ]
 
 [dependency-groups]
-dev = [
-    "rich>=14.0.0",
-]
 lint = [
-    "ruff>=0.12.5",
+    "ruff>=0.12.8",
 ]
 test = [
     "pytest>=8.4.1",
     "pytest-randomly>=3.16.0",
+]
+dev = [
+    "rich>=14.1.0",
 ]
 
 [project.urls]
