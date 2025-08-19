@@ -325,9 +325,9 @@ class YouTube:
             302: "webm",  # VP9 HFR - WebM - 1280x720
             612: "webm",  # VP9 HFR - WebM - 1280x720
             247: "webm",  # VP9 - WebM - 1280x720
-            214: "webm",  # VP9 - WebM - 1280x720
             298: "mp4",  # H.264 HFR - MP4 - 1280x720
             136: "mp4",  # H.264 - MP4 - 1280x720
+            214: "mp4",  # H.264 - MP4 - 1280x720
             169: "webm",  # VP8 - WebM - 1280x720
             697: "mp4",  # AV1 HFR High - MP4 - 854x480
             397: "mp4",  # AV1 - MP4 - 854x480

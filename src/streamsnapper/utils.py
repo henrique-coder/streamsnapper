@@ -83,6 +83,12 @@ def get_value(
 
     logger.trace(f"Extracting value for key: {key}")
 
+    # Ensure data is a dictionary
+    if not isinstance(data, dict):
+        logger.trace(f"Data is not a dictionary, returning default: {default_to}")
+
+        return default_to
+
     # Try primary key
     value = data.get(key)
 
