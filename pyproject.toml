@@ -56,12 +56,12 @@ dependencies = [
     "loguru>=0.7.3",
     "pydantic>=2.11.7",
     "scrapetube>=2.5.1",
-    "yt-dlp>=2025.8.11",
+    "yt-dlp>=2025.8.27",
 ]
 
 [dependency-groups]
 lint = [
-    "ruff>=0.12.9",
+    "ruff>=0.12.11",
 ]
 test = [
     "pytest>=8.4.1",
