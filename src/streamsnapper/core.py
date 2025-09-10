@@ -276,13 +276,17 @@ class YouTube:
 
     def analyze_video_streams(
         self,
-        preferred_quality: Literal["144p", "240p", "360p", "480p", "720p", "1080p", "1440p", "2160p", "4320p", "all"] = "all",
+        preferred_resolution: Literal[
+            "144p", "240p", "360p", "480p", "720p", "1080p", "1440p", "2160p", "4320p", "worst", "best", "all"
+        ] = "all",
+        fallback: bool = True,
     ) -> None:
         """
-        Analyze the video streams of the YouTube video and select the best stream based on the preferred quality.
+        Analyze video streams and select the best stream based on preferred resolution.
 
         Args:
-            preferred_quality: The preferred quality of the video stream. If a specific quality is provided, the stream will be selected according to the chosen quality, however if the quality is not available, the best quality will be selected. If 'all', all streams will be considered and sorted by quality. Defaults to 'all'.
+            preferred_resolution: Target video resolution. Use specific values like "1080p" for exact quality, "best" for highest available quality, "worst" for lowest quality, or "all" for all streams. Defaults to "all".
+            fallback: Enable fallback to lower resolutions when preferred resolution is unavailable. Only applies to specific resolutions (not "best"/"worst"/"all"). Defaults to True.
         """
 
         data = self._raw_youtube_streams
@@ -431,18 +435,55 @@ class YouTube:
             dict.fromkeys([f"{stream['quality']}p" for stream in self.best_video_streams if stream["quality"]])
         )
 
-        if preferred_quality != "all":
-            preferred_quality = preferred_quality.strip().lower()
+        if preferred_resolution != "all":
+            preferred_resolution = preferred_resolution.strip().lower()
 
-            if preferred_quality not in self.available_video_qualities:
+            if preferred_resolution == "best":
+                logger.debug("Selecting best available video resolution")
                 best_available_quality = max([stream["quality"] for stream in self.best_video_streams])
                 self.best_video_streams = [
                     stream for stream in self.best_video_streams if stream["quality"] == best_available_quality
                 ]
-            else:
+            elif preferred_resolution == "worst":
+                logger.debug("Selecting worst available video resolution")
+                worst_available_quality = min([stream["quality"] for stream in self.best_video_streams])
                 self.best_video_streams = [
-                    stream for stream in self.best_video_streams if stream["quality"] == int(preferred_quality.replace("p", ""))
+                    stream for stream in self.best_video_streams if stream["quality"] == worst_available_quality
                 ]
+            else:
+                target_quality = int(preferred_resolution.replace("p", ""))
+                available_qualities = sorted([stream["quality"] for stream in self.best_video_streams], reverse=True)
+
+                logger.debug(f"Target resolution: {target_quality}p, available: {[f'{q}p' for q in available_qualities]}")
+
+                if target_quality in available_qualities:
+                    logger.debug(f"Found exact match for {target_quality}p")
+                    self.best_video_streams = [
+                        stream for stream in self.best_video_streams if stream["quality"] == target_quality
+                    ]
+                elif fallback:
+                    logger.debug(f"Exact resolution {target_quality}p not found, using fallback")
+                    fallback_quality = None
+
+                    for quality in available_qualities:
+                        if quality <= target_quality:
+                            fallback_quality = quality
+                            break
+
+                    if fallback_quality:
+                        logger.debug(f"Using fallback resolution: {fallback_quality}p")
+                        self.best_video_streams = [
+                            stream for stream in self.best_video_streams if stream["quality"] == fallback_quality
+                        ]
+                    else:
+                        logger.debug("No suitable fallback found, using best available")
+                        best_available_quality = max(available_qualities)
+                        self.best_video_streams = [
+                            stream for stream in self.best_video_streams if stream["quality"] == best_available_quality
+                        ]
+                else:
+                    logger.debug(f"Exact resolution {target_quality}p not found and fallback disabled")
+                    self.best_video_streams = []
 
             self.best_video_stream = self.best_video_streams[0] if self.best_video_streams else {}
             self.best_video_download_url = self.best_video_stream["url"] if self.best_video_stream else None
