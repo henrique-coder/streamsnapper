@@ -488,12 +488,17 @@ class YouTube:
             self.best_video_stream = self.best_video_streams[0] if self.best_video_streams else {}
             self.best_video_download_url = self.best_video_stream["url"] if self.best_video_stream else None
 
-    def analyze_audio_streams(self, preferred_language: str | Literal["source", "local", "all"] = "source") -> None:
+    def analyze_audio_streams(self, preferred_language: str | list[str] = "all") -> None:
         """
-        Analyze the audio streams of the YouTube video and select the best stream based on the preferred quality.
+        Analyze audio streams and select the best stream based on language preferences.
 
         Args:
-            preferred_language: The preferred language for the audio stream. If 'source', use the original audio language. If 'local', use the system language. If 'all', return all available audio streams. Or a specific language code in format 'en-US'. Defaults to 'source'.
+            preferred_language: Language preference as string or list for fallback priority.
+                - Language codes: "pt-BR", "en-US", "pt", "en" (with smart fallback)
+                - "source": Original video audio language
+                - "local": System language with fallback to English
+                - "all": All streams ordered by quality
+                For lists, tries each item sequentially until match found.
         """
 
         data = self._raw_youtube_streams
@@ -592,28 +597,70 @@ class YouTube:
         self.best_audio_download_url = self.best_audio_stream["url"] if self.best_audio_stream else None
 
         self.available_audio_languages = list(
-            dict.fromkeys([stream["language"].lower() for stream in self.best_audio_streams if stream["language"]])
+            dict.fromkeys([stream["language"] for stream in self.best_audio_streams if stream["language"]])
         )
 
-        if preferred_language != "all":
-            preferred_language = preferred_language.strip().lower()
+        def normalize_language_code(lang_code: str) -> str:
+            return lang_code.replace("_", "-").lower() if lang_code else ""
 
-            if preferred_language == "local":
-                if self.system_language_prefix in self.available_audio_languages:
-                    self.best_audio_streams = [
-                        stream for stream in self.best_audio_streams if stream["language"] == self.system_language_prefix
+        def find_language_match(target_lang: str, available_streams: list) -> list:
+            if target_lang == "all":
+                return available_streams
+
+            if target_lang == "source":
+                original_streams = [s for s in available_streams if s["is_original_audio"]]
+                return original_streams if original_streams else available_streams[:1]
+
+            if target_lang == "local":
+                system_lang = f"{self.system_language_prefix}-{self.system_language_suffix}"
+                for lang in [system_lang, self.system_language_prefix, "en-us", "en"]:
+                    lang_normalized = normalize_language_code(lang)
+                    exact_matches = [s for s in available_streams if normalize_language_code(s["language"]) == lang_normalized]
+                    if exact_matches:
+                        return exact_matches
+
+                    base_lang = lang_normalized.split("-")[0] if "-" in lang_normalized else lang_normalized
+                    base_variants = [
+                        s for s in available_streams if normalize_language_code(s["language"]).startswith(f"{base_lang}-")
                     ]
-                else:
-                    preferred_language = "source"
-            if preferred_language == "source":
-                self.best_audio_streams = [stream for stream in self.best_audio_streams if stream["is_original_audio"]]
-            elif preferred_language != "local":
-                self.best_audio_streams = [
-                    stream for stream in self.best_audio_streams if stream["language"] == preferred_language
-                ]
+                    if base_variants:
+                        return base_variants
 
-            self.best_audio_stream = self.best_audio_streams[0] if self.best_audio_streams else {}
-            self.best_audio_download_url = self.best_audio_stream["url"] if self.best_audio_stream else None
+                    base_exact = [s for s in available_streams if normalize_language_code(s["language"]) == base_lang]
+                    if base_exact:
+                        return base_exact
+                return []
+
+            target_lang = normalize_language_code(target_lang)
+
+            exact_matches = [s for s in available_streams if normalize_language_code(s["language"]) == target_lang]
+            if exact_matches:
+                return exact_matches
+
+            base_lang = target_lang.split("-")[0] if "-" in target_lang else target_lang
+
+            base_variants = [s for s in available_streams if normalize_language_code(s["language"]).startswith(f"{base_lang}-")]
+            if base_variants:
+                return base_variants
+
+            base_exact = [s for s in available_streams if normalize_language_code(s["language"]) == base_lang]
+            if base_exact:
+                return base_exact
+
+            return []
+
+        language_list = [preferred_language] if isinstance(preferred_language, str) else preferred_language
+
+        for lang in language_list:
+            matches = find_language_match(lang, self.best_audio_streams)
+            if matches:
+                self.best_audio_streams = matches
+                break
+        else:
+            self.best_audio_streams = []
+
+        self.best_audio_stream = self.best_audio_streams[0] if self.best_audio_streams else {}
+        self.best_audio_download_url = self.best_audio_stream["url"] if self.best_audio_stream else None
 
     def analyze_subtitle_streams(self) -> None:
         """Analyze the subtitle streams of the YouTube video."""

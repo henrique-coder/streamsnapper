@@ -30,8 +30,8 @@ from streamsnapper import YouTube
 youtube = YouTube(logging=False, cookies=None)
 youtube.extract(url="https://www.youtube.com/watch?v=***********", ytdlp_data=None)
 youtube.analyze_information(check_thumbnails=False, retrieve_dislike_count=False)
-youtube.analyze_video_streams(preferred_resolution="all")
-youtube.analyze_audio_streams(preferred_language="source")
+youtube.analyze_video_streams(preferred_resolution="all", fallback=True)
+youtube.analyze_audio_streams("all")
 youtube.analyze_subtitle_streams()
 
 print(youtube.information.to_dict())
