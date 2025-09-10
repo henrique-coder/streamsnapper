@@ -61,14 +61,10 @@ dependencies = [
 
 [dependency-groups]
 lint = [
-    "ruff>=0.12.12",
-]
-test = [
-    "pytest>=8.4.2",
-    "pytest-randomly>=3.16.0",
+    "ruff",
 ]
 dev = [
-    "rich>=14.1.0",
+    "rich",
 ]
 
 [project.urls]
