@@ -608,7 +608,7 @@ class YouTubeExtractor:
             r"(?:youtube\.com/(?:playlist\?list=|watch\?.*?&list=|music/playlist\?list=|music\.youtube\.com/watch\?.*?&list=))([a-zA-Z0-9_-]+)"
         )
 
-    def identify_platform(self, url: str) -> Literal["youtube", "youtubeMusic"] | None:
+    def identify_platform(self, url: str) -> Literal["youtube", "youtube_music"] | None:
         """
         Identify the platform of a given URL as either YouTube or YouTube Music.
 
@@ -616,13 +616,13 @@ class YouTubeExtractor:
             url: The URL to identify the platform from.
 
         Returns:
-            'youtube' if the URL corresponds to YouTube, 'youtubeMusic' if it corresponds to YouTube Music. Returns None if the platform is not recognized.
+            'youtube' if the URL corresponds to YouTube, 'youtube_music' if it corresponds to YouTube Music. Returns None if the platform is not recognized.
         """
 
         found_match = self._platform_regex.search(url)
 
         if found_match:
-            return "youtubeMusic" if found_match.group(1) else "youtube"
+            return "youtube_music" if found_match.group(1) else "youtube"
 
     def extract_video_id(self, url: str) -> str | None:
         """
