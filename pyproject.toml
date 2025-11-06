@@ -50,7 +50,7 @@ dependencies = [
     "httpx>=0.28.1",
     "humanfriendly>=10.0",
     "loguru>=0.7.3",
-    "pydantic>=2.12.3",
+    "pydantic>=2.12.4",
     "scrapetube>=2.6.0",
     "yt-dlp[default]>=2025.10.22",
 ]
