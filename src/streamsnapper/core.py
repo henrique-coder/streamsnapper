@@ -261,7 +261,6 @@ class YouTube:
             # 356: "webm",  # VP9 - WebM - 1920x1080 - YouTube Premium Format (M3U8)
             299: "mp4",  # H.264 HFR - MP4 - 1920x1080
             137: "mp4",  # H.264 - MP4 - 1920x1080
-            216: "mp4",  # H.264 - MP4 - 1920x1080
             170: "webm",  # VP8 - WebM - 1920x1080
             698: "mp4",  # AV1 HFR High - MP4 - 1280x720
             398: "mp4",  # AV1 HFR - MP4 - 1280x720
