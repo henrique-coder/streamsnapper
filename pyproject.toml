@@ -1,7 +1,7 @@
 [project]
 name = "streamsnapper"
 version = "0.3.1"
-description = "Smart YouTube stream processor with type-safe data models - extract, analyze, and organize YouTube content with automatic validation and modern Python patterns"
+description = "Extract and analyze YouTube video streams with intelligent quality selection, language fallback, and comprehensive metadata retrieval"
 license = "MIT"
 readme = {file = "README.md", content-type = "text/markdown"}
 requires-python = ">=3.10"
@@ -51,7 +51,6 @@ dependencies = [
     "httpx>=0.28.1",
     "loguru>=0.7.3",
     "pydantic>=2.12.4",
-    "scrapetube>=2.6.0",
     "yt-dlp[default]>=2025.11.12",
 ]
 

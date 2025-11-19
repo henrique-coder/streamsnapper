@@ -2,7 +2,6 @@ from re import compile as re_compile
 from typing import Any, Literal
 from urllib.parse import unquote
 
-from scrapetube import get_channel, get_playlist, get_search
 from yt_dlp import YoutubeDL
 from yt_dlp import utils as yt_dlp_utils
 
@@ -31,20 +30,19 @@ from .utils import (
 
 class YouTube:
     """
-    Advanced YouTube video extractor with Pydantic-powered data models.
+    YouTube video extractor with stream analysis and metadata retrieval.
 
-    Provides comprehensive access to YouTube video information, video streams,
-    audio streams, and subtitles with automatic validation and type safety.
+    Extracts video/audio streams, metadata, and subtitles with intelligent
+    quality and language selection.
     """
 
     def __init__(self, logging: bool = False, cookies: SupportedCookieBrowser | CookieFile | None = None) -> None:
         """
-        Initialize the YouTube extractor with advanced configuration options.
+        Initialize the YouTube extractor.
 
         Args:
-            logging: Enable detailed logging for debugging and monitoring. Defaults to False.
-            cookies: Cookie source for accessing age-restricted or private content.
-                    Can be a browser type or cookie file path. Defaults to None.
+            logging: Enable detailed logging. Defaults to False.
+            cookies: Cookie source for accessing restricted content. Defaults to None.
         """
 
         not_logging = not logging
@@ -94,7 +92,7 @@ class YouTube:
         self.system_language_prefix: str = found_system_language[0]
         self.system_language_suffix: str = found_system_language[1]
 
-        # Initialize Pydantic data models
+        # Initialize data models
         self.information: VideoInformation = VideoInformation()
         self.video_streams: VideoStreamCollection = VideoStreamCollection()
         self.audio_streams: AudioStreamCollection = AudioStreamCollection()
@@ -102,14 +100,14 @@ class YouTube:
 
     def extract(self, url: str) -> None:
         """
-        Extract the YouTube video data from a URL.
+        Extract YouTube video data from URL.
 
         Args:
-            url: The YouTube video URL to extract data from.
+            url: YouTube video URL.
 
         Raises:
-            ValueError: If no URL is provided or URL is invalid.
-            ScrapingError: If an error occurs while scraping the YouTube video.
+            ValueError: If URL is invalid.
+            ScrapingError: If extraction fails.
         """
 
         self._source_url = url
@@ -136,14 +134,14 @@ class YouTube:
 
     def analyze_information(self, check_thumbnails: bool = False, retrieve_dislike_count: bool = False) -> None:
         """
-        Analyze the information of the YouTube video.
+        Analyze video metadata and statistics.
 
         Args:
-            check_thumbnails: Check if all video thumbnails are available. Defaults to False.
-            retrieve_dislike_count: Retrieve the dislike count from the returnyoutubedislike.com API. Defaults to False.
+            check_thumbnails: Validate thumbnail URLs. Defaults to False.
+            retrieve_dislike_count: Fetch dislikes from external API. Defaults to False.
 
         Raises:
-            InvalidDataError: If the provided yt-dlp data is invalid.
+            InvalidDataError: If data extraction fails.
         """
 
         data = self._raw_youtube_data
@@ -222,11 +220,11 @@ class YouTube:
         fallback: bool = True,
     ) -> None:
         """
-        Analyze video streams and select the best stream based on preferred resolution.
+        Analyze and filter video streams by resolution.
 
         Args:
-            preferred_resolution: Target video resolution. Use specific values like "1080p" for exact quality, "best" for highest available quality, "worst" for lowest quality, or "all" for all streams. Defaults to "all".
-            fallback: Enable fallback to lower resolutions when preferred resolution is unavailable. Only applies to specific resolutions (not "best"/"worst"/"all"). Defaults to True.
+            preferred_resolution: Target resolution or selection mode. Defaults to "all".
+            fallback: Enable lower resolution fallback. Defaults to True.
         """
 
         data = self._raw_youtube_streams
@@ -394,15 +392,12 @@ class YouTube:
 
     def analyze_audio_streams(self, preferred_language: str | list[str] = "all") -> None:
         """
-        Analyze audio streams and select the best stream based on language preferences.
+        Analyze and filter audio streams by language preference.
 
         Args:
-            preferred_language: Language preference as string or list for fallback priority.
-                - Language codes: "pt-BR", "en-US", "pt", "en" (with smart fallback)
-                - "local": System language with fallback to next language in list, then source
-                - "source": Original video audio language (typically available)
-                - "all": All streams ordered by quality (default for display)
-                For lists, tries each item sequentially. If no match found, falls back to source.
+            preferred_language: Language selection strategy. String for single language,
+                list for priority fallback, "local" for system language, "source" for
+                original audio, "all" for all streams. Defaults to "all".
         """
 
         data = self._raw_youtube_streams
@@ -537,11 +532,7 @@ class YouTube:
                 self.audio_streams = AudioStreamCollection(streams=filtered_streams)
 
     def analyze_subtitle_streams(self) -> None:
-        """
-        Analyze and process subtitle streams from the YouTube video.
-
-        Creates SubtitleStream models with language detection and quality scoring.
-        """
+        """Analyze and extract subtitle stream information."""
 
         data = self._raw_youtube_subtitles
 
@@ -570,14 +561,13 @@ class YouTube:
 
 class YouTubeExtractor:
     """
-    Advanced URL analyzer and content extractor for YouTube.
+    URL analyzer and ID extractor for YouTube content.
 
-    Provides utilities for extracting video/playlist IDs, platform detection,
-    and content searching with comprehensive regex patterns.
+    Provides utilities for extracting video/playlist IDs and platform detection.
     """
 
     def __init__(self) -> None:
-        """Initialize the extractor with optimized regex patterns for YouTube URL analysis."""
+        """Initialize the extractor with regex patterns for YouTube URL analysis."""
 
         self._platform_regex = re_compile(r"(?:https?://)?(?:www\.)?(music\.)?youtube\.com|youtu\.be|youtube\.com/shorts")
         self._video_id_regex = re_compile(
@@ -641,114 +631,3 @@ class YouTubeExtractor:
             return playlist_id if len(playlist_id) >= 34 or playlist_id.startswith("RD") else None
 
         return None
-
-    def search(
-        self,
-        query: str,
-        sort_by: Literal["relevance", "upload_date", "view_count", "rating"] = "relevance",
-        results_type: Literal["video", "channel", "playlist", "movie"] = "video",
-        limit: int = 1,
-    ) -> list[dict[str, str]] | None:
-        """
-        Search for YouTube content based on a query and return a list of URLs (raw data provided by scrapetube library).
-
-        Args:
-            query: The search query string.
-            sort_by: The sorting method to use for the search results. Options are 'relevance', 'upload_date', 'view_count', and 'rating'. Defaults to 'relevance'.
-            results_type: The type of content to search for. Options are 'video', 'channel', 'playlist', and 'movie'. Defaults to 'video'.
-            limit: The maximum number of video URLs to return. Defaults to 1.
-
-        Returns:
-            A list of dictionaries containing information about the found videos. If no videos are found, return None.
-        """
-
-        try:
-            extracted_data = list(get_search(query=query, sleep=1, sort_by=sort_by, results_type=results_type, limit=limit))
-        except Exception:
-            return None
-
-        if extracted_data:
-            return extracted_data
-
-        return None
-
-    def get_playlist_videos(self, url: str, limit: int | None = None) -> list[str] | None:
-        """
-        Get the video URLs from a YouTube playlist (raw data provided by scrapetube library).
-
-        Args:
-            url: The URL of the YouTube playlist.
-            limit: The maximum number of video URLs to return. If None, return all video URLs. Defaults to None.
-
-        Returns:
-            A list of video URLs from the playlist. If no videos are found or the playlist is private, return None.
-        """
-
-        playlist_id = self.extract_playlist_id(url, include_private=False)
-
-        if not playlist_id:
-            return None
-
-        try:
-            extracted_data = list(get_playlist(playlist_id, sleep=1, limit=limit))
-        except Exception:
-            return None
-
-        if extracted_data:
-            found_urls = [
-                f"https://www.youtube.com/watch?v={item.get('videoId')}" for item in extracted_data if item.get("videoId")
-            ]
-
-            return found_urls if found_urls else None
-
-    def get_channel_videos(
-        self,
-        channel_id: str | None = None,
-        channel_url: str | None = None,
-        channel_username: str | None = None,
-        sort_by: Literal["newest", "oldest", "popular"] = "newest",
-        content_type: Literal["videos", "shorts", "streams"] = "videos",
-        limit: int | None = None,
-    ) -> list[str] | None:
-        """
-        Get the video URLs from a YouTube channel (raw data provided by scrapetube library).
-
-        - If channel_id, channel_url, and channel_username are all None, return None.
-        - If more than one of channel_id, channel_url, and channel_username is provided, raise ValueError.
-
-        Args:
-            channel_id: The ID of the YouTube channel. Defaults to None.
-            channel_url: The URL of the YouTube channel. Defaults to None.
-            channel_username: The username of the YouTube channel. Defaults to None.
-            sort_by: The sorting method to use for the channel videos. Options are 'newest', 'oldest', and 'popular'. Defaults to 'newest'.
-            content_type: The type of content to search for. Options are 'videos', 'shorts', and 'streams'. Defaults to 'videos'.
-            limit: The maximum number of video URLs to return. If None, return all video URLs. Defaults to None.
-
-        Returns:
-            A list of video URLs from the channel. If no videos are found or the channel is non-existent, return None.
-        """
-
-        if sum([bool(channel_id), bool(channel_url), bool(channel_username)]) != 1:
-            raise ValueError('Provide only one of the following arguments: "channel_id", "channel_url" or "channel_username"')
-
-        try:
-            extracted_data = list(
-                get_channel(
-                    channel_id=channel_id,
-                    channel_url=channel_url,
-                    channel_username=channel_username.replace("@", ""),
-                    sleep=1,
-                    sort_by=sort_by,
-                    content_type=content_type,
-                    limit=limit,
-                )
-            )
-        except Exception:
-            return None
-
-        if extracted_data:
-            found_urls = [
-                f"https://www.youtube.com/watch?v={item.get('videoId')}" for item in extracted_data if item.get("videoId")
-            ]
-
-            return found_urls if found_urls else None
