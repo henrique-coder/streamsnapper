@@ -7,11 +7,9 @@
 ![Python Versions](https://img.shields.io/pypi/pyversions/streamsnapper?style=for-the-badge&logo=python&logoColor=white&color=306998)
 ![License](https://img.shields.io/pypi/l/streamsnapper?style=for-the-badge&color=blue)
 
-**Smart YouTube Stream Processor with Type-Safe Data Models**
+**Extract and analyze YouTube video streams with intelligent quality selection and language fallback**
 
-_Extract, analyze, and organize YouTube content with automatic validation and modern Python patterns_
-
-[🚀 Quick Start](#-quick-start) • [📖 Documentation](#-documentation) • [⚡ Features](#-features)
+[🚀 Quick Start](#-quick-start) • [📖 API Reference](#-api-reference) • [💡 Examples](#-examples)
 
 </div>
 
@@ -19,315 +17,255 @@ _Extract, analyze, and organize YouTube content with automatic validation and mo
 
 ## 🌟 Overview
 
-StreamSnapper is a modern Python library for YouTube content extraction with:
+StreamSnapper extracts YouTube video/audio streams and metadata with intelligent filtering:
 
-- **Type-Safe Models** - Built with Pydantic v2 for automatic validation
-- **Smart Selection** - Intelligent quality and language fallback
-- **Rich Collections** - Powerful filtering and sorting methods
-- **Production Ready** - Clean API, comprehensive error handling
+- **Quality Selection** - Automatic fallback from preferred to available resolutions
+- **Language Priority** - Multi-language fallback with system locale detection
+- **Stream Filtering** - HDR, 4K, codec, bitrate, and format filtering
+- **Metadata Extraction** - Complete video information, chapters, and statistics
 
 ## 🔧 Installation
 
-### Using UV (Recommended)
-
 ```bash
-# Stable version
+# Stable release
 uv add --upgrade streamsnapper
 
-# Active development version
+# Development version
 uv add --upgrade git+https://github.com/henrique-coder/streamsnapper.git --branch main
 ```
 
-### Requirements
-
-- Python 3.10 or higher
-- Dependencies installed automatically
+**Requirements:** Python 3.10+
 
 ## 🚀 Quick Start
 
-### Basic Example
+### Basic Usage
 
 ```python
 from streamsnapper import YouTube
 
-# Initialize and extract
-youtube = YouTube()
-youtube.extract("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
+# Extract video data
+yt = YouTube()
+yt.extract("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
 
-# Analyze content
-youtube.analyze_information()
-youtube.analyze_video_streams("1080p", fallback=True)
-youtube.analyze_audio_streams(["en-US", "source"])
+# Analyze streams
+yt.analyze_information()
+yt.analyze_video_streams("1080p", fallback=True)
+yt.analyze_audio_streams(["pt-BR", "en-US", "source"])
 
-# Access data
-print(f"📺 {youtube.information.title}")
-print(f"👀 {youtube.information.view_count:,} views")
-print(f"🎬 {len(youtube.video_streams)} video streams available")
+# Access results
+print(f"Title: {yt.information.title}")
+print(f"Best video: {yt.video_streams.best_stream.resolution}")
+print(f"Best audio: {yt.audio_streams.best_stream.bitrate}kbps")
 ```
 
-### Getting Best Quality Streams
+### Quality Selection
 
 ```python
-from streamsnapper import YouTube
+# Specific resolution with fallback
+yt.analyze_video_streams("1080p", fallback=True)
 
-youtube = YouTube()
-youtube.extract("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
+# Best or worst quality
+yt.analyze_video_streams("best")
+yt.analyze_video_streams("worst")
 
-# Get best quality
-youtube.analyze_video_streams("best")
-youtube.analyze_audio_streams("all")
-
-# Access best streams
-best_video = youtube.video_streams.best_stream
-best_audio = youtube.audio_streams.best_stream
-
-print(f"Video: {best_video.resolution} {best_video.codec}")
-print(f"Audio: {best_audio.bitrate}kbps {best_audio.codec}")
+# All streams for manual selection
+yt.analyze_video_streams("all")
 ```
 
-### Using Cookies for Private Content
+### Language Selection
+
+```python
+# Priority list (tries in order, fallback to source)
+yt.analyze_audio_streams(["pt-BR", "en-US", "source"])
+
+# System language (fallback to source)
+yt.analyze_audio_streams("local")
+
+# Original audio (best quality)
+yt.analyze_audio_streams("source")
+
+# All streams
+yt.analyze_audio_streams("all")
+```
+
+### Private Content
 
 ```python
 from streamsnapper import YouTube, SupportedCookieBrowser, CookieFile
 
-# Use browser cookies
-youtube = YouTube(cookies=SupportedCookieBrowser.CHROME)
+# Browser cookies
+yt = YouTube(cookies=SupportedCookieBrowser.CHROME)
 
-# Or use cookie file
-youtube = YouTube(cookies=CookieFile("/path/to/cookies.txt"))
-
-# Extract private/restricted content
-youtube.extract("https://www.youtube.com/watch?v=private_video")
-youtube.analyze_information()
+# Cookie file
+yt = YouTube(cookies=CookieFile("/path/to/cookies.txt"))
 ```
 
-## ⚡ Features
+## 💡 Examples
 
-### 🔍 Smart Stream Selection
+### Filter Streams
 
 ```python
-# Resolution preferences with fallback
-youtube.analyze_video_streams("1080p", fallback=True)
+# Video filtering
+videos = yt.video_streams
+hd_videos = videos.hd_streams              # ≥720p
+h264 = videos.get_by_codec("h264")         # Specific codec
+hdr = videos.hdr_streams                   # HDR only
+uhd = videos.uhd_streams                   # 4K+
 
-# Language priority list with source fallback
-# Tries each language in order, then falls back to source if none match
-youtube.analyze_audio_streams(["pt-BR", "en-US", "source"])
+# Audio filtering
+audios = yt.audio_streams
+hq_audio = audios.high_quality_streams     # ≥128kbps
+stereo = audios.stereo_streams             # 2 channels
+pt_audio = audios.get_by_language("pt-BR") # Language
 
-# System language detection with intelligent fallback
-# String: Falls back to source if system language not found
-youtube.analyze_audio_streams("local")
-
-# List with local: Tries system language, then continues to next languages
-youtube.analyze_audio_streams(["local", "en-US", "source"])
-
-# Direct to source: Always gets original video audio (best quality)
-youtube.analyze_audio_streams("source")
+# Subtitle filtering
+subs = yt.subtitle_streams
+manual = subs.manual_subtitles             # Human-created
+en_subs = subs.get_by_language("en")       # English
 ```
 
-### 📊 Advanced Filtering
+### Download Selection
 
 ```python
-# Video streams
-videos = youtube.video_streams
-hd_videos = videos.hd_streams              # HD quality only
-h264_streams = videos.get_by_codec("h264") # Specific codec
-hdr_streams = videos.hdr_streams           # HDR content
+# Get best streams under size limit
+videos = [v for v in yt.video_streams.streams if v.size_mb and v.size_mb <= 100]
+best_video = max(videos, key=lambda v: v.quality_score)
+best_audio = yt.audio_streams.best_stream
 
-# Audio streams
-audios = youtube.audio_streams
-high_quality = audios.high_quality_streams  # ≥128kbps
-stereo = audios.stereo_streams             # Stereo only
-english = audios.get_by_language("en-US")  # Language filter
-
-# Subtitles
-subtitles = youtube.subtitle_streams
-manual = subtitles.manual_subtitles        # Human-created
-english_subs = subtitles.get_by_language("en")
+print(f"Video: {best_video.url}")
+print(f"Audio: {best_audio.url}")
 ```
 
-### 📈 Quality Analysis
+### Batch Processing
 
 ```python
-# Video quality metrics
-video = youtube.video_streams.best_stream
-print(f"Resolution: {video.resolution}")
-print(f"Quality Score: {video.quality_score}")
-print(f"Codec: {video.codec}")
-print(f"HDR: {video.is_hdr}")
-print(f"4K: {video.is_4k}")
+def process_videos(urls: list[str]) -> list[dict]:
+    results = []
+    for url in urls:
+        yt = YouTube()
+        yt.extract(url)
+        yt.analyze_information()
+        yt.analyze_video_streams("all")
 
-# Audio quality metrics
-audio = youtube.audio_streams.best_stream
-print(f"Bitrate: {audio.bitrate}kbps")
-print(f"Sample Rate: {audio.sample_rate}Hz")
-print(f"Channels: {audio.channel_description}")
-print(f"Quality Score: {audio.quality_score}")
+        results.append({
+            'title': yt.information.title,
+            'duration': yt.information.duration_formatted,
+            'qualities': yt.video_streams.available_qualities,
+            'has_4k': len(yt.video_streams.uhd_streams) > 0
+        })
+    return results
 ```
 
-## 📖 Documentation
+## 📖 API Reference
 
-### Core Classes
-
-#### `YouTube`
-
-Main class for extracting and analyzing YouTube content.
+### YouTube Class
 
 ```python
-youtube = YouTube(
-    logging=True,                    # Enable logging
-    cookies=SupportedCookieBrowser.CHROME  # Browser cookies
+yt = YouTube(
+    logging=False,                # Enable debug logging
+    cookies=None                  # Browser or cookie file
 )
 
-# Extract video
-youtube.extract(url: str)
+yt.extract(url: str)              # Extract video data
 
-# Analyze content
-youtube.analyze_information(
-    check_thumbnails=True,           # Validate thumbnails
-    retrieve_dislike_count=True      # Get dislikes from API
+yt.analyze_information(
+    check_thumbnails=False,       # Validate thumbnail URLs
+    retrieve_dislike_count=False  # Fetch dislikes from API
 )
 
-youtube.analyze_video_streams(
-    preferred_resolution="1080p",    # Target resolution
-    fallback=True                    # Enable fallback
+yt.analyze_video_streams(
+    preferred_resolution="all",   # "720p", "1080p", "best", "worst", "all"
+    fallback=True                 # Enable resolution fallback
 )
 
-youtube.analyze_audio_streams(
-    preferred_language=["pt-BR", "en-US", "source"]  # Language priority with fallback
+yt.analyze_audio_streams(
+    preferred_language="all"      # "pt-BR", ["en-US", "source"], "local", "all"
 )
 
-youtube.analyze_subtitle_streams()
+yt.analyze_subtitle_streams()     # Extract subtitle information
 ```
 
-#### `YouTubeExtractor`
-
-Advanced URL analysis and content extraction utilities.
+### VideoInformation
 
 ```python
-from streamsnapper import YouTubeExtractor
-
-extractor = YouTubeExtractor()
-
-# Extract IDs
-video_id = extractor.extract_video_id(url)
-playlist_id = extractor.extract_playlist_id(url)
-
-# Identify platform
-platform = extractor.identify_platform(url)  # 'youtube' or 'youtube_music'
-
-# Search content
-results = extractor.search(
-    query="search term",
-    sort_by="relevance",
-    results_type="video",
-    limit=10
-)
-
-# Get playlist videos
-videos = extractor.get_playlist_videos(url, limit=50)
-
-# Get channel content
-videos = extractor.get_channel_videos(
-    channel_id="UCxxxxxx",
-    sort_by="newest",
-    content_type="videos"
-)
-```
-
-### Data Models
-
-#### `VideoInformation`
-
-Complete video metadata with automatic validation.
-
-```python
-info = youtube.information
+info = yt.information
 
 # URLs
-info.short_url           # youtu.be link
-info.embed_url           # Embed URL
-info.youtube_music_url   # YouTube Music URL
-
-# Basic info
-info.id                  # Video ID
-info.title               # Video title
-info.description         # Description
-info.duration            # Duration in seconds
-info.duration_formatted  # HH:MM:SS format
-
-# Channel info
-info.channel_id          # Channel ID
-info.channel_name        # Channel name
-info.channel_url         # Channel URL
-info.is_verified_channel # Verification status
-
-# Statistics
-info.view_count          # Views
-info.like_count          # Likes
-info.dislike_count       # Dislikes (if enabled)
-info.comment_count       # Comments
+info.short_url                    # youtu.be link
+info.embed_url                    # Embed URL
+info.full_url                     # Full watch URL
 
 # Metadata
-info.upload_date         # Upload date
-info.categories          # Categories list
-info.tags                # Tags list
-info.thumbnails          # Thumbnail URLs
-info.chapters            # Chapter information
+info.id                           # Video ID
+info.title                        # Title
+info.description                  # Description
+info.duration                     # Seconds
+info.duration_formatted           # HH:MM:SS
+
+# Channel
+info.channel_id                   # Channel ID
+info.channel_name                 # Channel name
+info.is_verified_channel          # Verification status
+
+# Statistics
+info.view_count                   # Views
+info.like_count                   # Likes
+info.comment_count                # Comments
+info.upload_date                  # Upload date
+
+# Additional
+info.categories                   # Categories list
+info.tags                         # Tags list
+info.thumbnails                   # Thumbnail URLs
+info.chapters                     # Chapter data
 ```
 
-#### `VideoStream`
-
-Individual video stream with quality metrics.
+### VideoStream
 
 ```python
-stream = youtube.video_streams.best_stream
+stream = yt.video_streams.best_stream
 
-# Quality info
-stream.resolution        # e.g., "1080p"
-stream.width            # Width in pixels
-stream.height           # Height in pixels
-stream.framerate        # FPS
-stream.quality_score    # Quality ranking score
-stream.aspect_ratio     # Aspect ratio (e.g., 1.78 for 16:9)
+# Quality
+stream.resolution                 # "1080p", "720p", etc
+stream.width                      # Width in pixels
+stream.height                     # Height in pixels
+stream.framerate                  # FPS
+stream.quality_score              # Ranking score
 
-# Format info
-stream.codec            # Video codec (e.g., "h264")
-stream.codec_variant    # Codec variant
-stream.extension        # File extension
-stream.bitrate          # Bitrate
+# Format
+stream.codec                      # "h264", "av1", "vp9"
+stream.extension                  # "mp4", "webm"
+stream.bitrate                    # Bitrate
 
 # Flags
-stream.is_hd            # HD quality (≥720p)
-stream.is_full_hd       # Full HD (≥1080p)
-stream.is_4k            # 4K quality (≥2160p)
-stream.is_hdr           # HDR content
+stream.is_hd                      # ≥720p
+stream.is_full_hd                 # ≥1080p
+stream.is_4k                      # ≥2160p
+stream.is_hdr                     # HDR content
 
-# Download info
-stream.url              # Direct URL
-stream.size             # File size in bytes
-stream.size_mb          # File size in MB
+# Download
+stream.url                        # Direct URL
+stream.size                       # Bytes
+stream.size_mb                    # Megabytes
 ```
 
-#### `VideoStreamCollection`
-
-Collection of video streams with filtering methods.
+### VideoStreamCollection
 
 ```python
-videos = youtube.video_streams
+videos = yt.video_streams
 
 # Properties
-videos.streams                # All streams
-videos.best_stream           # Highest quality
-videos.worst_stream          # Lowest quality
-videos.has_streams           # Has any streams
-videos.available_qualities   # List of resolutions
-videos.available_codecs      # List of codecs
+videos.streams                    # All streams
+videos.best_stream                # Highest quality
+videos.worst_stream               # Lowest quality
+videos.available_qualities        # ["1080p", "720p", ...]
+videos.available_codecs           # ["h264", "vp9", ...]
 
-# Filtering
-videos.hd_streams            # HD (≥720p)
-videos.full_hd_streams       # Full HD (≥1080p)
-videos.uhd_streams           # 4K+ (≥2160p)
-videos.hdr_streams           # HDR content
+# Filters
+videos.hd_streams                 # ≥720p
+videos.full_hd_streams            # ≥1080p
+videos.uhd_streams                # ≥2160p
+videos.hdr_streams                # HDR only
 
 # Methods
 videos.get_by_resolution("1080p", fallback=True)
@@ -336,61 +274,55 @@ videos.get_by_framerate_range(min_fps=60)
 videos.get_by_size_range(max_mb=100)
 ```
 
-#### `AudioStream`
-
-Individual audio stream with quality metrics.
+### AudioStream
 
 ```python
-stream = youtube.audio_streams.best_stream
+stream = yt.audio_streams.best_stream
 
-# Quality info
-stream.bitrate              # Bitrate in kbps
-stream.sample_rate          # Sample rate in Hz
-stream.quality_score        # Quality ranking score
+# Quality
+stream.bitrate                    # Bitrate (kbps)
+stream.sample_rate                # Sample rate (Hz)
+stream.quality_score              # Ranking score
 
-# Format info
-stream.codec                # Audio codec (e.g., "aac")
-stream.codec_variant        # Codec variant
-stream.extension            # File extension
-stream.channels             # Number of channels
-stream.channel_description  # e.g., "Stereo", "Surround 5.1"
+# Format
+stream.codec                      # "aac", "opus"
+stream.extension                  # "mp4", "webm"
+stream.channels                   # Channel count
+stream.channel_description        # "Stereo", "Surround 5.1"
 
 # Language
-stream.language             # Language code
-stream.language_name        # Language name
+stream.language                   # Language code
+stream.language_name              # Language name
 
-# Quality flags
-stream.is_high_quality      # ≥128kbps
-stream.is_lossless_quality  # ≥320kbps & ≥48kHz
-stream.is_stereo            # 2 channels
-stream.is_surround          # >2 channels
+# Flags
+stream.is_high_quality            # ≥128kbps
+stream.is_lossless_quality        # ≥320kbps & ≥48kHz
+stream.is_stereo                  # 2 channels
+stream.is_surround                # >2 channels
 
-# Download info
-stream.url                  # Direct URL
-stream.size                 # File size in bytes
-stream.size_mb              # File size in MB
+# Download
+stream.url                        # Direct URL
+stream.size                       # Bytes
+stream.size_mb                    # Megabytes
 ```
 
-#### `AudioStreamCollection`
-
-Collection of audio streams with filtering methods.
+### AudioStreamCollection
 
 ```python
-audios = youtube.audio_streams
+audios = yt.audio_streams
 
 # Properties
-audios.streams                # All streams
-audios.best_stream           # Highest quality
-audios.worst_stream          # Lowest quality
-audios.has_streams           # Has any streams
-audios.available_languages   # List of languages
-audios.available_codecs      # List of codecs
+audios.streams                    # All streams
+audios.best_stream                # Highest quality
+audios.worst_stream               # Lowest quality
+audios.available_languages        # ["en-US", "pt-BR", ...]
+audios.available_codecs           # ["aac", "opus", ...]
 
-# Filtering
-audios.high_quality_streams   # ≥128kbps
-audios.lossless_quality_streams  # ≥320kbps & ≥48kHz
-audios.stereo_streams        # Stereo only
-audios.surround_streams      # Surround sound
+# Filters
+audios.high_quality_streams       # ≥128kbps
+audios.lossless_quality_streams   # ≥320kbps & ≥48kHz
+audios.stereo_streams             # 2 channels
+audios.surround_streams           # >2 channels
 
 # Methods
 audios.get_by_language("en-US", fallback=True)
@@ -399,160 +331,55 @@ audios.get_by_bitrate_range(min_bitrate=128)
 audios.get_by_sample_rate_range(min_rate=44100)
 ```
 
-#### `SubtitleStream`
-
-Individual subtitle stream with metadata.
+### SubtitleStream
 
 ```python
-stream = youtube.subtitle_streams.manual_subtitles[0]
+stream = yt.subtitle_streams.manual_subtitles[0]
 
-# Basic info
-stream.language             # Language code
-stream.language_name        # Language name
-stream.extension            # Format (e.g., "vtt", "srt")
-stream.format_name          # Format name
+# Metadata
+stream.language                   # Language code
+stream.language_name              # Language name
+stream.extension                  # "srt", "vtt"
 
 # Flags
-stream.is_manual            # Human-created
-stream.is_auto_generated    # Auto-generated
-stream.is_translatable      # Can be translated
-
-# Quality
-stream.quality_score        # Quality ranking
+stream.is_manual                  # Human-created
+stream.is_auto_generated          # Auto-generated
 
 # Download
-stream.url                  # Direct URL
+stream.url                        # Direct URL
 ```
 
-#### `SubtitleStreamCollection`
-
-Collection of subtitle streams with filtering methods.
+### SubtitleStreamCollection
 
 ```python
-subtitles = youtube.subtitle_streams
+subs = yt.subtitle_streams
 
 # Properties
-subtitles.streams                  # All streams
-subtitles.has_streams              # Has any streams
-subtitles.available_languages      # Language codes
-subtitles.available_language_names # Language names
-subtitles.available_extensions     # Available formats
+subs.streams                      # All streams
+subs.available_languages          # Language codes
+subs.available_language_names     # Language names
 
-# Filtering
-subtitles.manual_subtitles         # Human-created
-subtitles.auto_generated_subtitles # Auto-generated
+# Filters
+subs.manual_subtitles             # Human-created only
+subs.auto_generated_subtitles     # Auto-generated only
 
 # Methods
-subtitles.get_by_language("en")
-subtitles.get_by_extension("vtt")
-subtitles.get_best_for_language("en")
+subs.get_by_language("en", fallback=True)
 ```
 
-### Export & Conversion
-
-Convert Pydantic models to different formats:
+### YouTubeExtractor
 
 ```python
-# To dictionary
-info_dict = youtube.information.to_dict()
-video_dict = youtube.video_streams.to_dict()
-audio_dict = youtube.audio_streams.to_dict()
+from streamsnapper import YouTubeExtractor
 
-# To JSON string
-info_json = youtube.information.to_json()
-video_json = youtube.video_streams.to_json()
-audio_json = youtube.audio_streams.to_json()
+extractor = YouTubeExtractor()
 
-# Individual streams
-best_video = youtube.video_streams.best_stream
-if best_video:
-    video_data = best_video.to_dict()
-```
+# Extract IDs
+video_id = extractor.extract_video_id(url)
+playlist_id = extractor.extract_playlist_id(url, include_private=False)
 
-## 🎯 Advanced Examples
-
-### Multi-Video Analysis
-
-```python
-from streamsnapper import YouTube
-
-def analyze_multiple_videos(urls: list[str]) -> list[dict]:
-    results = []
-
-    for url in urls:
-        youtube = YouTube()
-        youtube.extract(url)
-        youtube.analyze_information()
-        youtube.analyze_video_streams("all")
-        youtube.analyze_audio_streams("all")
-
-        results.append({
-            'title': youtube.information.title,
-            'duration': youtube.information.duration_formatted,
-            'views': youtube.information.view_count,
-            'qualities': youtube.video_streams.available_qualities,
-            'has_4k': len(youtube.video_streams.uhd_streams) > 0
-        })
-
-    return results
-```
-
-### Custom Quality Selection
-
-```python
-from streamsnapper import YouTube
-
-def select_optimal_streams(url: str, max_size_mb: int = 100):
-    youtube = YouTube()
-    youtube.extract(url)
-    youtube.analyze_video_streams("all")
-    youtube.analyze_audio_streams("all")
-
-    # Filter by size
-    suitable_videos = [
-        s for s in youtube.video_streams.streams
-        if s.size_mb and s.size_mb <= max_size_mb
-    ]
-
-    # Get best within size limit
-    best_video = max(suitable_videos, key=lambda s: s.quality_score)
-
-    # Get best audio
-    best_audio = youtube.audio_streams.best_stream
-
-    return best_video, best_audio
-```
-
-### Multi-Language Content
-
-```python
-from streamsnapper import YouTube
-
-def analyze_languages(url: str):
-    youtube = YouTube()
-    youtube.extract(url)
-    youtube.analyze_audio_streams("all")
-    youtube.analyze_subtitle_streams()
-
-    # Audio languages
-    audio_langs = youtube.audio_streams.available_languages
-
-    # Subtitle languages
-    sub_langs = youtube.subtitle_streams.available_languages
-
-    # Analysis per language
-    analysis = {}
-    for lang in audio_langs:
-        audio = youtube.audio_streams.get_by_language(lang)
-        subs = youtube.subtitle_streams.get_by_language(lang)
-
-        analysis[lang] = {
-            'audio_quality': audio[0].quality_score if audio else 0,
-            'has_manual_subs': any(s.is_manual for s in subs),
-            'subtitle_count': len(subs)
-        }
-
-    return analysis
+# Identify platform
+platform = extractor.identify_platform(url)  # "youtube" or "youtube_music"
 ```
 
 ## 🛡️ Error Handling
@@ -561,47 +388,15 @@ def analyze_languages(url: str):
 from streamsnapper import YouTube, ScrapingError, InvalidDataError
 
 try:
-    youtube = YouTube()
-    youtube.extract("https://www.youtube.com/watch?v=example")
-    youtube.analyze_information()
+    yt = YouTube()
+    yt.extract("https://www.youtube.com/watch?v=invalid")
+    yt.analyze_information()
 except ScrapingError as e:
-    print(f"Failed to extract video: {e}")
+    print(f"Extraction failed: {e}")
 except InvalidDataError as e:
-    print(f"Invalid data received: {e}")
-except Exception as e:
-    print(f"Unexpected error: {e}")
+    print(f"Invalid data: {e}")
 ```
 
-## 🤝 Contributing
+## 📝 License
 
-Contributions are welcome! Please follow these steps:
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Make your changes following coding standards
-4. Test your changes: `python -m pytest`
-5. Commit: `git commit -m "Add amazing feature"`
-6. Push: `git push origin feature/amazing-feature`
-7. Create a Pull Request
-
-## 📜 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## ⚠️ Disclaimer
-
-StreamSnapper is designed for **educational purposes**, **research projects**, **personal use**, and **development**. Please respect content creators and copyright laws. Use responsibly and in accordance with YouTube's Terms of Service.
-
----
-
-<div align="center">
-
-**⭐ Star us on GitHub — it helps a lot!**
-
-[🐛 Report Bug](https://github.com/henrique-coder/streamsnapper/issues) •
-[✨ Request Feature](https://github.com/henrique-coder/streamsnapper/issues) •
-[💬 Discussions](https://github.com/henrique-coder/streamsnapper/discussions)
-
-Made with ❤️ by [henrique-coder](https://github.com/henrique-coder)
-
-</div>
+MIT License - see [LICENSE](LICENSE) file
