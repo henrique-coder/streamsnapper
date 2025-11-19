@@ -1,4 +1,4 @@
 package:
   name: "streamsnapper"
   title: "StreamSnapper"
-  description: "Smart YouTube stream processor with type-safe data models - extract, analyze, and organize YouTube content with automatic validation and modern Python patterns"
+  description: "Extract and analyze YouTube video streams with intelligent quality selection, language fallback, and comprehensive metadata retrieval"
