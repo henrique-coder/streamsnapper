@@ -1,6 +1,6 @@
 [project]
 name = "streamsnapper"
-version = "0.3.1"
+version = "0.4.0"
 description = "Extract and analyze YouTube video streams with intelligent quality selection, language fallback, and comprehensive metadata retrieval"
 license = "MIT"
 readme = {file = "README.md", content-type = "text/markdown"}
