@@ -1,7 +1,7 @@
 [project]
 name = "streamsnapper"
 version = "0.3.1"
-description = "Smart YouTube stream processor - effortless extraction with automatic organization into clean, usable classes."
+description = "Smart YouTube stream processor with type-safe data models - extract, analyze, and organize YouTube content with automatic validation and modern Python patterns"
 license = "MIT"
 readme = {file = "README.md", content-type = "text/markdown"}
 requires-python = ">=3.10"
@@ -34,6 +34,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
     "Topic :: Internet",
@@ -48,11 +49,10 @@ classifiers = [
 ]
 dependencies = [
     "httpx>=0.28.1",
-    "humanfriendly>=10.0",
     "loguru>=0.7.3",
     "pydantic>=2.12.4",
     "scrapetube>=2.6.0",
-    "yt-dlp[default]>=2025.10.22",
+    "yt-dlp[default]>=2025.11.12",
 ]
 
 [dependency-groups]
@@ -60,7 +60,7 @@ dev = [
     "rich>=14.2.0",
 ]
 lint = [
-    "ruff>=0.14.3",
+    "ruff>=0.14.5",
 ]
 
 [project.urls]
