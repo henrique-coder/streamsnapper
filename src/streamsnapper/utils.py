@@ -1,19 +1,16 @@
-# Standard modules
-from locale import getlocale, setlocale, LC_ALL
-from re import sub
 from collections.abc import Callable
-from typing import Any
-from unicodedata import normalize
-from json import JSONDecodeError
 from contextlib import suppress
 from enum import Enum
-from pathlib import Path
+from json import JSONDecodeError
+from locale import LC_ALL, getlocale, setlocale
 from os import PathLike
+from pathlib import Path
+from re import sub
+from typing import Any
+from unicodedata import normalize
 
-# Third-party modules
 from httpx import get, head
 
-# Local modules
 from .logger import logger
 
 
@@ -155,18 +152,12 @@ def sanitize_filename(text: str, max_length: int | None = 100) -> str | None:
     # Remove non-ASCII characters (accents, symbols, etc.)
     ascii_text = normalized.encode("ASCII", "ignore").decode("utf-8")
 
-    # Remove invalid filename characters for safety
-    # < > : " / \ | ? * = Windows/Unix forbidden chars
-    # \0 = NULL character
-    # \t = Tab
-    # \n = New line
-    # \r = Carriage return
-    # \v = Vertical tab
-    # \f = Form feed
+    # Remove invalid filename characters for safety across platforms
+    # Windows/Unix forbidden chars: < > : " / \ | ? * and control characters
     invalid_chars_pattern = r'[<>:"/\\|?*\0\t\n\r\v\f]'
     cleaned = sub(invalid_chars_pattern, "", ascii_text)
 
-    # Replace multiple spaces with a single space
+    # Normalize whitespace (replace multiple spaces/tabs with single space)
     cleaned = sub(r"\s+", " ", cleaned).strip()
 
     # Truncate to max_length, ensuring we don't cut in the middle of a word

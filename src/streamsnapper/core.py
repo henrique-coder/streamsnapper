@@ -1,94 +1,50 @@
-# Standard modules
 from re import compile as re_compile
 from typing import Any, Literal
 from urllib.parse import unquote
 
-# Third-party modules
 from scrapetube import get_channel, get_playlist, get_search
-from yt_dlp import YoutubeDL, utils as yt_dlp_utils
-from pydantic import BaseModel
+from yt_dlp import YoutubeDL
+from yt_dlp import utils as yt_dlp_utils
 
-# Local modules
 from .exceptions import InvalidDataError, ScrapingError
+from .logger import logger
+from .models import (
+    AudioStream,
+    AudioStreamCollection,
+    SubtitleStream,
+    SubtitleStreamCollection,
+    VideoInformation,
+    VideoStream,
+    VideoStreamCollection,
+)
 from .utils import (
-    sanitize_filename,
-    get_value,
-    strip_whitespace,
+    CookieFile,
+    SupportedCookieBrowser,
     detect_system_language,
     filter_valid_youtube_thumbnails,
+    get_value,
     get_youtube_dislike_count,
-    SupportedCookieBrowser,
-    CookieFile,
+    sanitize_filename,
+    strip_whitespace,
 )
-from .logger import logger
-
-
-class VideoInformation(BaseModel):
-    """Structured video information with automatic validation and serialization."""
-
-    # URLs
-    source_url: str | None = None
-    short_url: str | None = None
-    embed_url: str | None = None
-    youtube_music_url: str | None = None
-    full_url: str | None = None
-
-    # Basic info
-    id: str | None = None
-    title: str | None = None
-    clean_title: str | None = None
-    description: str | None = None
-
-    # Channel info
-    channel_id: str | None = None
-    channel_url: str | None = None
-    channel_name: str | None = None
-    clean_channel_name: str | None = None
-    is_verified_channel: bool | None = None
-
-    # Video stats
-    duration: int | None = None
-    view_count: int | None = None
-    like_count: int | None = None
-    dislike_count: int | None = None
-    comment_count: int | None = None
-    follow_count: int | None = None
-
-    # Metadata
-    is_age_restricted: bool | None = None
-    categories: list[str] | None = None
-    tags: list[str] | None = None
-    chapters: list[dict[str, str | float]] | None = None
-    is_streaming: bool | None = None
-    upload_timestamp: int | None = None
-    availability: str | None = None
-    language: str | None = None
-
-    # Media
-    thumbnails: list[str] | None = None
-
-    class Config:
-        """Pydantic configuration."""
-
-        validate_assignment = True
-        extra = "forbid"
-
-    def to_dict(self) -> dict[str, Any]:
-        """Convert model to dictionary."""
-
-        return self.model_dump()
 
 
 class YouTube:
-    """A class for extracting and formatting data from YouTube videos, facilitating access to general video information, video streams, audio streams and subtitles."""
+    """
+    Advanced YouTube video extractor with Pydantic-powered data models.
+
+    Provides comprehensive access to YouTube video information, video streams,
+    audio streams, and subtitles with automatic validation and type safety.
+    """
 
     def __init__(self, logging: bool = False, cookies: SupportedCookieBrowser | CookieFile | None = None) -> None:
         """
-        Initialize the YouTube class with the required settings for extracting and formatting data from YouTube videos (raw data provided by yt-dlp library).
+        Initialize the YouTube extractor with advanced configuration options.
 
         Args:
-            logging: Enable or disable logging for the YouTube class. Defaults to False.
-            cookies: Cookie file or browser to extract cookies from. Defaults to None.
+            logging: Enable detailed logging for debugging and monitoring. Defaults to False.
+            cookies: Cookie source for accessing age-restricted or private content.
+                    Can be a browser type or cookie file path. Defaults to None.
         """
 
         not_logging = not logging
@@ -133,61 +89,44 @@ class YouTube:
         self._raw_youtube_streams: list[dict[Any, Any]] = []
         self._raw_youtube_subtitles: dict[str, list[dict[str, str]]] = {}
 
-        found_system_language = detect_system_language()
+        found_system_language = detect_system_language().split("-")
 
-        self.system_language_prefix: str = found_system_language.split("-")[0]
-        self.system_language_suffix: str = found_system_language.split("-")[1]
+        self.system_language_prefix: str = found_system_language[0]
+        self.system_language_suffix: str = found_system_language[1]
 
+        # Initialize Pydantic data models
         self.information: VideoInformation = VideoInformation()
+        self.video_streams: VideoStreamCollection = VideoStreamCollection()
+        self.audio_streams: AudioStreamCollection = AudioStreamCollection()
+        self.subtitle_streams: SubtitleStreamCollection = SubtitleStreamCollection()
 
-        self.best_video_streams: list[dict[str, Any]] = []
-        self.best_video_stream: dict[str, Any] = {}
-        self.best_video_download_url: str | None = None
-
-        self.best_audio_streams: list[dict[str, Any]] = []
-        self.best_audio_stream: dict[str, Any] = {}
-        self.best_audio_download_url: str | None = None
-
-        self.subtitle_streams: dict[str, list[dict[str, str]]] = {}
-
-        self.available_video_qualities: list[str] = []
-        self.available_audio_languages: list[str] = []
-
-    def extract(self, url: str | None = None, ytdlp_data: dict[Any, Any] | None = None) -> None:
+    def extract(self, url: str) -> None:
         """
-        Extract the YouTube video data from a URL or provided previously extracted yt-dlp data.
-
-        - If a URL is provided, it will be used to scrape the YouTube video data.
-        - If yt-dlp data is provided, it will be used directly.
-        - If both URL and yt-dlp data are provided, the yt-dlp data will be used.
+        Extract the YouTube video data from a URL.
 
         Args:
-            url: The YouTube video URL to extract data from. Defaults to None.
-            ytdlp_data: The previously extracted yt-dlp data. Defaults to None.
+            url: The YouTube video URL to extract data from.
 
         Raises:
-            ValueError: If no URL or yt-dlp data is provided.
-            InvalidDataError: If the provided yt-dlp data is invalid.
+            ValueError: If no URL is provided or URL is invalid.
             ScrapingError: If an error occurs while scraping the YouTube video.
         """
 
         self._source_url = url
 
-        if ytdlp_data:
-            self._raw_youtube_data = ytdlp_data
-        elif not url:
-            raise ValueError("No YouTube video URL or yt-dlp data provided")
-        else:
-            video_id = self._extractor.extract_video_id(url)
+        if not url:
+            raise ValueError("No YouTube video URL provided")
 
-            if not video_id:
-                raise ValueError(f'Invalid YouTube video URL: "{url}"')
+        video_id = self._extractor.extract_video_id(url)
 
-            try:
-                with YoutubeDL(self._ydl_opts) as ydl:
-                    self._raw_youtube_data = ydl.extract_info(url=url, download=False, process=True)
-            except (yt_dlp_utils.DownloadError, yt_dlp_utils.ExtractorError, Exception) as e:
-                raise ScrapingError(f'An error occurred while scraping video: "{url}" - Error: {repr(e)}') from e
+        if not video_id:
+            raise ValueError(f'Invalid YouTube video URL: "{url}"')
+
+        try:
+            with YoutubeDL(self._ydl_opts) as ydl:
+                self._raw_youtube_data = ydl.extract_info(url=url, download=False, process=True)
+        except (yt_dlp_utils.DownloadError, yt_dlp_utils.ExtractorError, Exception) as e:
+            raise ScrapingError(f'An error occurred while scraping video: "{url}" - Error: {repr(e)}') from e
 
         self._raw_youtube_streams = get_value(self._raw_youtube_data, "formats", convert_to=list)
         self._raw_youtube_subtitles = get_value(self._raw_youtube_data, "subtitles", convert_to=dict, default_to={})
@@ -224,6 +163,7 @@ class YouTube:
             for chapter in get_value(data, "chapters", convert_to=list, default_to=[])
         ]
 
+        # URL generation
         self.information.source_url = self._source_url
         self.information.short_url = f"https://youtu.be/{id_}"
         self.information.embed_url = f"https://www.youtube.com/embed/{id_}"
@@ -388,15 +328,15 @@ class YouTube:
 
         sorted_video_streams = sorted(video_streams, key=calculate_score, reverse=True)
 
-        def extract_stream_info(stream: dict[Any, Any]) -> dict[str, str | int | float | bool | None]:
+        def extract_stream_info(stream: dict[Any, Any]) -> VideoStream:
             """
-            Extract the information of a given video stream.
+            Extract the information of a given video stream and create a VideoStream model.
 
             Args:
                 stream: The video stream to extract the information from.
 
             Returns:
-                A dictionary containing the extracted information of the stream.
+                A VideoStream model with the extracted information.
             """
 
             codec = get_value(stream, "vcodec")
@@ -404,89 +344,54 @@ class YouTube:
             quality_note = get_value(stream, "format_note")
             youtube_format_id = get_value(stream, "format_id", convert_to=int)
 
-            data = {
-                "url": get_value(stream, "url", convert_to=[unquote, strip_whitespace]),
-                "codec": codec_parts[0] if codec_parts else None,
-                "codec_variant": codec_parts[1] if len(codec_parts) > 1 else None,
-                "raw_codec": codec,
-                "extension": get_value(format_id_extension_map, youtube_format_id, default_to="mp4"),
-                "width": get_value(stream, "width", convert_to=int),
-                "height": get_value(stream, "height", convert_to=int),
-                "framerate": get_value(stream, "fps", convert_to=float),
-                "bitrate": get_value(stream, "tbr", convert_to=float),
-                "quality_note": quality_note,
-                "is_hdr": "hdr" in quality_note.lower() if quality_note else False,
-                "size": get_value(stream, "filesize", convert_to=int),
-                "language": get_value(stream, "language"),
-                "youtube_format_id": youtube_format_id,
-            }
+            return VideoStream(
+                url=get_value(stream, "url", convert_to=[unquote, strip_whitespace]),
+                codec=codec_parts[0] if codec_parts else None,
+                codec_variant=codec_parts[1] if len(codec_parts) > 1 else None,
+                raw_codec=codec,
+                extension=get_value(format_id_extension_map, youtube_format_id, default_to="mp4"),
+                width=get_value(stream, "width", convert_to=int),
+                height=get_value(stream, "height", convert_to=int),
+                framerate=get_value(stream, "fps", convert_to=float),
+                bitrate=get_value(stream, "tbr", convert_to=float),
+                quality_note=quality_note,
+                is_hdr="hdr" in quality_note.lower() if quality_note else False,
+                size=get_value(stream, "filesize", convert_to=int),
+                language=get_value(stream, "language"),
+                youtube_format_id=youtube_format_id,
+            )
 
-            data["quality"] = data["height"]
-
-            return dict(sorted(data.items()))
-
-        self.best_video_streams = (
-            [extract_stream_info(stream) for stream in sorted_video_streams] if sorted_video_streams else None
-        )
-        self.best_video_stream = self.best_video_streams[0] if self.best_video_streams else None
-        self.best_video_download_url = self.best_video_stream["url"] if self.best_video_stream else None
-
-        self.available_video_qualities = list(
-            dict.fromkeys([f"{stream['quality']}p" for stream in self.best_video_streams if stream["quality"]])
-        )
+        # Create Pydantic models
+        if sorted_video_streams:
+            video_stream_models = [extract_stream_info(stream) for stream in sorted_video_streams]
+            self.video_streams = VideoStreamCollection(streams=video_stream_models)
+        else:
+            self.video_streams = VideoStreamCollection()
 
         if preferred_resolution != "all":
             preferred_resolution = preferred_resolution.strip().lower()
 
             if preferred_resolution == "best":
                 logger.debug("Selecting best available video resolution")
-                best_available_quality = max([stream["quality"] for stream in self.best_video_streams])
-                self.best_video_streams = [
-                    stream for stream in self.best_video_streams if stream["quality"] == best_available_quality
-                ]
+                best_stream = self.video_streams.best_stream
+                if best_stream:
+                    self.video_streams = VideoStreamCollection(streams=[best_stream])
             elif preferred_resolution == "worst":
                 logger.debug("Selecting worst available video resolution")
-                worst_available_quality = min([stream["quality"] for stream in self.best_video_streams])
-                self.best_video_streams = [
-                    stream for stream in self.best_video_streams if stream["quality"] == worst_available_quality
-                ]
+                worst_stream = self.video_streams.worst_stream
+                if worst_stream:
+                    self.video_streams = VideoStreamCollection(streams=[worst_stream])
             else:
-                target_quality = int(preferred_resolution.replace("p", ""))
-                available_qualities = sorted([stream["quality"] for stream in self.best_video_streams], reverse=True)
+                target_resolution = preferred_resolution
+                logger.debug(f"Target resolution: {target_resolution}, available: {self.video_streams.available_qualities}")
 
-                logger.debug(f"Target resolution: {target_quality}p, available: {[f'{q}p' for q in available_qualities]}")
-
-                if target_quality in available_qualities:
-                    logger.debug(f"Found exact match for {target_quality}p")
-                    self.best_video_streams = [
-                        stream for stream in self.best_video_streams if stream["quality"] == target_quality
-                    ]
-                elif fallback:
-                    logger.debug(f"Exact resolution {target_quality}p not found, using fallback")
-                    fallback_quality = None
-
-                    for quality in available_qualities:
-                        if quality <= target_quality:
-                            fallback_quality = quality
-                            break
-
-                    if fallback_quality:
-                        logger.debug(f"Using fallback resolution: {fallback_quality}p")
-                        self.best_video_streams = [
-                            stream for stream in self.best_video_streams if stream["quality"] == fallback_quality
-                        ]
-                    else:
-                        logger.debug("No suitable fallback found, using best available")
-                        best_available_quality = max(available_qualities)
-                        self.best_video_streams = [
-                            stream for stream in self.best_video_streams if stream["quality"] == best_available_quality
-                        ]
+                filtered_streams = self.video_streams.get_by_resolution(target_resolution, fallback=fallback)
+                if filtered_streams:
+                    logger.debug(f"Found {len(filtered_streams)} streams for resolution {target_resolution}")
+                    self.video_streams = VideoStreamCollection(streams=filtered_streams)
                 else:
-                    logger.debug(f"Exact resolution {target_quality}p not found and fallback disabled")
-                    self.best_video_streams = []
-
-            self.best_video_stream = self.best_video_streams[0] if self.best_video_streams else {}
-            self.best_video_download_url = self.best_video_stream["url"] if self.best_video_stream else None
+                    logger.debug(f"No streams found for resolution {target_resolution}")
+                    self.video_streams = VideoStreamCollection()
 
     def analyze_audio_streams(self, preferred_language: str | list[str] = "all") -> None:
         """
@@ -495,10 +400,10 @@ class YouTube:
         Args:
             preferred_language: Language preference as string or list for fallback priority.
                 - Language codes: "pt-BR", "en-US", "pt", "en" (with smart fallback)
-                - "source": Original video audio language
-                - "local": System language with fallback to English
-                - "all": All streams ordered by quality
-                For lists, tries each item sequentially until match found.
+                - "local": System language with fallback to next language in list, then source
+                - "source": Original video audio language (typically available)
+                - "all": All streams ordered by quality (default for display)
+                For lists, tries each item sequentially. If no match found, falls back to source.
         """
 
         data = self._raw_youtube_streams
@@ -554,139 +459,126 @@ class YouTube:
 
         sorted_audio_streams = sorted(audio_streams, key=calculate_score, reverse=True)
 
-        def extract_stream_info(stream: dict[Any, Any]) -> dict[str, str | int | float | bool | None]:
+        def extract_stream_info(stream: dict[Any, Any]) -> AudioStream:
             """
-            Extract the information of a given audio stream.
+            Extract the information of a given audio stream and create an AudioStream model.
 
             Args:
                 stream: The audio stream to extract the information from.
 
             Returns:
-                A dictionary containing the extracted information of the stream.
+                An AudioStream model with the extracted information.
             """
 
             codec = get_value(stream, "acodec")
             codec_parts = codec.split(".", 1) if codec else []
             youtube_format_id = int(get_value(stream, "format_id", convert_to=str).split("-")[0])
-            youtube_format_note = get_value(stream, "format_note")
 
-            data = {
-                "url": get_value(stream, "url", convert_to=[unquote, strip_whitespace]),
-                "codec": codec_parts[0] if codec_parts else None,
-                "codec_variant": codec_parts[1] if len(codec_parts) > 1 else None,
-                "raw_codec": codec,
-                "extension": get_value(format_id_extension_map, str(youtube_format_id), "mp3"),
-                "bitrate": get_value(stream, "abr", convert_to=float),
-                "quality_note": youtube_format_note,
-                "is_original_audio": "(default)" in youtube_format_note or youtube_format_note.islower()
-                if youtube_format_note
-                else None,
-                "size": get_value(stream, "filesize", convert_to=int),
-                "sample_rate": get_value(stream, "asr", convert_to=int),
-                "channels": get_value(stream, "audio_channels", convert_to=int),
-                "language": get_value(stream, "language"),
-                "youtube_format_id": youtube_format_id,
-            }
+            # Determine language name - this would need language mapping logic
+            language_code = get_value(stream, "language")
+            language_name = None  # Could be enhanced with language code to name mapping
 
-            return dict(sorted(data.items()))
+            return AudioStream(
+                url=get_value(stream, "url", convert_to=[unquote, strip_whitespace]),
+                codec=codec_parts[0] if codec_parts else None,
+                codec_variant=codec_parts[1] if len(codec_parts) > 1 else None,
+                raw_codec=codec,
+                extension=get_value(format_id_extension_map, str(youtube_format_id), "mp3"),
+                bitrate=get_value(stream, "abr", convert_to=float),
+                sample_rate=get_value(stream, "asr", convert_to=int),
+                channels=get_value(stream, "audio_channels", convert_to=int),
+                language=language_code,
+                language_name=language_name,
+                size=get_value(stream, "filesize", convert_to=int),
+                youtube_format_id=youtube_format_id,
+            )
 
-        self.best_audio_streams = (
-            [extract_stream_info(stream) for stream in sorted_audio_streams] if sorted_audio_streams else None
-        )
-        self.best_audio_stream = self.best_audio_streams[0] if self.best_audio_streams else None
-        self.best_audio_download_url = self.best_audio_stream["url"] if self.best_audio_stream else None
-
-        self.available_audio_languages = list(
-            dict.fromkeys([stream["language"] for stream in self.best_audio_streams if stream["language"]])
-        )
-
-        def normalize_language_code(lang_code: str) -> str:
-            return lang_code.replace("_", "-").lower() if lang_code else ""
-
-        def find_language_match(target_lang: str, available_streams: list) -> list:
-            if target_lang == "all":
-                return available_streams
-
-            if target_lang == "source":
-                original_streams = [s for s in available_streams if s["is_original_audio"]]
-                return original_streams if original_streams else available_streams[:1]
-
-            if target_lang == "local":
-                system_lang = f"{self.system_language_prefix}-{self.system_language_suffix}"
-                for lang in [system_lang, self.system_language_prefix, "en-us", "en"]:
-                    lang_normalized = normalize_language_code(lang)
-                    exact_matches = [s for s in available_streams if normalize_language_code(s["language"]) == lang_normalized]
-                    if exact_matches:
-                        return exact_matches
-
-                    base_lang = lang_normalized.split("-")[0] if "-" in lang_normalized else lang_normalized
-                    base_variants = [
-                        s for s in available_streams if normalize_language_code(s["language"]).startswith(f"{base_lang}-")
-                    ]
-                    if base_variants:
-                        return base_variants
-
-                    base_exact = [s for s in available_streams if normalize_language_code(s["language"]) == base_lang]
-                    if base_exact:
-                        return base_exact
-                return []
-
-            target_lang = normalize_language_code(target_lang)
-
-            exact_matches = [s for s in available_streams if normalize_language_code(s["language"]) == target_lang]
-            if exact_matches:
-                return exact_matches
-
-            base_lang = target_lang.split("-")[0] if "-" in target_lang else target_lang
-
-            base_variants = [s for s in available_streams if normalize_language_code(s["language"]).startswith(f"{base_lang}-")]
-            if base_variants:
-                return base_variants
-
-            base_exact = [s for s in available_streams if normalize_language_code(s["language"]) == base_lang]
-            if base_exact:
-                return base_exact
-
-            return []
-
-        language_list = [preferred_language] if isinstance(preferred_language, str) else preferred_language
-
-        for lang in language_list:
-            matches = find_language_match(lang, self.best_audio_streams)
-            if matches:
-                self.best_audio_streams = matches
-                break
+        # Create Pydantic models
+        if sorted_audio_streams:
+            audio_stream_models = [extract_stream_info(stream) for stream in sorted_audio_streams]
+            self.audio_streams = AudioStreamCollection(streams=audio_stream_models)
         else:
-            self.best_audio_streams = []
+            self.audio_streams = AudioStreamCollection()
 
-        self.best_audio_stream = self.best_audio_streams[0] if self.best_audio_streams else {}
-        self.best_audio_download_url = self.best_audio_stream["url"] if self.best_audio_stream else None
+        # Language filtering using preference list with source fallback
+        if preferred_language != "all":
+            language_list = [preferred_language] if isinstance(preferred_language, str) else preferred_language
+
+            filtered_streams = []
+
+            # Try each language preference in order
+            for lang in language_list:
+                if lang == "source":
+                    # Return best quality stream (original audio)
+                    if self.audio_streams.streams:
+                        filtered_streams = [self.audio_streams.best_stream]
+                        break
+                elif lang == "local":
+                    # Try system language with fallback to next in list
+                    system_lang = f"{self.system_language_prefix}-{self.system_language_suffix}"
+                    for fallback_lang in [system_lang, self.system_language_prefix]:
+                        filtered_streams = self.audio_streams.get_by_language(fallback_lang, fallback=False)
+                        if filtered_streams:
+                            break
+                    if filtered_streams:
+                        break
+                    # Continue to next language in list instead of hardcoded fallback
+                else:
+                    # Try specific language
+                    filtered_streams = self.audio_streams.get_by_language(lang, fallback=True)
+                    if filtered_streams:
+                        break
+
+            # If no language match found in list, fallback to source (best quality)
+            if not filtered_streams and self.audio_streams.streams:
+                logger.debug("No language match found in preference list, falling back to source (best quality)")
+                filtered_streams = [self.audio_streams.best_stream]
+
+            if filtered_streams:
+                self.audio_streams = AudioStreamCollection(streams=filtered_streams)
 
     def analyze_subtitle_streams(self) -> None:
-        """Analyze the subtitle streams of the YouTube video."""
+        """
+        Analyze and process subtitle streams from the YouTube video.
+
+        Creates SubtitleStream models with language detection and quality scoring.
+        """
 
         data = self._raw_youtube_subtitles
 
-        subtitle_streams = {}
+        subtitle_stream_models = []
 
-        for stream in data:
-            subtitle_streams[stream] = [
-                {
-                    "extension": get_value(subtitle, "ext"),
-                    "url": get_value(subtitle, "url", convert_to=[unquote, strip_whitespace]),
-                    "language": get_value(subtitle, "name"),
-                }
-                for subtitle in data[stream]
-            ]
+        for language_code, subtitle_list in data.items():
+            for subtitle in subtitle_list:
+                try:
+                    subtitle_stream = SubtitleStream(
+                        url=get_value(subtitle, "url", convert_to=[unquote, strip_whitespace]),
+                        extension=get_value(subtitle, "ext", default_to="srt"),
+                        language=language_code,
+                        language_name=get_value(subtitle, "name"),
+                        is_auto_generated=False,  # Would need logic to detect this
+                        is_translatable=False,  # Would need logic to detect this
+                        is_fragment_based=False,  # Would need logic to detect this
+                        youtube_format_id=get_value(subtitle, "format_id"),
+                    )
+                    subtitle_stream_models.append(subtitle_stream)
+                except Exception as e:
+                    logger.warning(f"Failed to create subtitle stream for {language_code}: {e}")
+                    continue
 
-        self.subtitle_streams = dict(sorted(subtitle_streams.items()))
+        self.subtitle_streams = SubtitleStreamCollection(streams=subtitle_stream_models)
 
 
 class YouTubeExtractor:
-    """A class for extracting data from YouTube URLs and searching for YouTube videos."""
+    """
+    Advanced URL analyzer and content extractor for YouTube.
+
+    Provides utilities for extracting video/playlist IDs, platform detection,
+    and content searching with comprehensive regex patterns.
+    """
 
     def __init__(self) -> None:
-        """Initialize the Extractor class with some regular expressions for analyzing YouTube URLs."""
+        """Initialize the extractor with optimized regex patterns for YouTube URL analysis."""
 
         self._platform_regex = re_compile(r"(?:https?://)?(?:www\.)?(music\.)?youtube\.com|youtu\.be|youtube\.com/shorts")
         self._video_id_regex = re_compile(

@@ -1,7 +1,5 @@
-# Standard modules
 from sys import stderr
 
-# Third-party modules
 from loguru import logger
 
 
