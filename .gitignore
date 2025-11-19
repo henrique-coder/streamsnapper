@@ -6,14 +6,12 @@
 __pycache__
 .ruff_cache
 .pytest_cache
-node_modules
 
 # Directories
 .debug
 
 # Files
-dev.py
+example.py
 
 # Extensions
 *.env
-*.log
