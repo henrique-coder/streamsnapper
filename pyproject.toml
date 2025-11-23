@@ -59,7 +59,7 @@ dev = [
     "rich>=14.2.0",
 ]
 lint = [
-    "ruff>=0.14.5",
+    "ruff>=0.14.6",
 ]
 
 [project.urls]
