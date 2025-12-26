@@ -192,7 +192,10 @@ class AudioStreamCollection(BaseModel):
         partial_matches = [
             s
             for s in self.streams
-            if (s.language and (language_lower in s.language.lower() or s.language.lower().startswith(language_lower[:2])))
+            if (
+                s.language
+                and (language_lower in s.language.lower() or s.language.lower().startswith(language_lower[:2]))
+            )
             or (s.language_name and language_lower in s.language_name.lower())
         ]
 
@@ -208,7 +211,9 @@ class AudioStreamCollection(BaseModel):
         """Get streams by codec type."""
 
         return sorted(
-            [s for s in self.streams if s.codec and s.codec.lower() == codec.lower()], key=lambda s: s.quality_score, reverse=True
+            [s for s in self.streams if s.codec and s.codec.lower() == codec.lower()],
+            key=lambda s: s.quality_score,
+            reverse=True,
         )
 
     def get_high_quality(self) -> list[AudioStream]:
@@ -216,7 +221,9 @@ class AudioStreamCollection(BaseModel):
 
         return sorted([s for s in self.streams if s.is_high_quality], key=lambda s: s.quality_score, reverse=True)
 
-    def get_by_bitrate_range(self, min_bitrate: float | None = None, max_bitrate: float | None = None) -> list[AudioStream]:
+    def get_by_bitrate_range(
+        self, min_bitrate: float | None = None, max_bitrate: float | None = None
+    ) -> list[AudioStream]:
         """Get streams within bitrate range."""
 
         filtered = self.streams

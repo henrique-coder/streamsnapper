@@ -148,7 +148,10 @@ class SubtitleStreamCollection(BaseModel):
         partial_matches = [
             s
             for s in self.streams
-            if (s.language and (language_lower in s.language.lower() or s.language.lower().startswith(language_lower[:2])))
+            if (
+                s.language
+                and (language_lower in s.language.lower() or s.language.lower().startswith(language_lower[:2]))
+            )
             or (s.language_name and language_lower in s.language_name.lower())
         ]
         if partial_matches:
@@ -171,7 +174,9 @@ class SubtitleStreamCollection(BaseModel):
     def get_by_extension(self, extension: str) -> list[SubtitleStream]:
         """Get subtitles by file extension."""
         return sorted(
-            [s for s in self.streams if s.extension.lower() == extension.lower()], key=lambda s: s.quality_score, reverse=True
+            [s for s in self.streams if s.extension.lower() == extension.lower()],
+            key=lambda s: s.quality_score,
+            reverse=True,
         )
 
     def get_best_for_language(self, language: str, prefer_manual: bool = True) -> SubtitleStream | None:

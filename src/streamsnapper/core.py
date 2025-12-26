@@ -52,7 +52,7 @@ class YouTube:
 
         logger.info("Initializing YouTube class...")
 
-        self._ydl_opts: dict[str, bool] = {
+        self._ydl_opts: dict[str, Any] = {
             "extract_flat": False,
             "geo_bypass": True,
             "noplaylist": True,
@@ -78,9 +78,8 @@ class YouTube:
                 logger.error(f"Unsupported cookie type: {type(cookies)}")
 
             raise TypeError(f"Cookies must be SupportedCookieBrowser or CookieFile, got {type(cookies)}")
-        else:
-            if logging:
-                logger.debug("Cookie extraction disabled")
+        elif logging:
+            logger.debug("Cookie extraction disabled")
 
         self._extractor: YouTubeExtractor = YouTubeExtractor()
         self._raw_youtube_data: dict[Any, Any] = {}
@@ -124,7 +123,7 @@ class YouTube:
             with YoutubeDL(self._ydl_opts) as ydl:
                 self._raw_youtube_data = ydl.extract_info(url=url, download=False, process=True)
         except (yt_dlp_utils.DownloadError, yt_dlp_utils.ExtractorError, Exception) as e:
-            raise ScrapingError(f'An error occurred while scraping video: "{url}" - Error: {repr(e)}') from e
+            raise ScrapingError(f'An error occurred while scraping video: "{url}" - Error: {e!r}') from e
 
         self._raw_youtube_streams = get_value(self._raw_youtube_data, "formats", convert_to=list)
         self._raw_youtube_subtitles = get_value(self._raw_youtube_data, "subtitles", convert_to=dict, default_to={})
@@ -299,7 +298,8 @@ class YouTube:
         video_streams = [
             stream
             for stream in data
-            if get_value(stream, "vcodec") != "none" and get_value(stream, "format_id", convert_to=int) in format_id_extension_map
+            if get_value(stream, "vcodec") != "none"
+            and get_value(stream, "format_id", convert_to=int) in format_id_extension_map
         ]
 
         def calculate_score(stream: dict[Any, Any]) -> float:
@@ -316,10 +316,10 @@ class YouTube:
                 The calculated score for the stream.
             """
 
-            width = get_value(stream, "width", 0, convert_to=int)
-            height = get_value(stream, "height", 0, convert_to=int)
-            framerate = get_value(stream, "fps", 0, convert_to=float)
-            bitrate = get_value(stream, "tbr", 0, convert_to=float)
+            width = get_value(stream, "width", default_to=0, convert_to=int)
+            height = get_value(stream, "height", default_to=0, convert_to=int)
+            framerate = get_value(stream, "fps", default_to=0, convert_to=float)
+            bitrate = get_value(stream, "tbr", default_to=0, convert_to=float)
 
             return float(width * height * framerate * bitrate)
 
@@ -366,21 +366,23 @@ class YouTube:
             self.video_streams = VideoStreamCollection()
 
         if preferred_resolution != "all":
-            preferred_resolution = preferred_resolution.strip().lower()
+            resolution = preferred_resolution.strip().lower()
 
-            if preferred_resolution == "best":
+            if resolution == "best":
                 logger.debug("Selecting best available video resolution")
                 best_stream = self.video_streams.best_stream
                 if best_stream:
                     self.video_streams = VideoStreamCollection(streams=[best_stream])
-            elif preferred_resolution == "worst":
+            elif resolution == "worst":
                 logger.debug("Selecting worst available video resolution")
                 worst_stream = self.video_streams.worst_stream
                 if worst_stream:
                     self.video_streams = VideoStreamCollection(streams=[worst_stream])
             else:
-                target_resolution = preferred_resolution
-                logger.debug(f"Target resolution: {target_resolution}, available: {self.video_streams.available_qualities}")
+                target_resolution = resolution
+                logger.debug(
+                    f"Target resolution: {target_resolution}, available: {self.video_streams.available_qualities}"
+                )
 
                 filtered_streams = self.video_streams.get_by_resolution(target_resolution, fallback=fallback)
                 if filtered_streams:
@@ -427,7 +429,7 @@ class YouTube:
             stream
             for stream in data
             if get_value(stream, "acodec") != "none"
-            and get_value(stream, "format_id", "").split("-")[0] in format_id_extension_map
+            and get_value(stream, "format_id", default_to="").split("-")[0] in format_id_extension_map
         ]
 
         def calculate_score(stream: dict[Any, Any]) -> float:
@@ -444,8 +446,8 @@ class YouTube:
                 The calculated score for the stream.
             """
 
-            bitrate = get_value(stream, "abr", 0, convert_to=float)
-            sample_rate = get_value(stream, "asr", 0, convert_to=float)
+            bitrate = get_value(stream, "abr", default_to=0, convert_to=float)
+            sample_rate = get_value(stream, "asr", default_to=0, convert_to=float)
 
             bitrate_priority = 0.1  # The lower the value, the higher the priority of bitrate over sample rate
 
@@ -477,7 +479,7 @@ class YouTube:
                 codec=codec_parts[0] if codec_parts else None,
                 codec_variant=codec_parts[1] if len(codec_parts) > 1 else None,
                 raw_codec=codec,
-                extension=get_value(format_id_extension_map, str(youtube_format_id), "mp3"),
+                extension=get_value(format_id_extension_map, str(youtube_format_id), default_to="mp3"),
                 bitrate=get_value(stream, "abr", convert_to=float),
                 sample_rate=get_value(stream, "asr", convert_to=int),
                 channels=get_value(stream, "audio_channels", convert_to=int),
@@ -503,12 +505,11 @@ class YouTube:
             # Try each language preference in order
             for lang in language_list:
                 if lang == "source":
-                    # Return best quality stream (original audio)
-                    if self.audio_streams.streams:
-                        filtered_streams = [self.audio_streams.best_stream]
+                    best = self.audio_streams.best_stream
+                    if best:
+                        filtered_streams = [best]
                         break
                 elif lang == "local":
-                    # Try system language with fallback to next in list
                     system_lang = f"{self.system_language_prefix}-{self.system_language_suffix}"
                     for fallback_lang in [system_lang, self.system_language_prefix]:
                         filtered_streams = self.audio_streams.get_by_language(fallback_lang, fallback=False)
@@ -516,17 +517,17 @@ class YouTube:
                             break
                     if filtered_streams:
                         break
-                    # Continue to next language in list instead of hardcoded fallback
                 else:
                     # Try specific language
                     filtered_streams = self.audio_streams.get_by_language(lang, fallback=True)
                     if filtered_streams:
                         break
 
-            # If no language match found in list, fallback to source (best quality)
-            if not filtered_streams and self.audio_streams.streams:
-                logger.debug("No language match found in preference list, falling back to source (best quality)")
-                filtered_streams = [self.audio_streams.best_stream]
+            if not filtered_streams:
+                best = self.audio_streams.best_stream
+                if best:
+                    logger.debug("No language match found, falling back to best quality")
+                    filtered_streams = [best]
 
             if filtered_streams:
                 self.audio_streams = AudioStreamCollection(streams=filtered_streams)
@@ -552,7 +553,7 @@ class YouTube:
                         youtube_format_id=get_value(subtitle, "format_id"),
                     )
                     subtitle_stream_models.append(subtitle_stream)
-                except Exception as e:
+                except Exception as e:  # noqa: PERF203
                     logger.warning(f"Failed to create subtitle stream for {language_code}: {e}")
                     continue
 
@@ -569,7 +570,9 @@ class YouTubeExtractor:
     def __init__(self) -> None:
         """Initialize the extractor with regex patterns for YouTube URL analysis."""
 
-        self._platform_regex = re_compile(r"(?:https?://)?(?:www\.)?(music\.)?youtube\.com|youtu\.be|youtube\.com/shorts")
+        self._platform_regex = re_compile(
+            r"(?:https?://)?(?:www\.)?(music\.)?youtube\.com|youtu\.be|youtube\.com/shorts"
+        )
         self._video_id_regex = re_compile(
             r"(?:youtu\.be/|youtube\.com/(?:watch\?v=|embed/|v/|shorts/|music/|live/|.*[?&]v=))([a-zA-Z0-9_-]{11})"
         )
@@ -585,7 +588,8 @@ class YouTubeExtractor:
             url: The URL to identify the platform from.
 
         Returns:
-            'youtube' if the URL corresponds to YouTube, 'youtube_music' if it corresponds to YouTube Music. Returns None if the platform is not recognized.
+            'youtube' if the URL corresponds to YouTube, 'youtube_music'
+            if it corresponds to YouTube Music. Returns None if the platform is not recognized.
         """
 
         found_match = self._platform_regex.search(url)
@@ -614,10 +618,12 @@ class YouTubeExtractor:
 
         Args:
             url: The URL to extract the playlist ID from.
-            include_private: Whether to include private playlists, like the mixes YouTube makes for you. Defaults to False.
+            include_private: Whether to include private playlists, like the mixes
+                YouTube makes for you. Defaults to False.
 
         Returns:
-            The extracted playlist ID. If no playlist ID is found or the playlist is private and include_private is False, return None.
+            The extracted playlist ID. If no playlist ID is found or the playlist
+            is private and include_private is False, return None.
         """
 
         found_match = self._playlist_id_regex.search(url)

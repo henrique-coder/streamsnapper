@@ -216,9 +216,12 @@ class VideoStreamCollection(BaseModel):
         if fallback:
             fallback_streams = [s for s in self.streams if s.height and s.height <= target_height]
             if fallback_streams:
-                best_fallback_height = max(s.height for s in fallback_streams)
+                heights = [s.height for s in fallback_streams if s.height is not None]
+                best_fallback_height = max(heights)
                 return sorted(
-                    [s for s in fallback_streams if s.height == best_fallback_height], key=lambda s: s.quality_score, reverse=True
+                    [s for s in fallback_streams if s.height == best_fallback_height],
+                    key=lambda s: s.quality_score,
+                    reverse=True,
                 )
 
         return []
@@ -239,7 +242,9 @@ class VideoStreamCollection(BaseModel):
 
         return sorted(filtered, key=lambda s: s.quality_score, reverse=True)
 
-    def get_by_bitrate_range(self, min_bitrate: float | None = None, max_bitrate: float | None = None) -> list[VideoStream]:
+    def get_by_bitrate_range(
+        self, min_bitrate: float | None = None, max_bitrate: float | None = None
+    ) -> list[VideoStream]:
         """Get streams within bitrate range."""
         filtered = self.streams
 

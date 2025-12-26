@@ -3,15 +3,24 @@ from contextlib import suppress
 from enum import Enum
 from json import JSONDecodeError
 from locale import LC_ALL, getlocale, setlocale
-from os import PathLike
 from pathlib import Path
 from re import sub
-from typing import Any
+from typing import Any, Final
 from unicodedata import normalize
 
-from httpx import get, head
+from curl_cffi.requests import Session
+from pydantic import BaseModel, ConfigDict, field_validator
 
 from .logger import logger
+
+
+DEFAULT_FILENAME_MAX_LENGTH: Final[int] = 100
+DEFAULT_LANGUAGE_FALLBACK: Final[str] = "en-US"
+DEFAULT_REQUEST_TIMEOUT: Final[int] = 5
+YOUTUBE_DISLIKE_API_URL: Final[str] = "https://returnyoutubedislikeapi.com/votes"
+
+INVALID_FILENAME_CHARS_PATTERN: Final[str] = r'[<>:"/\\|?*\0\t\n\r\v\f]'
+WHITESPACE_PATTERN: Final[str] = r"\s+"
 
 
 class SupportedCookieBrowser(str, Enum):
@@ -26,42 +35,54 @@ class SupportedCookieBrowser(str, Enum):
     CHROMIUM = "chromium"
 
 
-class CookieFile:
-    """Represents a cookie file."""
+class CookieFile(BaseModel):
+    """
+    Represents a cookie file with path validation.
 
-    def __init__(self, file_path: str | PathLike) -> None:
+    Validates that the provided path exists and is a file.
+    """
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    path: Path
+
+    @field_validator("path", mode="before")
+    @classmethod
+    def validate_path(cls, v: str | Path) -> Path:
         """
-        Initialize cookie file.
+        Validate and convert path to Path object.
 
         Args:
-            file_path: Path to cookie file (Netscape format)
+            v: Path as string or Path object
+
+        Returns:
+            Validated Path object
+
+        Raises:
+            ValueError: If path is not a file
         """
+        path = Path(v) if isinstance(v, str) else v
 
-        self.path: Path = Path(file_path)
-
-        if not self.path.exists():
-            logger.warning(f"Cookie file does not exist: {self.path}")
-        elif not self.path.is_file():
-            raise ValueError(f"Cookie path is not a file: {self.path}")
+        if not path.exists():
+            logger.warning(f"Cookie file does not exist: {path}")
+        elif not path.is_file():
+            raise ValueError(f"Cookie path is not a file: {path}")
         else:
-            logger.debug(f"Cookie file initialized: {self.path}")
+            logger.debug(f"Cookie file initialized: {path}")
+
+        return path
 
     def __str__(self) -> str:
-        """Return file path as string."""
-
+        """Return file path as POSIX string."""
         return self.path.as_posix()
-
-    def __repr__(self) -> str:
-        """Return representation of cookie file."""
-
-        return f"CookieFile('{self.path}')"
 
 
 def get_value(
     data: dict[Any, Any],
     key: Any,
     fallback_keys: list[Any] | None = None,
-    convert_to: Callable | list[Callable] | None = None,
+    *,
+    convert_to: Callable[..., Any] | list[Callable[..., Any]] | None = None,
     default_to: Any = None,
 ) -> Any:
     """
@@ -71,129 +92,84 @@ def get_value(
         data: The dictionary to extract value from
         key: Primary key to look for
         fallback_keys: Alternative keys if primary key fails
-        convert_to: Function(s) to convert the value
-        default_to: Default value if extraction/conversion fails
+        convert_to: Function(s) to convert the value (keyword-only)
+        default_to: Default value if extraction/conversion fails (keyword-only)
 
     Returns:
         Extracted and converted value or default
     """
-
     logger.trace(f"Extracting value for key: {key}")
 
-    # Ensure data is a dictionary
     if not isinstance(data, dict):
         logger.trace(f"Data is not a dictionary, returning default: {default_to}")
-
         return default_to
 
-    # Try primary key
     value = data.get(key)
 
-    # Try fallback keys if primary key failed
     if value is None and fallback_keys:
         for fallback_key in fallback_keys:
             if fallback_key is not None:
                 value = data.get(fallback_key)
-
                 if value is not None:
                     logger.trace(f"Found value using fallback key: {fallback_key}")
                     break
 
     if value is None:
         logger.trace(f"No value found for key {key}, returning default: {default_to}")
-
         return default_to
 
-    # Apply conversions if specified
-    if convert_to is not None:
-        converters = [convert_to] if not isinstance(convert_to, list) else convert_to
+    if convert_to is None:
+        return value
 
-        for converter in converters:
-            try:
-                converted_value = converter(value)
-                logger.trace(f"Successfully converted value using {converter.__name__}")
+    converters = [convert_to] if not isinstance(convert_to, list) else convert_to
 
-                return converted_value
-            except (ValueError, TypeError) as e:
-                logger.trace(f"Conversion failed with {converter.__name__}: {repr(e)}")
+    for converter in converters:
+        with suppress(ValueError, TypeError):
+            converted_value = converter(value)  # type: ignore[call-non-callable]
+            converter_name = getattr(converter, "__name__", str(converter))
+            logger.trace(f"Successfully converted value using {converter_name}")
+            return converted_value
 
-                if converter == converters[-1]:
-                    logger.warning(f"All conversions failed for key {key}, returning default")
+        converter_name = getattr(converter, "__name__", str(converter))
+        logger.trace(f"Conversion failed with {converter_name}")
 
-                    return default_to
-
-                continue
-
-    return value
+    logger.warning(f"All conversions failed for key {key}, returning default")
+    return default_to
 
 
-def sanitize_filename(text: str, max_length: int | None = 100) -> str | None:
+def sanitize_filename(text: str, max_length: int | None = DEFAULT_FILENAME_MAX_LENGTH) -> str | None:
     """
     Sanitize text for use as filename, limiting to max_length characters.
+
     Removes invalid characters, normalizes unicode, and truncates if necessary.
 
     Args:
         text: Text to sanitize
-        max_length: Maximum allowed length for the filename or None for no limit. Defaults to 100.
+        max_length: Maximum allowed length for the filename or None for no limit
 
     Returns:
         Sanitized filename or None if empty after sanitization
     """
-
     if not text:
         logger.warning("No text provided for filename sanitization")
         return None
 
     logger.trace(f"Sanitizing filename from text: '{text}'")
 
-    # Normalize unicode characters to decompose accents
     normalized = normalize("NFKD", text)
-
-    # Remove non-ASCII characters (accents, symbols, etc.)
     ascii_text = normalized.encode("ASCII", "ignore").decode("utf-8")
+    cleaned = sub(INVALID_FILENAME_CHARS_PATTERN, "", ascii_text)
+    cleaned = sub(WHITESPACE_PATTERN, " ", cleaned).strip()
 
-    # Remove invalid filename characters for safety across platforms
-    # Windows/Unix forbidden chars: < > : " / \ | ? * and control characters
-    invalid_chars_pattern = r'[<>:"/\\|?*\0\t\n\r\v\f]'
-    cleaned = sub(invalid_chars_pattern, "", ascii_text)
-
-    # Normalize whitespace (replace multiple spaces/tabs with single space)
-    cleaned = sub(r"\s+", " ", cleaned).strip()
-
-    # Truncate to max_length, ensuring we don't cut in the middle of a word
     if max_length and len(cleaned) > max_length:
-        # Try to cut at word boundary (space)
         cutoff = cleaned[:max_length].rfind(" ")
         cleaned = cleaned[:cutoff] if cutoff != -1 else cleaned[:max_length]
-
-        # Clean any trailing spaces after truncation
         cleaned = cleaned.rstrip()
 
     result = cleaned if cleaned else None
     logger.trace(f"Sanitized filename: '{result}' from original text: '{text}'")
 
     return result
-
-
-def format_duration(seconds: int | None) -> str:
-    """
-    Format duration in seconds to human readable format (HH:MM:SS).
-
-    Args:
-        seconds: Duration in seconds
-
-    Returns:
-        Formatted duration string (HH:MM:SS) or "Unknown" if None
-    """
-
-    if seconds is None:
-        return "Unknown"
-
-    hours = seconds // 3600
-    minutes = (seconds % 3600) // 60
-    secs = seconds % 60
-
-    return f"{hours:02d}:{minutes:02d}:{secs:02d}"
 
 
 def strip_whitespace(value: Any) -> str:
@@ -206,11 +182,30 @@ def strip_whitespace(value: Any) -> str:
     Returns:
         Stripped string
     """
-
     return str(value).strip()
 
 
-def detect_system_language(fallback: str = "en-US") -> str:
+def format_duration(seconds: int | None) -> str:
+    """
+    Format duration in seconds to human readable format (HH:MM:SS).
+
+    Args:
+        seconds: Duration in seconds
+
+    Returns:
+        Formatted duration string (HH:MM:SS) or "Unknown" if None
+    """
+    if seconds is None:
+        return "Unknown"
+
+    hours = seconds // 3600
+    minutes = (seconds % 3600) // 60
+    secs = seconds % 60
+
+    return f"{hours:02d}:{minutes:02d}:{secs:02d}"
+
+
+def detect_system_language(fallback: str = DEFAULT_LANGUAGE_FALLBACK) -> str:
     """
     Detect system language using the most reliable method.
 
@@ -220,30 +215,25 @@ def detect_system_language(fallback: str = "en-US") -> str:
     Returns:
         Language code in format "en-US" (fallback: "en-US")
     """
-
     try:
-        # Set locale to system default and get it
         setlocale(LC_ALL, "")
         system_locale = getlocale()[0]
 
         if system_locale and "_" in system_locale:
-            # Convert from "en_US" to "en-US" format
             language_code = system_locale.split(".")[0].replace("_", "-")
             logger.debug(f"Detected system language: {language_code}")
-
             return language_code
     except Exception as e:
-        logger.warning(f"Language detection failed: {repr(e)}")
+        logger.warning(f"Language detection failed: {e!r}")
 
-    # Fallback
     logger.info(f"Using fallback language: {fallback}")
-
     return fallback
 
 
 def filter_valid_youtube_thumbnails(thumbnails: list[str]) -> list[str]:
     """
     Filter YouTube thumbnail URLs, returning list starting from first valid thumbnail.
+
     Stops at first valid thumbnail found.
 
     Args:
@@ -252,29 +242,23 @@ def filter_valid_youtube_thumbnails(thumbnails: list[str]) -> list[str]:
     Returns:
         List starting from first valid thumbnail, or empty list if none valid
     """
-
     if not thumbnails:
         return []
 
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36"
-    }
+    with Session() as session:
+        for index, url in enumerate(thumbnails):
+            try:
+                response = session.head(url, allow_redirects=False, timeout=DEFAULT_REQUEST_TIMEOUT)
 
-    for index, url in enumerate(thumbnails):
-        try:
-            response = head(url, headers=headers, follow_redirects=False, timeout=5)
+                if response.ok:
+                    logger.trace(f"First valid YouTube thumbnail found: {url}")
+                    return thumbnails[index:]
 
-            if response.is_success:
-                logger.trace(f"First valid YouTube thumbnail found: {url}")
-
-                return thumbnails[index:]
-            else:
                 logger.trace(f"Invalid YouTube thumbnail (non-success response): {url}")
-        except Exception as e:
-            logger.trace(f"Invalid YouTube thumbnail (request exception): {url} - {repr(e)}")
+            except Exception as e:  # noqa: PERF203
+                logger.trace(f"Invalid YouTube thumbnail (request exception): {url} - {e!r}")
 
     logger.debug("No valid YouTube thumbnails found")
-
     return []
 
 
@@ -288,29 +272,26 @@ def get_youtube_dislike_count(video_id: str) -> int | None:
     Returns:
         Dislike count as integer or None if unavailable/failed
     """
-
     try:
-        response = get(
-            "https://returnyoutubedislikeapi.com/votes",
-            params={"videoId": video_id},
-            headers={
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36"
-            },
-        )
+        with Session() as session:
+            response = session.get(
+                YOUTUBE_DISLIKE_API_URL,
+                params={"videoId": video_id},
+                timeout=DEFAULT_REQUEST_TIMEOUT,
+            )
 
-        if response.is_success:
-            with suppress(JSONDecodeError):
-                dislike_count = get_value(response.json(), "dislikes", convert_to=int)
+            if response.ok:
+                with suppress(JSONDecodeError):
+                    dislike_count = get_value(response.json(), "dislikes", convert_to=int)
 
-                if dislike_count is not None:
-                    logger.trace(f"Retrieved dislike count for {video_id}: {dislike_count}")
+                    if dislike_count is not None:
+                        logger.trace(f"Retrieved dislike count for {video_id}: {dislike_count}")
+                        return dislike_count
 
-                    return dislike_count
-                else:
                     logger.trace(f"No dislike data available for video: {video_id}")
-        else:
-            logger.trace(f"Failed to fetch dislike count (non-success response): {video_id}")
+            else:
+                logger.trace(f"Failed to fetch dislike count (non-success response): {video_id}")
     except Exception as e:
-        logger.trace(f"Failed to fetch dislike count (request exception): {video_id} - {repr(e)}")
+        logger.trace(f"Failed to fetch dislike count (request exception): {video_id} - {e!r}")
 
     return None

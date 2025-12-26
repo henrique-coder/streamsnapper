@@ -48,7 +48,7 @@ class YouTubeExtractor:
             for stream in formats
             if (
                 get_value(stream, "acodec") != "none"
-                and get_value(stream, "format_id", "").split("-")[0] in AUDIO_FORMAT_EXTENSIONS
+                and get_value(stream, "format_id", default_to="").split("-")[0] in AUDIO_FORMAT_EXTENSIONS
             )
         ]
 
@@ -63,10 +63,10 @@ class StreamProcessor:
     @staticmethod
     def calculate_video_score(stream: dict[str, Any]) -> float:
         """Calculate quality score for video stream."""
-        width = get_value(stream, "width", 0, convert_to=int)
-        height = get_value(stream, "height", 0, convert_to=int)
-        framerate = get_value(stream, "fps", 0, convert_to=float)
-        bitrate = get_value(stream, "tbr", 0, convert_to=float)
+        width = get_value(stream, "width", default_to=0, convert_to=int)
+        height = get_value(stream, "height", default_to=0, convert_to=int)
+        framerate = get_value(stream, "fps", default_to=0, convert_to=float)
+        bitrate = get_value(stream, "tbr", default_to=0, convert_to=float)
 
         return float(
             (width * QUALITY_WEIGHTS["width"])
@@ -78,8 +78,8 @@ class StreamProcessor:
     @staticmethod
     def calculate_audio_score(stream: dict[str, Any]) -> float:
         """Calculate quality score for audio stream."""
-        bitrate = get_value(stream, "abr", 0, convert_to=float)
-        sample_rate = get_value(stream, "asr", 0, convert_to=float)
+        bitrate = get_value(stream, "abr", default_to=0, convert_to=float)
+        sample_rate = get_value(stream, "asr", default_to=0, convert_to=float)
 
         return float((bitrate * QUALITY_WEIGHTS["bitrate"]) + (sample_rate * QUALITY_WEIGHTS["sample_rate"]))
 

@@ -21,7 +21,7 @@ jobs:
 
     steps:
       - name: 📥 Checkout Repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -35,13 +35,20 @@ jobs:
             echo "should_release=false" >> $GITHUB_OUTPUT
           fi
 
+      - name: ⚡ Setup UV
+        if: steps.check_commit.outputs.should_release == 'true'
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
       - name: 📚 Load Release Config
         if: steps.check_commit.outputs.should_release == 'true'
         id: release_config
         run: |
-          PACKAGE_NAME=$(yq '.package.name' .github/release-config.yaml)
-          PACKAGE_TITLE=$(yq '.package.title' .github/release-config.yaml)
-          PACKAGE_DESC=$(yq '.package.description' .github/release-config.yaml)
+          PACKAGE_NAME=$(uvx yq '.package.name' .github/release-config.yaml)
+          PACKAGE_TITLE=$(uvx yq '.package.title' .github/release-config.yaml)
+          PACKAGE_DESC=$(uvx yq '.package.description' .github/release-config.yaml)
 
           echo "pkg_name=$PACKAGE_NAME" >> $GITHUB_OUTPUT
           echo "pkg_title=$PACKAGE_TITLE" >> $GITHUB_OUTPUT
@@ -77,22 +84,6 @@ jobs:
           echo "commits<<EOF" >> $GITHUB_OUTPUT
           echo "$COMMITS" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
-
-      - name: 🐍 Setup Python
-        if: steps.check_commit.outputs.should_release == 'true'
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-
-      - name: ⚡ Setup UV
-        if: steps.check_commit.outputs.should_release == 'true'
-        uses: astral-sh/setup-uv@v7
-
-      - name: 🔧 Install Tools
-        if: steps.check_commit.outputs.should_release == 'true'
-        run: |
-          uv tool install yq
-          uv tool install twine
 
       - name: 🏗️ Build Package
         if: steps.check_commit.outputs.should_release == 'true'
@@ -138,6 +129,6 @@ jobs:
 
       - name: 🚀 Upload to PyPI
         if: steps.check_commit.outputs.should_release == 'true'
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          verbose: true
+        run: uv publish
+        env:
+          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}

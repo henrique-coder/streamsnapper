@@ -7,15 +7,15 @@ from .video import VideoInformation, VideoStream, VideoStreamCollection
 
 
 __all__ = [
-    "VideoInformation",
-    "VideoStream",
-    "VideoStreamCollection",
     "AudioStream",
     "AudioStreamCollection",
-    "SubtitleStream",
-    "SubtitleStreamCollection",
+    "DownloadPlan",
     "ExtractionMetadata",
     "ExtractionResult",
     "StreamDownloadInfo",
-    "DownloadPlan",
+    "SubtitleStream",
+    "SubtitleStreamCollection",
+    "VideoInformation",
+    "VideoStream",
+    "VideoStreamCollection",
 ]
